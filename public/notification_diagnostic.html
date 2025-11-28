@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico do Sistema de Notificações</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .status-success { @apply text-green-600 bg-green-100; }
+        .status-error { @apply text-red-600 bg-red-100; }
+        .status-warning { @apply text-yellow-600 bg-yellow-100; }
+        .status-info { @apply text-blue-600 bg-blue-100; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-stethoscope text-blue-600 mr-3"></i>
+                    Diagnóstico do Sistema de Notificações
+                </h1>
+                <p class="text-gray-600">Ferramenta para testar e diagnosticar o funcionamento das notificações</p>
+            </div>
+
+            <!-- Status Geral -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-heartbeat text-red-500 mr-2"></i>
+                    Status Geral do Sistema
+                </h2>
+                <div id="general-status" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Status cards serão inseridos aqui -->
+                </div>
+            </div>
+
+            <!-- Testes de API -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-flask text-purple-500 mr-2"></i>
+                    Testes de API
+                </h2>
+                <div class="space-y-4">
+                    <button onclick="testNotificationsAPI()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-play mr-2"></i>
+                        Testar API de Notificações
+                    </button>
+                    <button onclick="testDiagnosticAPI()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors ml-2">
+                        <i class="fas fa-stethoscope mr-2"></i>
+                        Testar API de Diagnóstico
+                    </button>
+                    <button onclick="testCountAPI()" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors ml-2">
+                        <i class="fas fa-hashtag mr-2"></i>
+                        Testar Contagem
+                    </button>
+                </div>
+                <div id="api-results" class="mt-4">
+                    <!-- Resultados dos testes serão inseridos aqui -->
+                </div>
+            </div>
+
+            <!-- Informações Técnicas -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-cogs text-gray-500 mr-2"></i>
+                    Informações Técnicas
+                </h2>
+                <div id="technical-info" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Informações técnicas serão inseridas aqui -->
+                </div>
+            </div>
+
+            <!-- Logs de Teste -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-terminal text-green-500 mr-2"></i>
+                    Logs de Teste
+                </h2>
+                <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm h-64 overflow-y-auto" id="logs">
+                    <div class="text-yellow-400">[INFO] Diagnóstico iniciado...</div>
+                </div>
+                <button onclick="clearLogs()" 
+                        class="mt-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                    <i class="fas fa-trash mr-1"></i>
+                    Limpar Logs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para adicionar logs
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = colors[type] || 'text-gray-400';
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        // Função para limpar logs
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '<div class="text-yellow-400">[INFO] Logs limpos...</div>';
+        }
+
+        // Função para criar card de status
+        function createStatusCard(title, value, status, icon) {
+            const statusClass = status === 'success' ? 'status-success' : 
+                               status === 'error' ? 'status-error' : 
+                               status === 'warning' ? 'status-warning' : 'status-info';
+            
+            return `
+                <div class="${statusClass} p-4 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="${icon} text-lg mr-3"></i>
+                        <div>
+                            <div class="font-semibold">${title}</div>
+                            <div class="text-sm">${value}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Função para testar API de notificações
+        async function testNotificationsAPI() {
+            addLog('Testando API de notificações não lidas...', 'info');
+            
+            try {
+                const response = await fetch('/notifications/unread', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                addLog(`Status da resposta: ${response.status} ${response.statusText}`, 
+                       response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`Dados recebidos: ${JSON.stringify(data, null, 2)}`, 'success');
+                    
+                    displayAPIResult('notifications-test', {
+                        status: 'success',
+                        title: 'API de Notificações',
+                        data: data
+                    });
+                } else {
+                    const errorText = await response.text();
+                    addLog(`Erro na resposta: ${errorText}`, 'error');
+                    
+                    displayAPIResult('notifications-test', {
+                        status: 'error',
+                        title: 'API de Notificações',
+                        error: `HTTP ${response.status}: ${response.statusText}`
+                    });
+                }
+            } catch (error) {
+                addLog(`Erro na requisição: ${error.message}`, 'error');
+                displayAPIResult('notifications-test', {
+                    status: 'error',
+                    title: 'API de Notificações',
+                    error: error.message
+                });
+            }
+        }
+
+        // Função para testar API de diagnóstico
+        async function testDiagnosticAPI() {
+            addLog('Testando API de diagnóstico...', 'info');
+            
+            try {
+                const response = await fetch('/notifications/diagnostic', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                addLog(`Status da resposta: ${response.status} ${response.statusText}`, 
+                       response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`Dados de diagnóstico recebidos`, 'success');
+                    
+                    updateGeneralStatus(data);
+                    updateTechnicalInfo(data);
+                    
+                    displayAPIResult('diagnostic-test', {
+                        status: 'success',
+                        title: 'API de Diagnóstico',
+                        data: data
+                    });
+                } else {
+                    const errorText = await response.text();
+                    addLog(`Erro na resposta: ${errorText}`, 'error');
+                    
+                    displayAPIResult('diagnostic-test', {
+                        status: 'error',
+                        title: 'API de Diagnóstico',
+                        error: `HTTP ${response.status}: ${response.statusText}`
+                    });
+                }
+            } catch (error) {
+                addLog(`Erro na requisição: ${error.message}`, 'error');
+                displayAPIResult('diagnostic-test', {
+                    status: 'error',
+                    title: 'API de Diagnóstico',
+                    error: error.message
+                });
+            }
+        }
+
+        // Função para testar API de contagem
+        async function testCountAPI() {
+            addLog('Testando API de contagem...', 'info');
+            
+            try {
+                const response = await fetch('/notifications/count', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                addLog(`Status da resposta: ${response.status} ${response.statusText}`, 
+                       response.ok ? 'success' : 'error');
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`Contagem recebida: ${JSON.stringify(data)}`, 'success');
+                    
+                    displayAPIResult('count-test', {
+                        status: 'success',
+                        title: 'API de Contagem',
+                        data: data
+                    });
+                } else {
+                    const errorText = await response.text();
+                    addLog(`Erro na resposta: ${errorText}`, 'error');
+                    
+                    displayAPIResult('count-test', {
+                        status: 'error',
+                        title: 'API de Contagem',
+                        error: `HTTP ${response.status}: ${response.statusText}`
+                    });
+                }
+            } catch (error) {
+                addLog(`Erro na requisição: ${error.message}`, 'error');
+                displayAPIResult('count-test', {
+                    status: 'error',
+                    title: 'API de Contagem',
+                    error: error.message
+                });
+            }
+        }
+
+        // Função para exibir resultado de API
+        function displayAPIResult(testId, result) {
+            const resultsContainer = document.getElementById('api-results');
+            
+            // Remove resultado anterior do mesmo teste
+            const existingResult = document.getElementById(testId);
+            if (existingResult) {
+                existingResult.remove();
+            }
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.id = testId;
+            resultDiv.className = `p-4 rounded-lg border-l-4 ${
+                result.status === 'success' ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'
+            }`;
+            
+            let content = `
+                <h3 class="font-semibold ${result.status === 'success' ? 'text-green-800' : 'text-red-800'}">
+                    <i class="fas ${result.status === 'success' ? 'fa-check-circle' : 'fa-times-circle'} mr-2"></i>
+                    ${result.title}
+                </h3>
+            `;
+            
+            if (result.status === 'success' && result.data) {
+                content += `<pre class="mt-2 text-sm bg-gray-100 p-2 rounded overflow-x-auto">${JSON.stringify(result.data, null, 2)}</pre>`;
+            } else if (result.error) {
+                content += `<p class="mt-2 text-red-700">${result.error}</p>`;
+            }
+            
+            resultDiv.innerHTML = content;
+            resultsContainer.appendChild(resultDiv);
+        }
+
+        // Função para atualizar status geral
+        function updateGeneralStatus(data) {
+            const container = document.getElementById('general-status');
+            
+            const cards = [
+                {
+                    title: 'Autenticação',
+                    value: data.user_authenticated ? `Usuário: ${data.user_name}` : 'Não autenticado',
+                    status: data.user_authenticated ? 'success' : 'error',
+                    icon: 'fas fa-user'
+                },
+                {
+                    title: 'Banco de Dados',
+                    value: data.database_connection ? 'Conectado' : 'Erro de conexão',
+                    status: data.database_connection ? 'success' : 'error',
+                    icon: 'fas fa-database'
+                },
+                {
+                    title: 'Total de Notificações',
+                    value: data.total_notifications || 0,
+                    status: 'info',
+                    icon: 'fas fa-bell'
+                },
+                {
+                    title: 'Não Lidas',
+                    value: data.unread_notifications || 0,
+                    status: data.unread_notifications > 0 ? 'warning' : 'success',
+                    icon: 'fas fa-exclamation-circle'
+                }
+            ];
+            
+            container.innerHTML = cards.map(card => 
+                createStatusCard(card.title, card.value, card.status, card.icon)
+            ).join('');
+        }
+
+        // Função para atualizar informações técnicas
+        function updateTechnicalInfo(data) {
+            const container = document.getElementById('technical-info');
+            
+            const info = [
+                { label: 'Session ID', value: data.session_id || 'N/A' },
+                { label: 'CSRF Token', value: data.csrf_token ? 'Presente' : 'Ausente' },
+                { label: 'User ID', value: data.user_id || 'N/A' },
+                { label: 'Timestamp', value: data.timestamp || 'N/A' },
+                { label: 'Notificações Globais', value: data.global_notifications || 0 },
+                { label: 'Notificações do Usuário', value: data.user_notifications || 0 }
+            ];
+            
+            container.innerHTML = info.map(item => `
+                <div class="bg-gray-50 p-3 rounded">
+                    <div class="text-sm font-medium text-gray-700">${item.label}</div>
+                    <div class="text-sm text-gray-900 font-mono">${item.value}</div>
+                </div>
+            `).join('');
+        }
+
+        // Inicializar diagnóstico ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Página de diagnóstico carregada', 'success');
+            addLog('Clique nos botões acima para executar os testes', 'info');
+            
+            // Executar diagnóstico automático
+            setTimeout(() => {
+                testDiagnosticAPI();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

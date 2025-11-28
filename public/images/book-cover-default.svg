@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef2ff"/>
+      <stop offset="1" stop-color="#e0e7ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="400" height="600" fill="url(#g)"/>
+  <rect x="28" y="28" width="344" height="544" rx="12" ry="12" fill="#ffffff" stroke="#c7d2fe" stroke-width="4"/>
+  <g fill="#6366f1" transform="translate(0,0)">
+    <rect x="60" y="80" width="280" height="24" rx="4"/>
+    <rect x="60" y="120" width="220" height="12" rx="4" opacity="0.6"/>
+    <rect x="60" y="160" width="260" height="12" rx="4" opacity="0.6"/>
+    <rect x="60" y="200" width="240" height="12" rx="4" opacity="0.6"/>
+  </g>
+  <g transform="translate(140,260)" fill="#c7d2fe">
+    <path d="M20 0h80c11 0 20 9 20 20v100c0 11-9 20-20 20H20c-11 0-20-9-20-20V20C0 9 9 0 20 0zm0 8c-6.6 0-12 5.4-12 12v100c0 6.6 5.4 12 12 12h80c6.6 0 12-5.4 12-12V20c0-6.6-5.4-12-12-12H20z"/>
+    <rect x="12" y="90" width="96" height="8" rx="4"/>
+    <rect x="12" y="74" width="96" height="8" rx="4"/>
+    <rect x="12" y="58" width="96" height="8" rx="4"/>
+  </g>
+  <text x="200" y="520" font-size="18" text-anchor="middle" fill="#64748b">Sem capa</text>
+</svg>

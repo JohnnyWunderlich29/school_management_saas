@@ -1,0 +1,179 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <x-breadcrumbs :items="[
+            ['title' => 'Configurações', 'url' => route('settings.index', $currentSchoolId ? ['school_id' => $currentSchoolId] : [])],
+            ['title' => 'Central', 'url' => '#']
+        ]" />
+        <!-- Conteúdo -->
+        <x-card>
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Central de Configurações</h1>
+            <p class="mt-1 text-sm text-gray-600">Acesse configurações financeiras, educacionais e administrativas em um único lugar.</p>
+        </div>
+
+        <!-- Navegação de Abas -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav id="settings-tabs-nav" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <a href="{{ route('settings.index', ['tab' => 'financeiro'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
+                   data-tab="financeiro"
+                   class="settings-tab-link {{ $tab === 'financeiro' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
+                    <i class="fas fa-coins mr-2"></i>
+                    Financeiro
+                </a>
+                <a href="{{ route('settings.index', ['tab' => 'educacional'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
+                   data-tab="educacional"
+                   class="settings-tab-link {{ $tab === 'educacional' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
+                    <i class="fas fa-graduation-cap mr-2"></i>
+                    Educacional
+                </a>
+            </nav>
+        </div>
+
+
+            <div id="settings-content">
+                <div id="settings-financeiro" class="aspect-auto w-full {{ $tab === 'financeiro' ? '' : 'hidden' }}">
+                    @if ($tab === 'financeiro')
+                        @if ($currentSchoolId)
+                            @php
+                                $canFinance = auth()->check() && (
+                                    auth()->user()->isSuperAdmin() ||
+                                    auth()->user()->temCargo('Suporte') ||
+                                    auth()->user()->temCargo('Suporte Técnico') ||
+                                    auth()->user()->temPermissao('finance.admin') ||
+                                    auth()->user()->temPermissao('financeiro.admin')
+                                );
+                            @endphp
+                            @if ($canFinance)
+                                @include('settings.partials.financeiro')
+                            @else
+                                <div class="p-6 text-gray-600">
+                                    Você não tem permissão para acessar as configurações financeiras. Solicite a permissão 'financeiro.admin' ao administrador.
+                                </div>
+                            @endif
+                        @else
+                            <div class="p-6 text-gray-600">Selecione uma escola para acessar as configurações financeiras.</div>
+                        @endif
+                    @endif
+                </div>
+                <div id="settings-educacional" class="aspect-auto w-full {{ $tab === 'educacional' ? '' : 'hidden' }}">
+                    @if ($tab === 'educacional')
+                        @if ($currentSchoolId)
+                            @permission('usuarios.editar')
+                                @include('settings.partials.educacional')
+                            @else
+                                <div class="p-6 text-gray-600">
+                                    Você não tem permissão para acessar as configurações educacionais. Solicite a permissão 'usuarios.editar' ao administrador.
+                                </div>
+                            @endpermission
+                        @else
+                            <div class="p-6 text-gray-600">Selecione uma escola para acessar as configurações educacionais.</div>
+                        @endif
+                    @endif
+                </div>
+            </div>
+        </x-card>
+    </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nav = document.getElementById('settings-tabs-nav');
+    if (!nav) return;
+    const links = nav.querySelectorAll('.settings-tab-link');
+    const financeiro = document.getElementById('settings-financeiro');
+    const educacional = document.getElementById('settings-educacional');
+
+    function animateSwitch(currentEl, nextEl) {
+        if (!currentEl || !nextEl || currentEl === nextEl) return;
+        // Prepare next element for fade-in
+        nextEl.classList.remove('hidden');
+        nextEl.classList.add('opacity-0', 'transform', '-translate-y-1');
+        nextEl.classList.add('transition-opacity', 'duration-200', 'ease-out');
+
+        // Fade-out current element
+        currentEl.classList.add('transition-opacity', 'duration-200', 'ease-out');
+        currentEl.classList.add('opacity-0', 'transform', 'translate-y-1');
+
+        // After transition, hide current and show next
+        setTimeout(() => {
+            currentEl.classList.add('hidden');
+            currentEl.classList.remove('opacity-0', 'transform', 'translate-y-1', 'transition-opacity', 'duration-200', 'ease-out');
+
+            // Trigger fade-in of next
+            requestAnimationFrame(() => {
+                nextEl.classList.remove('opacity-0', '-translate-y-1');
+                nextEl.classList.add('opacity-100');
+                // Cleanup classes after transition completes
+                setTimeout(() => {
+                    nextEl.classList.remove('opacity-100', 'transform', 'transition-opacity', 'duration-200', 'ease-out');
+                }, 220);
+            });
+        }, 200);
+    }
+
+    async function ensureLoaded(tab, href) {
+        const targetId = tab === 'financeiro' ? 'settings-financeiro' : 'settings-educacional';
+        const container = document.getElementById(targetId);
+        if (!container) return;
+        if (container.dataset.loaded === 'true') return;
+        try {
+            const html = await fetch(href, { credentials: 'same-origin' }).then(r => r.text());
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const remote = doc.getElementById(targetId);
+            if (remote) {
+                container.innerHTML = remote.innerHTML;
+                // Executar scripts internos
+                remote.querySelectorAll('script').forEach(s => {
+                    const ns = document.createElement('script');
+                    if (s.src) { ns.src = s.src; } else { ns.textContent = s.textContent; }
+                    document.body.appendChild(ns);
+                });
+                container.dataset.loaded = 'true';
+            }
+        } catch(e) {
+            console.error('Falha ao carregar conteúdo da aba', tab, e);
+        }
+    }
+
+    async function setActive(tab, href) {
+        await ensureLoaded(tab, href);
+        const current = financeiro.classList.contains('hidden') ? educacional : financeiro;
+        const next = tab === 'financeiro' ? financeiro : educacional;
+        animateSwitch(current, next);
+        links.forEach(a => {
+            const isActive = a.dataset.tab === tab;
+            a.classList.toggle('border-indigo-500', isActive);
+            a.classList.toggle('text-indigo-600', isActive);
+            a.classList.toggle('border-transparent', !isActive);
+            a.classList.toggle('text-gray-500', !isActive);
+        });
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            window.history.pushState({ tab }, '', url.toString());
+        } catch (e) {}
+    }
+
+    links.forEach(a => {
+        a.addEventListener('click', function(evt) {
+            evt.preventDefault();
+            const tab = a.dataset.tab || 'financeiro';
+            setActive(tab, a.href);
+        });
+    });
+
+    window.addEventListener('popstate', function(event) {
+        const tab = (event.state && event.state.tab) || new URL(window.location.href).searchParams.get('tab') || 'financeiro';
+        const link = Array.from(links).find(l => (l.dataset.tab || '') === tab);
+        setActive(tab, link ? link.href : window.location.href);
+    });
+});
+</script>
+@endpush
