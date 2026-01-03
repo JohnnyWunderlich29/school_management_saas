@@ -24,7 +24,3 @@ Multi-tenancy (Banco Compartilhado): Todas as escolas residem no mesmo banco de 
 Isolamento via Middleware: O acesso aos dados é restrito por um Middleware customizado (SchoolScopeMiddleware). Este componente garante que um usuário autenticado só visualize e manipule registros pertencentes à sua escola (school_id), prevenindo vazamento de dados entre instituições.
 
 Global Scopes: Utilização de Eloquent Global Scopes para filtrar automaticamente todas as queries pelo ID da escola ativa na sessão.
-
-.
-📄 Licença
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
