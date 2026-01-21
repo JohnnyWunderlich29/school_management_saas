@@ -27,5 +27,5 @@ RUN mkdir -p storage/framework/cache/data \
 # Instalar dependências sem rodar scripts automáticos que travam o build
 RUN composer install --no-dev --no-scripts --optimize-autoloader
 
-# Comando para iniciar o servidor interno do PHP (ideal para testes rápidos)
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+# Comando para iniciar o servidor (Railway injeta a variável PORT automaticamente)
+CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}

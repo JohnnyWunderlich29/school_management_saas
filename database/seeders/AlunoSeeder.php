@@ -15,52 +15,70 @@ class AlunoSeeder extends Seeder
     public function run(): void
     {
         $faker = Faker::create('pt_BR');
-        
+
         // Buscar salas para distribuir alunos
         $salas = Sala::all();
-        
-        // Criar 300 alunos
-        for ($i = 1; $i <= 300; $i++) {
+
+        // Em produção, criar menos alunos para evitar exaustão de memória (128MB Railway)
+        $totalAlunos = config('app.env') === 'production' ? 50 : 300;
+
+        $this->command->info("Iniciando a criação de {$totalAlunos} alunos...");
+
+        // Pré-carregar contagem de alunos por sala para otimizar
+        $contagemPorSala = Aluno::select('sala_id', \DB::raw('count(*) as total'))
+            ->whereNotNull('sala_id')
+            ->groupBy('sala_id')
+            ->pluck('total', 'sala_id')
+            ->toArray();
+
+        for ($i = 1; $i <= $totalAlunos; $i++) {
             // Distribuir alunos nas salas respeitando capacidade
             $salaId = null;
             if ($salas->isNotEmpty()) {
                 // Tentar encontrar uma sala com capacidade disponível
-                $salasDisponiveis = $salas->filter(function ($sala) {
-                    $alunosNaSala = Aluno::where('sala_id', $sala->id)->count();
-                    return $alunosNaSala < $sala->capacidade;
+                $salasDisponiveis = $salas->filter(function ($sala) use ($contagemPorSala) {
+                    $atual = $contagemPorSala[$sala->id] ?? 0;
+                    return $atual < $sala->capacidade;
                 });
-                
+
                 if ($salasDisponiveis->isNotEmpty()) {
-                    $salaId = $salasDisponiveis->random()->id;
+                    $salaEscolhida = $salasDisponiveis->random();
+                    $salaId = $salaEscolhida->id;
+                    $contagemPorSala[$salaId] = ($contagemPorSala[$salaId] ?? 0) + 1;
                 }
             }
-            
+
             // Gerar idade apropriada baseada no tipo de sala
-            $idadeMin = 6; // meses
-            $idadeMax = 72; // meses (6 anos)
-            
+            $idadeMin = 6;
+            $idadeMax = 72;
+
             if ($salaId) {
                 $sala = $salas->find($salaId);
                 if ($sala) {
-                    // Ajustar idade baseada no tipo de sala
                     if (str_contains($sala->codigo, 'BER')) {
-                        $idadeMin = 6; $idadeMax = 12; // 6 meses a 1 ano
+                        $idadeMin = 6;
+                        $idadeMax = 12;
                     } elseif (str_contains($sala->codigo, 'MAT')) {
-                        $idadeMin = 12; $idadeMax = 24; // 1 a 2 anos
+                        $idadeMin = 12;
+                        $idadeMax = 24;
                     } elseif (str_contains($sala->codigo, 'INF1')) {
-                        $idadeMin = 24; $idadeMax = 36; // 2 a 3 anos
+                        $idadeMin = 24;
+                        $idadeMax = 36;
                     } elseif (str_contains($sala->codigo, 'INF2')) {
-                        $idadeMin = 36; $idadeMax = 48; // 3 a 4 anos
+                        $idadeMin = 36;
+                        $idadeMax = 48;
                     } elseif (str_contains($sala->codigo, 'PRE')) {
-                        $idadeMin = 48; $idadeMax = 60; // 4 a 5 anos
+                        $idadeMin = 48;
+                        $idadeMax = 60;
                     } elseif (str_contains($sala->codigo, 'JAR')) {
-                        $idadeMin = 60; $idadeMax = 72; // 5 a 6 anos
+                        $idadeMin = 60;
+                        $idadeMax = 72;
                     }
                 }
             }
-            
+
             $dataNascimento = $faker->dateTimeBetween("-{$idadeMax} months", "-{$idadeMin} months");
-            
+
             Aluno::create([
                 'nome' => $faker->firstName,
                 'sobrenome' => $faker->lastName,
@@ -79,10 +97,14 @@ class AlunoSeeder extends Seeder
                 'medicamentos' => $faker->optional(0.2)->sentence(2),
                 'observacoes' => $faker->optional(0.4)->paragraph(1),
                 'sala_id' => $salaId,
-                'ativo' => $faker->boolean(98), // 98% ativos
+                'ativo' => $faker->boolean(98),
             ]);
+
+            if ($i % 10 === 0) {
+                $this->command->comment("Criados {$i} alunos...");
+            }
         }
-        
-        $this->command->info('300 alunos criados com sucesso!');
+
+        $this->command->info("{$totalAlunos} alunos criados com sucesso!");
     }
 }
