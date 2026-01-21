@@ -14,46 +14,49 @@
                             <p class="mt-2 text-sm text-gray-600">Gerencie os planejamentos de aula da sua instituição</p>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4 sm:mt-0">
-                        @can('create', App\Models\Planejamento::class)
-                            <div class="flex flex-col mt-4 sm:mt-0 gap-3 md:flex-row">
-                                <x-button href="{{ route('planejamentos.wizard') }}" color="primary"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v16m8-8H4"></path>
-                                    </svg>
-                                    <span class="hidden sm:inline">Novo Planejamento</span>
-                                    <span class="sm:hidden">Novo</span>
-                                </x-button>
-                                <!-- VAMOS APRESENTAR AINDA -->
-                                <!--
-                                @if (Auth::user()->isAdminOrCoordinator() || Auth::user()->isSuperAdmin())
-                                    <x-button href="{{ route('planejamentos.conflitos.index') }}" color="secondary"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-gray-300 font-medium rounded-lg transition-colors duration-200">
+                            @can('create', App\Models\Planejamento::class)
+                                <div class="flex flex-col mt-4 sm:mt-0 gap-3 md:flex-row">
+                                    <x-button href="{{ route('planejamentos.wizard') }}" color="primary"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg">
                                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                                d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        <span class="hidden sm:inline">Novo Planejamento</span>
+                                        <span class="sm:hidden">Novo</span>
+                                    </x-button>
+                                    <!-- VAMOS APRESENTAR AINDA -->
+                                    <!--
+                                        @if (Auth::user()->isAdminOrCoordinator() || Auth::user()->isSuperAdmin())
+        <x-button href="{{ route('planejamentos.conflitos.index') }}" color="secondary"
+                                                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-gray-600 hover:bg-gray-700 text-gray-300 font-medium rounded-lg transition-colors duration-200">
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                                    </path>
+                                                </svg>
+                                                <span class="hidden sm:inline">Gestão de Conflitos</span>
+                                                <span class="sm:hidden">Conflitos</span>
+                                            </x-button>
+        @endif
+                                        -->
+                                </div>
+                            @endcan
+                            @permission('planejamentos.visualizar')
+                                <div class="flex flex-col mt-4 sm:mt-0 gap-3 md:flex-row">
+                                    <x-button
+                                        href="{{ route('planejamentos.cronograma-dia', ['data' => request('data_inicio') ? \Carbon\Carbon::parse(request('data_inicio'))->format('Y-m-d') : now()->format('Y-m-d')]) }}"
+                                        color="secondary"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors duration-200">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v9a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z">
                                             </path>
                                         </svg>
-                                        <span class="hidden sm:inline">Gestão de Conflitos</span>
-                                        <span class="sm:hidden">Conflitos</span>
+                                        Cronograma de Hoje
                                     </x-button>
-                                @endif
-                                -->
-                            </div>
-                        @endcan
-                        @permission('planejamentos.visualizar')
-                            <div class="flex flex-col mt-4 sm:mt-0 gap-3 md:flex-row">
-                                <x-button href="{{ route('planejamentos.cronograma-dia', ['data' => request('data_inicio') ? \Carbon\Carbon::parse(request('data_inicio'))->format('Y-m-d') : now()->format('Y-m-d')]) }}" color="secondary"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors duration-200">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4h3a1 1 0 011 1v9a2 2 0 01-2 2H5a2 2 0 01-2-2V8a1 1 0 011-1h3z"></path>
-                                    </svg>
-                                    Cronograma de Hoje
-                                </x-button>
-                            </div>
-                        @endpermission
+                                </div>
+                            @endpermission
                         </div>
                     </div>
                 </div>
@@ -73,10 +76,9 @@
                     <x-filter-field name="status" label="Status" type="select" empty-option="Todos os status"
                         :options="collect([
                             'rascunho' => 'Rascunho',
-                            'finalizado' => 'Finalizado (Revisão)',
-                            'publicado' => 'Publicado',
-                            'rejeitado' => 'Rejeitado',
-                            'reprovado' => 'Reprovado',
+                            'finalizado' => 'Aguardando Aprovação',
+                            'aprovado' => 'Aprovado',
+                            'rejeitado' => 'Correção Solicitada',
                         ])" />
 
                     <x-filter-field name="turma_id" label="Turma" type="select" empty-option="Todas as turmas"
@@ -150,7 +152,9 @@
                                                     </div>
                                                 </x-table-cell>
                                                 <x-table-cell>
-                                                    @include('planejamentos.components.status-badge', ['status' => $planejamento->status_efetivo])
+                                                    @include('planejamentos.components.status-badge', [
+                                                        'status' => $planejamento->status_efetivo,
+                                                    ])
                                                 </x-table-cell>
                                                 <x-table-cell>
                                                     <div class="text-sm text-gray-900">
@@ -173,27 +177,29 @@
                                                                         stroke-width="2"
                                                                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
                                                                     </path>
-                                                        </svg>
-                                                        Ver
-                                                    </a>
-                                                @endpermission
+                                                                </svg>
+                                                                Ver
+                                                            </a>
+                                                        @endpermission
 
-                                                @permission('planejamentos.visualizar')
+                                                        @permission('planejamentos.visualizar')
                                                             <a href="{{ route('planejamentos.cronograma', ['planejamento' => $planejamento->id, 'data' => now()->format('Y-m-d')]) }}"
                                                                 class="inline-flex items-center px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium rounded-md transition-colors duration-200"
                                                                 title="Ver Cronograma Diário">
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"></path>
-                                                        </svg>
-                                                        Ver Cronograma Diário
-                                                    </a>
-                                                @endpermission
+                                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor"
+                                                                    viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2" d="M3 7h18M3 12h18M3 17h18"></path>
+                                                                </svg>
+                                                                Ver Cronograma Diário
+                                                            </a>
+                                                        @endpermission
 
                                                         @permission('planejamentos.editar')
-                                                            @if ($planejamento->status_efetivo === ['rascunho','reprovado','revisao','rejeitado'])
+                                                            @if (in_array($planejamento->status_efetivo, ['rascunho', 'reprovado', 'rejeitado']))
                                                                 <a href="{{ route('planejamentos.wizard', ['edit' => $planejamento->id]) }}"
                                                                     class="inline-flex items-center px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-md transition-colors duration-200"
-                                                                    title="Continuar planejamento">
+                                                                    title="{{ $planejamento->status_efetivo === 'rascunho' ? 'Continuar planejamento' : 'Corrigir planejamento' }}">
                                                                     <svg class="w-3 h-3 mr-1" fill="none"
                                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -201,20 +207,7 @@
                                                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
                                                                         </path>
                                                                     </svg>
-                                                                    Editar
-                                                                </a>
-                                                            @elseif (in_array($planejamento->status_efetivo, ['revisao','rejeitado','rascunho','reprovado']))
-                                                                <a href="{{ route('planejamentos.wizard', ['edit' => $planejamento->id]) }}"
-                                                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-md transition-colors duration-200"
-                                                                    title="Editar">
-                                                                    <svg class="w-3 h-3 mr-1" fill="none"
-                                                                        stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                                            stroke-width="2"
-                                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                                        </path>
-                                                                    </svg>
-                                                                    Editar
+                                                                    {{ $planejamento->status_efetivo === 'rascunho' ? 'Editar' : 'Corrigir' }}
                                                                 </a>
                                                             @endif
                                                         @endpermission
@@ -265,7 +258,9 @@
                                                 </p>
                                             </div>
                                             <div class="ml-3">
-                                                @include('planejamentos.components.status-badge', ['status' => $planejamento->status_efetivo])
+                                                @include('planejamentos.components.status-badge', [
+                                                    'status' => $planejamento->status_efetivo,
+                                                ])
                                             </div>
                                         </div>
 
@@ -335,8 +330,10 @@
                                                     <x-button variant="outline" size="sm"
                                                         href="{{ route('planejamentos.cronograma', ['planejamento' => $planejamento->id, 'data' => now()->format('Y-m-d')]) }}"
                                                         title="Ver Cronograma Diário" class="w-full sm:w-auto">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"></path>
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M3 7h18M3 12h18M3 17h18"></path>
                                                         </svg>
                                                         Cronograma Diário
                                                     </x-button>
@@ -355,7 +352,7 @@
                                                                 </path>
                                                             </svg>
                                                         </x-button>
-                                                    @elseif (in_array($planejamento->status_efetivo, ['revisao','rejeitado']))
+                                                    @elseif (in_array($planejamento->status_efetivo, ['revisao', 'rejeitado']))
                                                         <x-button variant="outline" size="sm"
                                                             href="{{ route('planejamentos.edit', $planejamento) }}"
                                                             title="Editar" class="w-full sm:w-auto">

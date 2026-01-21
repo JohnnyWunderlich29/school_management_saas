@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use App\Models\Escola;
+use App\Models\Finance\FinanceGateway;
+use App\Models\Finance\FinanceSettings;
 use App\Models\ModalidadeEnsino;
 use App\Models\NivelEnsino;
 use App\Models\Turno;
-use App\Models\Finance\FinanceSettings;
-use App\Models\Finance\FinanceGateway;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class SettingsController extends Controller
 {
@@ -23,14 +23,19 @@ class SettingsController extends Controller
             ?? optional(auth()->user())->school_id
             ?? session('escola_atual');
 
-        // Tab ativa por query param, padrão 'financeiro'
-        $activeTab = $request->query('tab', 'financeiro');
+        // Tab ativa por query param, padrão 'educacional'
+        $activeTab = $request->query('tab', 'educacional');
 
         // Quando a aba financeiro for solicitada, carregar os dados necessários
         if ($activeTab === 'financeiro' && $schoolId) {
             $settings = FinanceSettings::firstOrCreate(['school_id' => $schoolId], ['currency' => 'BRL']);
             $gateways = FinanceGateway::where('school_id', $schoolId)->orderBy('alias')->get();
             $financeEnv = config('features.finance_env', 'production');
+
+            $automation = \App\Models\Finance\BillingAutomation::firstOrCreate(
+                ['school_id' => $schoolId],
+                ['name' => 'Automação Padrão', 'days_advance' => 5, 'consolidate_default' => true, 'active' => true]
+            );
 
             $currentSchoolId = $schoolId;
             $tab = $activeTab;
@@ -40,7 +45,8 @@ class SettingsController extends Controller
                 'tab',
                 'settings',
                 'gateways',
-                'financeEnv'
+                'financeEnv',
+                'automation'
             ));
         }
 
@@ -48,7 +54,7 @@ class SettingsController extends Controller
         if ($activeTab === 'educacional' && $schoolId) {
             $escola = Escola::with([
                 'modalidadeConfigs.modalidadeEnsino',
-                'nivelConfigs.nivelEnsino'
+                'nivelConfigs.nivelEnsino',
             ])->find($schoolId);
 
             if ($escola) {
@@ -98,9 +104,18 @@ class SettingsController extends Controller
             }
         }
 
+        // Quando a aba de importação for solicitada
+        if ($activeTab === 'importacao' && $schoolId) {
+            $currentSchoolId = $schoolId;
+            $tab = $activeTab;
+
+            return view('settings.index', compact('currentSchoolId', 'tab'));
+        }
+
         // Garantir nomes esperados pelo blade
         $currentSchoolId = $schoolId;
         $tab = $activeTab;
+
         return view('settings.index', compact('currentSchoolId', 'tab'));
     }
 }

@@ -12,12 +12,17 @@ class SubscriptionsController extends Controller
     public function index(Request $request)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $query = Subscription::where('school_id', $schoolId);
-        if ($request->filled('status')) $query->where('status', $request->get('status'));
-        if ($request->filled('student_id')) $query->where('student_id', (int)$request->get('student_id'));
-        if ($request->filled('payer_id')) $query->where('payer_id', (int)$request->get('payer_id'));
-        if ($request->filled('billing_plan_id')) $query->where('billing_plan_id', (int)$request->get('billing_plan_id'));
+        if ($request->filled('status'))
+            $query->where('status', $request->get('status'));
+        if ($request->filled('student_id'))
+            $query->where('student_id', (int) $request->get('student_id'));
+        if ($request->filled('payer_id'))
+            $query->where('payer_id', (int) $request->get('payer_id'));
+        if ($request->filled('billing_plan_id'))
+            $query->where('billing_plan_id', (int) $request->get('billing_plan_id'));
         $subs = $query->orderByDesc('id')->paginate($request->get('per_page', 15));
         return response()->json($subs);
     }
@@ -25,7 +30,8 @@ class SubscriptionsController extends Controller
     public function show(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $sub = Subscription::where('school_id', $schoolId)->findOrFail($id);
         return response()->json($sub);
     }
@@ -33,7 +39,8 @@ class SubscriptionsController extends Controller
     public function store(Request $request)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $validator = Validator::make($request->all(), [
             'student_id' => 'nullable|integer|min:1',
             'payer_id' => 'required|integer|min:1',
@@ -47,14 +54,20 @@ class SubscriptionsController extends Controller
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'discount_percent' => 'nullable|integer|min:0|max:100',
+            'early_discount_value' => 'nullable|integer|min:0|max:100',
+            'early_discount_days' => 'nullable|integer|min:0|max:31',
+            'early_discount_active' => 'nullable|boolean',
             'notes' => 'nullable|string|max:1024',
+            'last_billed_at' => 'nullable|date',
         ]);
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
+        if ($validator->fails())
+            return response()->json(['errors' => $validator->errors()], 422);
         $data = $validator->validated();
         if (!isset($data['start_at']) || empty($data['start_at'])) {
             $data['start_at'] = now()->toDateString();
         }
-        if (!isset($data['currency'])) $data['currency'] = 'BRL';
+        if (!isset($data['currency']))
+            $data['currency'] = 'BRL';
         $sub = new Subscription($data);
         $sub->school_id = $schoolId;
         $sub->status = $sub->status ?? 'active';
@@ -65,7 +78,8 @@ class SubscriptionsController extends Controller
     public function update(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $validator = Validator::make($request->all(), [
             'student_id' => 'nullable|integer|min:1',
             'payer_id' => 'nullable|integer|min:1',
@@ -79,9 +93,14 @@ class SubscriptionsController extends Controller
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date|after_or_equal:start_at',
             'discount_percent' => 'nullable|integer|min:0|max:100',
+            'early_discount_value' => 'nullable|integer|min:0|max:100',
+            'early_discount_days' => 'nullable|integer|min:0|max:31',
+            'early_discount_active' => 'nullable|boolean',
             'notes' => 'nullable|string|max:1024',
+            'last_billed_at' => 'nullable|date',
         ]);
-        if ($validator->fails()) return response()->json(['errors' => $validator->errors()], 422);
+        if ($validator->fails())
+            return response()->json(['errors' => $validator->errors()], 422);
         $sub = Subscription::where('school_id', $schoolId)->findOrFail($id);
         $sub->fill($validator->validated());
         $sub->save();
@@ -91,7 +110,8 @@ class SubscriptionsController extends Controller
     public function destroy(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $sub = Subscription::where('school_id', $schoolId)->findOrFail($id);
         $sub->delete();
         return response()->json(['message' => 'deleted']);
@@ -101,10 +121,12 @@ class SubscriptionsController extends Controller
     {
         $user = $request->user();
         if ($user) {
-            if (isset($user->school_id) && $user->school_id) return (int)$user->school_id;
-            if (isset($user->escola_id) && $user->escola_id) return (int)$user->escola_id;
+            if (isset($user->school_id) && $user->school_id)
+                return (int) $user->school_id;
+            if (isset($user->escola_id) && $user->escola_id)
+                return (int) $user->escola_id;
         }
         $schoolId = $request->input('school_id') ?? $request->input('escola_id');
-        return $schoolId ? (int)$schoolId : null;
+        return $schoolId ? (int) $schoolId : null;
     }
 }

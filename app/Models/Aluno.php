@@ -139,4 +139,20 @@ class Aluno extends Model
             ->wherePivot('responsavel_principal', true)
             ->first();
     }
+
+    /**
+     * Relacionamento com notas
+     */
+    public function notas()
+    {
+        return $this->hasMany(Nota::class);
+    }
+
+    /**
+     * Relacionamento com anotações/ocorrências
+     */
+    public function anotacoes()
+    {
+        return $this->hasMany(AlunoAnotacao::class);
+    }
 }

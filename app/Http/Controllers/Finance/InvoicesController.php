@@ -27,12 +27,13 @@ class InvoicesController extends Controller
     {
 
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $query = Invoice::where('school_id', $schoolId);
         // Suporte a filtro direto por payer_id (via subscriptions)
         if ($request->filled('payer_id')) {
             $subIds = Subscription::where('school_id', $schoolId)
-                ->where('payer_id', (int)$request->get('payer_id'))
+                ->where('payer_id', (int) $request->get('payer_id'))
                 ->pluck('id');
             if ($subIds->isNotEmpty()) {
                 $query->whereIn('subscription_id', $subIds);
@@ -40,10 +41,14 @@ class InvoicesController extends Controller
                 $query->whereRaw('0=1');
             }
         }
-        if ($request->filled('subscription_id')) $query->where('subscription_id', (int)$request->get('subscription_id'));
-        if ($request->filled('status')) $query->where('status', $request->get('status'));
-        if ($request->filled('due_from')) $query->whereDate('due_date', '>=', $request->get('due_from'));
-        if ($request->filled('due_to')) $query->whereDate('due_date', '<=', $request->get('due_to'));
+        if ($request->filled('subscription_id'))
+            $query->where('subscription_id', (int) $request->get('subscription_id'));
+        if ($request->filled('status'))
+            $query->where('status', $request->get('status'));
+        if ($request->filled('due_from'))
+            $query->whereDate('due_date', '>=', $request->get('due_from'));
+        if ($request->filled('due_to'))
+            $query->whereDate('due_date', '<=', $request->get('due_to'));
         $invoices = $query->orderBy('due_date')->paginate($request->get('per_page', 15));
 
         return response()->json($invoices);
@@ -52,7 +57,8 @@ class InvoicesController extends Controller
     public function show(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($id);
         return response()->json($invoice);
     }
@@ -60,7 +66,8 @@ class InvoicesController extends Controller
     public function store(Request $request)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $validator = Validator::make($request->all(), [
             'subscription_id' => 'required|integer|min:1',
             'due_date' => 'required|date',
@@ -99,6 +106,12 @@ class InvoicesController extends Controller
         $invoice->currency = $data['currency'] ?? 'BRL';
         $invoice->number = $this->generateNumber($schoolId);
         $invoice->save();
+
+        // Update subscription last_billed_at
+        if ($sub && $invoice->due_date) {
+            $sub->last_billed_at = $invoice->due_date;
+            $sub->save();
+        }
         Log::info('Invoice created', [
             'invoice_id' => $invoice->id,
             'school_id' => $schoolId,
@@ -155,7 +168,9 @@ class InvoicesController extends Controller
 
             // Normalize alias/method and log resolution
             $alias = strtolower((string) $alias);
-            if ($alias === 'assas') { $alias = 'asaas'; }
+            if ($alias === 'assas') {
+                $alias = 'asaas';
+            }
             $method = strtolower((string) ($method ?? ''));
             // Persist resolved alias into invoice if missing
             if (!$invoice->gateway_alias && $alias) {
@@ -177,7 +192,7 @@ class InvoicesController extends Controller
 
                     // Resolve payer
                     $payerModel = $sub ? Responsavel::find($sub->payer_id) : null;
-                    $cpf = $payerModel ? preg_replace('/\D/', '', (string)($payerModel->cpf ?? '')) : null;
+                    $cpf = $payerModel ? preg_replace('/\D/', '', (string) ($payerModel->cpf ?? '')) : null;
                     $payer = [
                         'name' => $payerModel ? trim(($payerModel->nome ?? '') . ' ' . ($payerModel->sobrenome ?? '')) : null,
                         'email' => $payerModel->email ?? null,
@@ -198,7 +213,7 @@ class InvoicesController extends Controller
                     }
                     if ($gc) {
                         $payer['external_id'] = $gc->external_customer_id;
-                        $payer['externalReference'] = (string)($payerModel->id);
+                        $payer['externalReference'] = (string) ($payerModel->id);
                     }
                     $cust = $gw->createOrUpdateCustomer(['school_id' => $schoolId], $payer);
                     $customerId = $cust['id'] ?? null;
@@ -208,8 +223,8 @@ class InvoicesController extends Controller
                         $err = $cust['error'] ?? null;
                         $code = is_array($err) ? ($err['errors'][0]['code'] ?? ($err['code'] ?? null)) : null;
                         $msg = is_array($err) ? ($err['errors'][0]['description'] ?? ($err['message'] ?? json_encode($err))) : (is_string($err) ? $err : null);
-                        $invoice->gateway_status = $status ? (string)$status : null;
-                        $invoice->gateway_error_code = $code ? (string)$code : null;
+                        $invoice->gateway_status = $status ? (string) $status : null;
+                        $invoice->gateway_error_code = $code ? (string) $code : null;
                         $invoice->gateway_error = $msg;
                         $invoice->save();
                     } else {
@@ -226,7 +241,7 @@ class InvoicesController extends Controller
                         }
 
                         // Create charge (fix method normalization)
-                        $mt = in_array($method, ['pix','boleto']) ? $method : 'boleto';
+                        $mt = in_array($method, ['pix', 'boleto']) ? $method : 'boleto';
                         $billingType = $mt === 'pix' ? 'PIX' : 'BOLETO';
                         Log::info('ASAAS charge attempt', [
                             'invoice_id' => $invoice->id,
@@ -271,8 +286,8 @@ class InvoicesController extends Controller
                             $err = $charge['error'] ?? null;
                             $code = is_array($err) ? ($err['errors'][0]['code'] ?? ($err['code'] ?? null)) : null;
                             $msg = is_array($err) ? ($err['errors'][0]['description'] ?? ($err['message'] ?? json_encode($err))) : (is_string($err) ? $err : null);
-                            $invoice->gateway_status = $status ? (string)$status : null;
-                            $invoice->gateway_error_code = $code ? (string)$code : null;
+                            $invoice->gateway_status = $status ? (string) $status : null;
+                            $invoice->gateway_error_code = $code ? (string) $code : null;
                             $invoice->gateway_error = $msg;
                             $invoice->save();
                         }
@@ -294,20 +309,21 @@ class InvoicesController extends Controller
 
                     // Resolve payer (shopper) para NuPay
                     $payerModel = $sub ? Responsavel::find($sub->payer_id) : null;
-                    $firstName = null; $lastName = null;
+                    $firstName = null;
+                    $lastName = null;
                     if ($payerModel) {
                         $names = trim(($payerModel->nome ?? '') . ' ' . ($payerModel->sobrenome ?? ''));
                         $parts = preg_split('/\s+/', $names, -1, PREG_SPLIT_NO_EMPTY);
                         $firstName = $parts[0] ?? null;
                         $lastName = isset($parts[1]) ? implode(' ', array_slice($parts, 1)) : null;
                     }
-                    $cpf = $payerModel ? preg_replace('/\D/', '', (string)($payerModel->cpf ?? '')) : null;
+                    $cpf = $payerModel ? preg_replace('/\D/', '', (string) ($payerModel->cpf ?? '')) : null;
 
                     $invoiceContext = [
-                        'invoice_id' => (string)$invoice->id,
-                        'invoice_number' => (string)($invoice->number ?? ''),
+                        'invoice_id' => (string) $invoice->id,
+                        'invoice_number' => (string) ($invoice->number ?? ''),
                         'description' => $invoice->description ?? null,
-                        'amount_cents' => (int)$invoice->total_cents,
+                        'amount_cents' => (int) $invoice->total_cents,
                         'payer' => [
                             'firstName' => $firstName,
                             'lastName' => $lastName,
@@ -324,7 +340,7 @@ class InvoicesController extends Controller
 
                     $created = $gw->createCharge($invoiceContext);
                     if (!empty($created['charge_id'])) {
-                        $invoice->charge_id = (string)$created['charge_id'];
+                        $invoice->charge_id = (string) $created['charge_id'];
                         $invoice->save();
                         $result['gateway'] = 'nupay';
                         $result['charge_id'] = $invoice->charge_id;
@@ -354,7 +370,8 @@ class InvoicesController extends Controller
     public function update(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
         $validator = Validator::make($request->all(), [
             'due_date' => 'nullable|date',
             'total_cents' => 'nullable|integer|min:0',
@@ -413,22 +430,23 @@ class InvoicesController extends Controller
     public function syncGatewayStatus(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
 
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($id);
         if (!$invoice->charge_id) {
             // Resolver alias do gateway: invoice -> assinatura -> método padrão da escola
-            $alias = strtolower((string)($invoice->gateway_alias ?? ''));
+            $alias = strtolower((string) ($invoice->gateway_alias ?? ''));
             if (!$alias) {
                 $sub = Subscription::where('school_id', $schoolId)->find($invoice->subscription_id);
                 $cm = $sub ? ChargeMethod::where('school_id', $schoolId)->find($sub->charge_method_id) : null;
                 if ($cm && $cm->gateway_alias) {
-                    $alias = strtolower((string)$cm->gateway_alias);
+                    $alias = strtolower((string) $cm->gateway_alias);
                 } else {
                     $defaultCm = ChargeMethod::where('school_id', $schoolId)->where('active', true)
                         ->orderBy('gateway_alias')->orderBy('method')->first();
                     if ($defaultCm) {
-                        $alias = strtolower((string)$defaultCm->gateway_alias);
+                        $alias = strtolower((string) $defaultCm->gateway_alias);
                     }
                 }
                 if ($alias) {
@@ -436,7 +454,9 @@ class InvoicesController extends Controller
                     $invoice->save();
                 }
             }
-            if ($alias === 'assas') { $alias = 'asaas'; }
+            if ($alias === 'assas') {
+                $alias = 'asaas';
+            }
             // Tentativa de recuperação via externalReference no gateway
             $config = FinanceGateway::where('school_id', $schoolId)->where('alias', $alias)->first();
             if ($config && $config->active) {
@@ -445,27 +465,27 @@ class InvoicesController extends Controller
                 $gw = $gm->forAlias($alias, $config);
                 // externalReference usado no create: invoice_id ou invoice_number
                 $found = null;
-                $refId = (string)$invoice->id;
+                $refId = (string) $invoice->id;
                 if ($refId !== '') {
                     $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference($refId) : null;
                 }
                 if ((!$found || empty($found['id'])) && !empty($invoice->number)) {
-                    $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference((string)$invoice->number) : null;
+                    $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference((string) $invoice->number) : null;
                 }
                 if ($found && !empty($found['id'])) {
                     // Atualiza a fatura com charge_id e segue fluxo normal
-                    $invoice->charge_id = (string)$found['id'];
+                    $invoice->charge_id = (string) $found['id'];
                     $invoice->save();
                 } else {
                     // Fallback: criar cobrança no gateway se não encontrada por externalReference
                     $sub = Subscription::where('school_id', $schoolId)->find($invoice->subscription_id);
                     $cm = $sub ? ChargeMethod::where('school_id', $schoolId)->find($sub->charge_method_id) : null;
-                    $method = $cm && in_array(strtolower((string)$cm->method), ['pix','boleto']) ? strtolower((string)$cm->method) : 'boleto';
+                    $method = $cm && in_array(strtolower((string) $cm->method), ['pix', 'boleto']) ? strtolower((string) $cm->method) : 'boleto';
                     $billingType = $method === 'pix' ? 'PIX' : 'BOLETO';
 
                     // Resolver customer
                     $payerModel = $sub ? Responsavel::find($sub->payer_id) : null;
-                    $cpf = $payerModel ? preg_replace('/\D/', '', (string)($payerModel->cpf ?? '')) : null;
+                    $cpf = $payerModel ? preg_replace('/\D/', '', (string) ($payerModel->cpf ?? '')) : null;
                     $payer = [
                         'name' => $payerModel ? trim(($payerModel->nome ?? '') . ' ' . ($payerModel->sobrenome ?? '')) : null,
                         'email' => $payerModel->email ?? null,
@@ -486,7 +506,7 @@ class InvoicesController extends Controller
                     }
                     if ($gc) {
                         $payer['external_id'] = $gc->external_customer_id;
-                        $payer['externalReference'] = (string)($payerModel->id);
+                        $payer['externalReference'] = (string) ($payerModel->id);
                     }
                     $cust = $gw->createOrUpdateCustomer(['invoice_id' => $invoice->id], $payer);
                     $customerId = $cust['id'] ?? ($gc ? $gc->external_customer_id : null);
@@ -513,7 +533,7 @@ class InvoicesController extends Controller
                         ]);
 
                         if (!empty($charge['charge_id'])) {
-                            $invoice->charge_id = (string)$charge['charge_id'];
+                            $invoice->charge_id = (string) $charge['charge_id'];
                             $invoice->boleto_url = $charge['boleto_url'] ?? null;
                             $invoice->linha_digitavel = $charge['linha_digitavel'] ?? null;
                             $invoice->barcode = $charge['barcode'] ?? null;
@@ -525,8 +545,8 @@ class InvoicesController extends Controller
                             $err = $charge['error'] ?? null;
                             $code = is_array($err) ? ($err['errors'][0]['code'] ?? ($err['code'] ?? null)) : null;
                             $msg = is_array($err) ? ($err['errors'][0]['description'] ?? ($err['message'] ?? json_encode($err))) : (is_string($err) ? $err : null);
-                            $invoice->gateway_status = $status ? (string)$status : null;
-                            $invoice->gateway_error_code = $code ? (string)$code : null;
+                            $invoice->gateway_status = $status ? (string) $status : null;
+                            $invoice->gateway_error_code = $code ? (string) $code : null;
                             $invoice->gateway_error = $msg;
                             $invoice->save();
                             return response()->json(['message' => 'Falha ao criar cobrança no gateway', 'invoice' => $invoice], 502);
@@ -540,18 +560,22 @@ class InvoicesController extends Controller
             }
         }
         // Resolver alias do gateway
-        $alias = strtolower((string)($invoice->gateway_alias ?? ''));
+        $alias = strtolower((string) ($invoice->gateway_alias ?? ''));
         if (!$alias) {
             $sub = Subscription::where('school_id', $schoolId)->find($invoice->subscription_id);
             if ($sub) {
                 $cm = ChargeMethod::where('school_id', $schoolId)->find($sub->charge_method_id);
                 if ($cm && $cm->gateway_alias) {
-                    $alias = strtolower((string)$cm->gateway_alias);
+                    $alias = strtolower((string) $cm->gateway_alias);
                 }
             }
         }
-        if ($alias === 'assas') { $alias = 'asaas'; }
-        if (!$alias) { $alias = 'asaas'; }
+        if ($alias === 'assas') {
+            $alias = 'asaas';
+        }
+        if (!$alias) {
+            $alias = 'asaas';
+        }
 
         $config = FinanceGateway::where('school_id', $schoolId)->where('alias', $alias)->first();
         if (!$config || !$config->active) {
@@ -565,27 +589,27 @@ class InvoicesController extends Controller
             $gw = $gm->forAlias($alias, $config);
             // externalReference usado no create: invoice_id ou invoice_number
             $found = null;
-            $refId = (string)$invoice->id;
+            $refId = (string) $invoice->id;
             if ($refId !== '') {
                 $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference($refId) : null;
             }
             if ((!$found || empty($found['id'])) && !empty($invoice->number)) {
-                $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference((string)$invoice->number) : null;
+                $found = method_exists($gw, 'findPaymentByExternalReference') ? $gw->findPaymentByExternalReference((string) $invoice->number) : null;
             }
             if ($found && !empty($found['id'])) {
                 // Atualiza a fatura com charge_id e segue fluxo normal
-                $invoice->charge_id = (string)$found['id'];
+                $invoice->charge_id = (string) $found['id'];
                 $invoice->save();
             } else {
                 // Fallback: criar cobrança no gateway se não encontrada por externalReference
                 $sub = Subscription::where('school_id', $schoolId)->find($invoice->subscription_id);
                 $cm = $sub ? ChargeMethod::where('school_id', $schoolId)->find($sub->charge_method_id) : null;
-                $method = $cm && in_array(strtolower((string)$cm->method), ['pix','boleto']) ? strtolower((string)$cm->method) : 'boleto';
+                $method = $cm && in_array(strtolower((string) $cm->method), ['pix', 'boleto']) ? strtolower((string) $cm->method) : 'boleto';
                 $billingType = $method === 'pix' ? 'PIX' : 'BOLETO';
 
                 // Resolver customer
                 $payerModel = $sub ? Responsavel::find($sub->payer_id) : null;
-                $cpf = $payerModel ? preg_replace('/\D/', '', (string)($payerModel->cpf ?? '')) : null;
+                $cpf = $payerModel ? preg_replace('/\D/', '', (string) ($payerModel->cpf ?? '')) : null;
                 $payer = [
                     'name' => $payerModel ? trim(($payerModel->nome ?? '') . ' ' . ($payerModel->sobrenome ?? '')) : null,
                     'email' => $payerModel->email ?? null,
@@ -606,7 +630,7 @@ class InvoicesController extends Controller
                 }
                 if ($gc) {
                     $payer['external_id'] = $gc->external_customer_id;
-                    $payer['externalReference'] = (string)($payerModel->id);
+                    $payer['externalReference'] = (string) ($payerModel->id);
                 }
                 $cust = $gw->createOrUpdateCustomer(['invoice_id' => $invoice->id], $payer);
                 $customerId = $cust['id'] ?? ($gc ? $gc->external_customer_id : null);
@@ -633,7 +657,7 @@ class InvoicesController extends Controller
                     ]);
 
                     if (!empty($charge['charge_id'])) {
-                        $invoice->charge_id = (string)$charge['charge_id'];
+                        $invoice->charge_id = (string) $charge['charge_id'];
                         $invoice->boleto_url = $charge['boleto_url'] ?? null;
                         $invoice->linha_digitavel = $charge['linha_digitavel'] ?? null;
                         $invoice->barcode = $charge['barcode'] ?? null;
@@ -645,8 +669,8 @@ class InvoicesController extends Controller
                         $err = $charge['error'] ?? null;
                         $code = is_array($err) ? ($err['errors'][0]['code'] ?? ($err['code'] ?? null)) : null;
                         $msg = is_array($err) ? ($err['errors'][0]['description'] ?? ($err['message'] ?? json_encode($err))) : (is_string($err) ? $err : null);
-                        $invoice->gateway_status = $status ? (string)$status : null;
-                        $invoice->gateway_error_code = $code ? (string)$code : null;
+                        $invoice->gateway_status = $status ? (string) $status : null;
+                        $invoice->gateway_error_code = $code ? (string) $code : null;
                         $invoice->gateway_error = $msg;
                         $invoice->save();
                         return response()->json(['message' => 'Falha ao criar cobrança no gateway', 'invoice' => $invoice], 502);
@@ -659,7 +683,7 @@ class InvoicesController extends Controller
             // Com charge_id garantido, consultar status da cobrança e refletir na fatura
             $payment = method_exists($gw, 'getPayment') ? $gw->getPayment($invoice->charge_id) : null;
             if (is_array($payment)) {
-                $gatewayStatus = strtolower((string)($payment['status'] ?? ''));
+                $gatewayStatus = strtolower((string) ($payment['status'] ?? ''));
                 $invoice->gateway_status = $gatewayStatus ?: $invoice->gateway_status;
 
                 // Mapear status do gateway (Asaas) para status local da fatura
@@ -726,7 +750,7 @@ class InvoicesController extends Controller
     private function generateNumber(int $schoolId): string
     {
         $last = Invoice::where('school_id', $schoolId)->orderByDesc('id')->first();
-        $next = $last ? ((int)preg_replace('/\D/', '', (string)$last->number)) + 1 : 1;
+        $next = $last ? ((int) preg_replace('/\D/', '', (string) $last->number)) + 1 : 1;
         return sprintf('F%06d', $next);
     }
 
@@ -734,17 +758,20 @@ class InvoicesController extends Controller
     {
         $user = $request->user();
         if ($user) {
-            if (isset($user->school_id) && $user->school_id) return (int)$user->school_id;
-            if (isset($user->escola_id) && $user->escola_id) return (int)$user->escola_id;
+            if (isset($user->school_id) && $user->school_id)
+                return (int) $user->school_id;
+            if (isset($user->escola_id) && $user->escola_id)
+                return (int) $user->escola_id;
         }
         $schoolId = $request->input('school_id') ?? $request->input('escola_id');
-        return $schoolId ? (int)$schoolId : null;
+        return $schoolId ? (int) $schoolId : null;
     }
 
     public function cancel(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
 
         $invoice = Invoice::where('school_id', $schoolId)->findOrFail($id);
         if ($invoice->status === 'paid') {
@@ -766,7 +793,8 @@ class InvoicesController extends Controller
     public function cancelBatch(Request $request)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['message' => 'school_id required'], 422);
+        if (!$schoolId)
+            return response()->json(['message' => 'school_id required'], 422);
 
         $ids = $request->input('invoice_ids');
         if (!is_array($ids) || empty($ids)) {
@@ -777,7 +805,10 @@ class InvoicesController extends Controller
         foreach ($ids as $id) {
             try {
                 $invoice = Invoice::where('school_id', $schoolId)->find($id);
-                if (!$invoice) { $results['errors'][] = ['id' => $id, 'error' => 'not_found']; continue; }
+                if (!$invoice) {
+                    $results['errors'][] = ['id' => $id, 'error' => 'not_found'];
+                    continue;
+                }
                 if ($invoice->status === 'paid' || $invoice->status === 'canceled') {
                     $results['skipped'][] = ['id' => $id, 'status' => $invoice->status];
                     continue;
@@ -799,30 +830,31 @@ class InvoicesController extends Controller
     public function resendEmail(Request $request, int $id)
     {
         $schoolId = $this->resolveSchoolId($request);
-        if (!$schoolId) return response()->json(['success' => false, 'message' => 'school_id required'], 422);
-    
+        if (!$schoolId)
+            return response()->json(['success' => false, 'message' => 'school_id required'], 422);
+
         $invoice = Invoice::where('school_id', $schoolId)->find($id);
         if (!$invoice) {
             return response()->json(['success' => false, 'message' => 'Fatura não encontrada'], 404);
         }
-    
+
         $sub = Subscription::where('school_id', $schoolId)->find($invoice->subscription_id);
         $payer = $sub ? Responsavel::find($sub->payer_id) : null;
         $email = $payer ? ($payer->email ?? null) : null;
         if (!$email) {
             return response()->json(['success' => false, 'message' => 'Não existe e-mail cadastrado para o pagador.'], 422);
         }
-    
-        $payerName = trim(((string)($payer->nome ?? '')) . ' ' . ((string)($payer->sobrenome ?? '')));
+
+        $payerName = trim(((string) ($payer->nome ?? '')) . ' ' . ((string) ($payer->sobrenome ?? '')));
         $payload = [
             'subject' => 'Cobrança ' . ($invoice->number ?? $invoice->id),
             'payer_name' => $payerName ?: 'Responsável',
-            'invoice_number' => $invoice->number ?? (string)$invoice->id,
+            'invoice_number' => $invoice->number ?? (string) $invoice->id,
             'due_date' => $invoice->due_date ? $invoice->due_date->format('d/m/Y') : null,
-            'amount_cents' => (int)($invoice->total_cents ?? 0),
+            'amount_cents' => (int) ($invoice->total_cents ?? 0),
             'payment_url' => $invoice->boleto_url ?: null,
         ];
-    
+
         try {
             Mail::to($email)->send(new DunningReminder($payload));
             Log::info('Cobrança reenviada por e-mail', ['invoice_id' => $invoice->id, 'email' => $email]);

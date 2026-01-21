@@ -27,11 +27,23 @@ class Invoice extends Model
         'linha_digitavel',
         'pix_qr_code',
         'pix_code',
+        'is_consolidated',
     ];
 
     protected $casts = [
         'due_date' => 'date',
         'total_cents' => 'integer',
         'paid_at' => 'datetime',
+        'is_consolidated' => 'boolean',
     ];
+
+    public function items()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class);
+    }
 }

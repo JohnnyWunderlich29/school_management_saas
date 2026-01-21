@@ -31,7 +31,8 @@ class Responsavel extends Model
         'autorizado_buscar',
         'contato_emergencia',
         'observacoes',
-        'ativo'
+        'ativo',
+        'consolidate_billing',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Responsavel extends Model
         'autorizado_buscar' => 'boolean',
         'contato_emergencia' => 'boolean',
         'ativo' => 'boolean',
+        'consolidate_billing' => 'boolean',
     ];
 
     /**
@@ -80,10 +82,10 @@ class Responsavel extends Model
      */
     public function scopeBuscarPorNome($query, $nome)
     {
-        return $query->where(function($q) use ($nome) {
+        return $query->where(function ($q) use ($nome) {
             $q->where('nome', 'like', "%{$nome}%")
-              ->orWhere('sobrenome', 'like', "%{$nome}%")
-              ->orWhereRaw("CONCAT(nome, ' ', sobrenome) like ?", ["%{$nome}%"]);
+                ->orWhere('sobrenome', 'like', "%{$nome}%")
+                ->orWhereRaw("CONCAT(nome, ' ', sobrenome) like ?", ["%{$nome}%"]);
         });
     }
 }

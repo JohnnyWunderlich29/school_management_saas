@@ -38,6 +38,8 @@ use App\Http\Controllers\RelatoriosBibliotecaController;
 use App\Http\Controllers\SystemUpdateController;
 use App\Http\Controllers\Marketing\InstitutionalController;
 use App\Http\Controllers\Marketing\LeadController;
+use App\Http\Controllers\NotaController;
+use App\Http\Controllers\AlunoAnotacaoController;
 
 // Rotas de autenticação
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -60,6 +62,11 @@ Route::middleware('guest')->group(function () {
         ->name('institucional.leads.store')
         ->middleware('throttle:10,1');
 });
+
+// Solicitacao de acesso (Erro 403)
+Route::post('/solicitar-acesso', [App\Http\Controllers\SolicitacaoAcessoController::class, 'store'])
+    ->name('solicitar.acesso')
+    ->middleware('auth');
 
 
 
@@ -110,13 +117,28 @@ Route::middleware(['auth', 'escola.context'])->group(function () {
             Route::get('/alunos/{aluno}/edit', [AlunoController::class, 'edit'])->name('alunos.edit');
             Route::put('/alunos/{aluno}', [AlunoController::class, 'update'])->name('alunos.update');
         });
-
         Route::middleware(['permission:alunos.excluir'])->group(function () {
             Route::patch('/alunos/{aluno}/toggle-status', [AlunoController::class, 'toggleStatus'])->name('alunos.toggleStatus');
         });
 
-        Route::middleware(['permission:alunos.editar'])->group(function () {
-            Route::post('/alunos/{aluno}/transferir', [AlunoController::class, 'transferir'])->name('alunos.transferir');
+        // Notas e Anotações de Alunos
+        Route::post('/alunos/{aluno}/transferir', [AlunoController::class, 'transferir'])->middleware(['permission:alunos.editar'])->name('alunos.transferir');
+
+        Route::middleware(['permission:notas.lancar'])->group(function () {
+            Route::post('/notas', [NotaController::class, 'store'])->name('notas.store');
+            Route::get('/api/alunos/{aluno}/disciplinas', [NotaController::class, 'getDisciplinasByAluno'])->name('api.alunos.disciplinas');
+        });
+
+        Route::middleware(['permission:notas.excluir'])->group(function () {
+            Route::delete('/notas/{nota}', [NotaController::class, 'destroy'])->name('notas.destroy');
+        });
+
+        Route::middleware(['permission:anotacoes.registrar'])->group(function () {
+            Route::post('/alunos-anotacoes', [AlunoAnotacaoController::class, 'store'])->name('alunos-anotacoes.store');
+        });
+
+        Route::middleware(['permission:anotacoes.excluir'])->group(function () {
+            Route::delete('/alunos-anotacoes/{anotacao}', [AlunoAnotacaoController::class, 'destroy'])->name('alunos-anotacoes.destroy');
         });
     });
 
@@ -142,6 +164,10 @@ Route::middleware(['auth', 'escola.context'])->group(function () {
 
         Route::middleware(['permission:responsaveis.excluir'])->group(function () {
             Route::patch('/responsaveis/{responsavel}/toggle-status', [ResponsavelController::class, 'toggleStatus'])->name('responsaveis.toggle-status');
+        });
+
+        Route::middleware(['permission:responsaveis.editar'])->group(function () {
+            Route::patch('/responsaveis/{responsavel}/toggle-consolidation', [ResponsavelController::class, 'toggleConsolidation'])->name('responsaveis.toggle-consolidation');
         });
     });
 
@@ -284,7 +310,7 @@ Route::middleware(['auth', 'escola.context'])->group(function () {
         });
 
         // Rotas de Empréstimos
-        Route::middleware(['permission:biblioteca.emprestar'])->group(function () {
+        Route::middleware(['permission:biblioteca.emprestimos.ver'])->group(function () {
             Route::get('/biblioteca/emprestimos', [EmprestimoController::class, 'index'])->name('biblioteca.emprestimos.index');
             // Formulário de novo empréstimo (usado pelo processamento de reservas)
             Route::get('/biblioteca/emprestimos/create', [EmprestimoController::class, 'create'])->name('biblioteca.emprestimos.create');
@@ -299,7 +325,7 @@ Route::middleware(['auth', 'escola.context'])->group(function () {
         });
 
         // Rotas de Reservas
-        Route::middleware(['permission:biblioteca.reservar'])->group(function () {
+        Route::middleware(['permission:biblioteca.reservas.ver'])->group(function () {
             Route::get('/biblioteca/reservas', [ReservaController::class, 'index'])->name('biblioteca.reservas.index');
             Route::post('/biblioteca/reservas', [ReservaController::class, 'store'])->name('biblioteca.reservas.store');
             Route::get('/biblioteca/reservas/{reserva}', [ReservaController::class, 'show'])->name('biblioteca.reservas.show');
@@ -320,79 +346,92 @@ Route::middleware(['auth', 'escola.context'])->group(function () {
 
 
     // Templates de Funcionários - requer permissões específicas
-Route::middleware(['module.license:funcionarios_module'])->group(function () {
+    Route::middleware(['module.license:funcionarios_module'])->group(function () {
 
-    // 🔹 Rotas de edição (create vem ANTES do {template})
-    Route::middleware(['permission:funcionarios.editar'])->group(function () {
-        Route::get('/funcionarios/{funcionario}/templates/create', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'create']
-        )->whereNumber('funcionario')->name('funcionarios.templates.create');
+        // 🔹 Rotas de edição (create vem ANTES do {template})
+        Route::middleware(['permission:funcionarios.editar'])->group(function () {
+            Route::get(
+                '/funcionarios/{funcionario}/templates/create',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'create']
+            )->whereNumber('funcionario')->name('funcionarios.templates.create');
 
-        Route::post('/funcionarios/{funcionario}/templates', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'store']
-        )->whereNumber('funcionario')->name('funcionarios.templates.store');
+            Route::post(
+                '/funcionarios/{funcionario}/templates',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'store']
+            )->whereNumber('funcionario')->name('funcionarios.templates.store');
 
-        Route::get('/funcionarios/{funcionario}/templates/{template}/edit', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'edit']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.edit');
+            Route::get(
+                '/funcionarios/{funcionario}/templates/{template}/edit',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'edit']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.edit');
 
-        Route::put('/funcionarios/{funcionario}/templates/{template}', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'update']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.update');
+            Route::put(
+                '/funcionarios/{funcionario}/templates/{template}',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'update']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.update');
 
-        Route::patch('/funcionarios/{funcionario}/templates/{template}/toggle-ativo', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'toggleAtivo']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.toggle-ativo');
+            Route::patch(
+                '/funcionarios/{funcionario}/templates/{template}/toggle-ativo',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'toggleAtivo']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.toggle-ativo');
+        });
+
+        // 🔹 Rotas de visualização
+        Route::middleware(['permission:funcionarios.ver'])->group(function () {
+            Route::get(
+                '/funcionarios/{funcionario}/templates',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'index']
+            )->whereNumber('funcionario')->name('funcionarios.templates.index');
+
+            Route::get(
+                '/funcionarios/{funcionario}/templates/{template}',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'show']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.show');
+        });
+
+        // 🔹 Rotas de cópia de templates
+        Route::middleware(['permission:funcionarios.criar'])->group(function () {
+            Route::post(
+                '/funcionarios/{funcionario}/templates/{template}/copiar',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'copiar']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.copiar');
+        });
+
+        // 🔹 Rotas de exclusão
+        Route::middleware(['permission:funcionarios.excluir'])->group(function () {
+            Route::delete(
+                '/funcionarios/{funcionario}/templates/{template}',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'destroy']
+            )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.destroy');
+        });
+
+        // 🔹 Rotas para geração de escalas automáticas
+        Route::middleware(['permission:escalas.criar'])->group(function () {
+            Route::get(
+                '/funcionarios/{funcionario}/templates/gerar-escalas',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'formGerarEscalas']
+            )->whereNumber('funcionario')->name('templates.gerar-escalas.form');
+
+            Route::post(
+                '/funcionarios/{funcionario}/templates/gerar-escalas',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'gerarEscalas']
+            )->whereNumber('funcionario')->name('templates.gerar-escalas');
+        });
+
+        // 🔹 Rota para visualização em calendário das escalas
+        Route::middleware(['permission:escalas.ver'])->group(function () {
+            Route::get(
+                '/templates/calendario-escalas',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'calendarioEscalas']
+            )->name('templates.calendario-escalas');
+
+            // Rota para escalas de funcionário específico
+            Route::get(
+                '/funcionarios/{funcionario}/escalas',
+                [\App\Http\Controllers\FuncionarioTemplateController::class, 'calendarioEscalas']
+            )->whereNumber('funcionario')->name('funcionarios.escalas.index');
+        });
     });
-
-    // 🔹 Rotas de visualização
-    Route::middleware(['permission:funcionarios.ver'])->group(function () {
-        Route::get('/funcionarios/{funcionario}/templates', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'index']
-        )->whereNumber('funcionario')->name('funcionarios.templates.index');
-
-        Route::get('/funcionarios/{funcionario}/templates/{template}', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'show']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.show');
-    });
-
-    // 🔹 Rotas de cópia de templates
-    Route::middleware(['permission:funcionarios.criar'])->group(function () {
-        Route::post('/funcionarios/{funcionario}/templates/{template}/copiar', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'copiar']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.copiar');
-    });
-
-    // 🔹 Rotas de exclusão
-    Route::middleware(['permission:funcionarios.excluir'])->group(function () {
-        Route::delete('/funcionarios/{funcionario}/templates/{template}', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'destroy']
-        )->whereNumber('funcionario')->whereNumber('template')->name('funcionarios.templates.destroy');
-    });
-
-    // 🔹 Rotas para geração de escalas automáticas
-    Route::middleware(['permission:escalas.criar'])->group(function () {
-        Route::get('/funcionarios/{funcionario}/templates/gerar-escalas', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'formGerarEscalas']
-        )->whereNumber('funcionario')->name('templates.gerar-escalas.form');
-
-        Route::post('/funcionarios/{funcionario}/templates/gerar-escalas', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'gerarEscalas']
-        )->whereNumber('funcionario')->name('templates.gerar-escalas');
-    });
-
-    // 🔹 Rota para visualização em calendário das escalas
-    Route::middleware(['permission:escalas.ver'])->group(function () {
-        Route::get('/templates/calendario-escalas', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'calendarioEscalas']
-        )->name('templates.calendario-escalas');
-        
-        // Rota para escalas de funcionário específico
-        Route::get('/funcionarios/{funcionario}/escalas', 
-            [\App\Http\Controllers\FuncionarioTemplateController::class, 'calendarioEscalas']
-        )->whereNumber('funcionario')->name('funcionarios.escalas.index');
-    });
-});
 
 
     // Escalas - requer permissões específicas
@@ -475,7 +514,7 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
         Route::get('/planejamentos/get-disciplinas-por-modalidade-turno-grupo', [PlanejamentoController::class, 'getDisciplinasPorModalidadeTurnoGrupo'])->name('planejamentos.getDisciplinasPorModalidadeTurnoGrupo');
         Route::get('/planejamentos/get-turmas-por-disciplina', [PlanejamentoController::class, 'getTurmasPorDisciplina'])->name('planejamentos.getTurmasPorDisciplina');
         Route::get('/planejamentos/get-turmas-por-grupo-turno', [PlanejamentoController::class, 'getTurmasPorGrupoTurno'])->name('planejamentos.getTurmasPorGrupoTurno');
-        
+
 
         // Outras rotas para o fluxo de 7 etapas que requerem permissões
         Route::get('/planejamentos/turmas-por-grupo-turno', [PlanejamentoController::class, 'getTurmasPorGrupoTurno'])->name('planejamentos.turmas-por-grupo-turno');
@@ -568,6 +607,17 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
         Route::put('/profile/settings', [ProfileController::class, 'updateSettings'])->name('profile.settings.update');
     });
 
+    // Rotas de Importação (Centralizada em Settings)
+    Route::middleware(['permission:usuarios.editar'])->group(function () {
+        Route::get('/settings/importacao/download-template/{type}', [App\Http\Controllers\ImportacaoController::class, 'downloadTemplate'])->name('settings.importacao.template');
+        Route::post('/settings/importacao/alunos/preview', [App\Http\Controllers\ImportacaoController::class, 'alunoPreview'])->name('settings.importacao.alunos.preview');
+        Route::post('/settings/importacao/alunos/import', [App\Http\Controllers\ImportacaoController::class, 'alunoImport'])->name('settings.importacao.alunos.import');
+        Route::post('/settings/importacao/responsaveis/preview', [App\Http\Controllers\ImportacaoController::class, 'responsavelPreview'])->name('settings.importacao.responsaveis.preview');
+        Route::post('/settings/importacao/responsaveis/import', [App\Http\Controllers\ImportacaoController::class, 'responsavelImport'])->name('settings.importacao.responsaveis.import');
+        Route::post('/settings/importacao/despesas/preview', [App\Http\Controllers\ImportacaoController::class, 'despesaPreview'])->name('settings.importacao.despesas.preview');
+        Route::post('/settings/importacao/despesas/import', [App\Http\Controllers\ImportacaoController::class, 'despesaImport'])->name('settings.importacao.despesas.import');
+    });
+
     // Rotas de administração - Gerenciamento de Salas dos Usuários
     Route::middleware(['permission:usuarios.editar'])->group(function () {
         // Rotas de user-salas removidas conforme solicitado
@@ -598,14 +648,40 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
     });
 
 
-// Rotas de Planejamentos - requer licença do módulo acadêmico e permissões específicas
+    // Rotas de Planejamentos - requer licença do módulo acadêmico e permissões específicas
     Route::middleware(['module.license:academico_module'])->group(function () {
+        // Provas
+        Route::middleware(['permission:provas.visualizar'])->group(function () {
+            Route::get('/provas', [\App\Http\Controllers\ProvaController::class, 'index'])->name('provas.index');
+            Route::get('/api/provas/slots', [\App\Http\Controllers\ProvaController::class, 'getSlots'])->name('provas.get-slots');
+
+            Route::middleware(['permission:provas.exportar'])->group(function () {
+                Route::get('/provas/{prova}/pdf', [\App\Http\Controllers\ProvaController::class, 'exportPdf'])->name('provas.pdf-export');
+            });
+        });
+
+        Route::middleware(['permission:provas.criar'])->group(function () {
+            Route::get('/provas/create', [\App\Http\Controllers\ProvaController::class, 'create'])->name('provas.create');
+            Route::post('/provas', [\App\Http\Controllers\ProvaController::class, 'store'])->name('provas.store');
+        });
+
+        Route::middleware(['permission:provas.editar'])->group(function () {
+            Route::get('/provas/{prova}/edit', [\App\Http\Controllers\ProvaController::class, 'edit'])->name('provas.edit');
+            Route::put('/provas/{prova}', [\App\Http\Controllers\ProvaController::class, 'update'])->name('provas.update');
+        });
+
+        Route::middleware(['permission:provas.excluir'])->group(function () {
+            Route::delete('/provas/{prova}', [\App\Http\Controllers\ProvaController::class, 'destroy'])->name('provas.destroy');
+        });
+
         Route::middleware(['permission:planejamentos.visualizar'])->group(function () {
             Route::get('/planejamentos', [PlanejamentoController::class, 'index'])->name('planejamentos.index');
-            
+
             // Movida para permissão de visualização para permitir acesso
-            Route::get('/planejamentos/get-ultimo-periodo-planejamento', 
-                [PlanejamentoController::class, 'getUltimoPeriodoPlanejamento'])
+            Route::get(
+                '/planejamentos/get-ultimo-periodo-planejamento',
+                [PlanejamentoController::class, 'getUltimoPeriodoPlanejamento']
+            )
                 ->name('planejamentos.get-ultimo-periodo-planejamento');
 
         });
@@ -617,7 +693,7 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
             Route::get('/planejamentos/modalidades-com-salas', [PlanejamentoController::class, 'getModalidadesComSalas'])->name('planejamentos.modalidades-com-salas');
 
             Route::get('/planejamentos/tipos-professor-by-modalidade', [PlanejamentoController::class, 'getTiposProfessor'])->name('planejamentos.tipos-professor-by-modalidade');
-            
+
             // Novas rotas do wizard unificado - DEVEM VIR ANTES DAS ROTAS COM PARÂMETROS
             Route::get('/planejamentos/wizard', [PlanejamentoController::class, 'wizard'])->name('planejamentos.wizard');
             Route::post('/planejamentos/wizard/store', [PlanejamentoController::class, 'wizardStore'])->name('planejamentos.wizard.store');
@@ -625,7 +701,7 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
             Route::post('/planejamentos/wizard/diario/upsert', [PlanejamentoController::class, 'wizardUpsertDiario'])->name('planejamentos.wizard.diario.upsert');
             Route::get('/planejamentos/wizard/step/{step}', [PlanejamentoController::class, 'wizardStep'])->name('planejamentos.wizard.step');
             Route::post('/planejamentos/wizard/validate-step', [PlanejamentoController::class, 'validateWizardStep'])->name('planejamentos.wizard.validate-step');
-            
+
             // APIs para o wizard
             Route::get('/api/planejamentos/unidades', [PlanejamentoController::class, 'getUnidades'])->name('api.planejamentos.unidades');
             Route::get('/api/planejamentos/turnos', [PlanejamentoController::class, 'getTurnosByUnidade'])->name('api.planejamentos.turnos');
@@ -645,7 +721,7 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
             // Detalhes de disciplina (usado na etapa 3 do wizard)
             Route::get('/api/disciplinas/{disciplina}', [PlanejamentoController::class, 'getDisciplinaDetalhes'])->name('api.disciplinas.detalhes');
             Route::get('/api/planejamentos/sugestoes-saberes', [PlanejamentoController::class, 'getSugestoesSaberes'])->name('api.planejamentos.sugestoes-saberes');
-            
+
             // APIs para turmas (necessárias para o wizard de planejamentos)
             Route::get('/api/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'show'])->name('api.turmas.show');
             Route::get('/api/turmas/{turma}/alunos', [\App\Http\Controllers\TurmaController::class, 'getAlunos'])->name('api.turmas.alunos');
@@ -656,7 +732,7 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
             // Rotas originais (mantidas para compatibilidade)
             Route::get('/planejamentos/conflitos', [PlanejamentoController::class, 'conflitos'])->name('planejamentos.conflitos');
             Route::post('/planejamentos/conflitos/verificar-todos', [PlanejamentoController::class, 'verificarTodosConflitos'])->name('planejamentos.conflitos.verificar-todos');
-            
+
             // Novas rotas do sistema aprimorado de gestão de conflitos
             Route::get('/planejamentos/conflitos/gestao', [PlanejamentoController::class, 'conflitosIndex'])->name('planejamentos.conflitos.index');
             Route::post('/planejamentos/conflitos/verificar-todos-enhanced', [PlanejamentoController::class, 'verificarTodosConflitosEnhanced'])->name('planejamentos.conflitos.verificar-todos-enhanced');
@@ -671,43 +747,43 @@ Route::middleware(['module.license:funcionarios_module'])->group(function () {
 
         Route::middleware(['permission:planejamentos.visualizar'])->group(function () {
             // Rotas com parâmetros devem vir DEPOIS das rotas específicas
-Route::get('/planejamentos/{planejamento}', [PlanejamentoController::class, 'show'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.show');
-Route::get('/planejamentos/{planejamento}/detalhado', [PlanejamentoController::class, 'showDetalhado'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.detalhado');
-            
+            Route::get('/planejamentos/{planejamento}', [PlanejamentoController::class, 'show'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.show');
+            Route::get('/planejamentos/{planejamento}/detalhado', [PlanejamentoController::class, 'showDetalhado'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.detalhado');
+
             // Nova visualização de planejamento
-Route::get('/planejamentos/{planejamento}/view', [PlanejamentoController::class, 'viewPlanejamento'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.view');
-Route::get('/planejamentos/{planejamento}/preview', [PlanejamentoController::class, 'previewPlanejamento'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.preview');
-Route::get('/planejamentos/{planejamento}/export/{format}', [PlanejamentoController::class, 'exportPlanejamento'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.export');
+            Route::get('/planejamentos/{planejamento}/view', [PlanejamentoController::class, 'viewPlanejamento'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.view');
+            Route::get('/planejamentos/{planejamento}/preview', [PlanejamentoController::class, 'previewPlanejamento'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.preview');
+            Route::get('/planejamentos/{planejamento}/export/{format}', [PlanejamentoController::class, 'exportPlanejamento'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.export');
 
             // Cronograma Diário - acesso rápido do professor e detalhe por planejamento
             Route::get('/planejamentos/cronograma-dia', [PlanejamentoController::class, 'cronogramaDia'])->name('planejamentos.cronograma-dia');
-Route::get('/planejamentos/{planejamento}/cronograma', [PlanejamentoController::class, 'cronogramaDetalhe'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.cronograma');
+            Route::get('/planejamentos/{planejamento}/cronograma', [PlanejamentoController::class, 'cronogramaDetalhe'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.cronograma');
         });
 
         Route::middleware(['permission:planejamentos.editar'])->group(function () {
-Route::get('/planejamentos/{planejamento}/edit', [PlanejamentoController::class, 'edit'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.edit');
+            Route::get('/planejamentos/{planejamento}/edit', [PlanejamentoController::class, 'edit'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.edit');
 
             Route::post('/planejamentos/{planejamento}/detalhado', [PlanejamentoController::class, 'storeDetalhado'])->name('planejamentos.detalhado.store');
             Route::put('/planejamentos/{planejamento}/detalhado', [PlanejamentoController::class, 'updateDetalhado'])->name('planejamentos.detalhado.update');
-            
+
             // Edição inline das seções
-Route::get('/planejamentos/{planejamento}/edit-section/{section}', [PlanejamentoController::class, 'editSection'])
-    ->where('planejamento', '[0-9]+')
-    ->name('planejamentos.edit-section');
+            Route::get('/planejamentos/{planejamento}/edit-section/{section}', [PlanejamentoController::class, 'editSection'])
+                ->where('planejamento', '[0-9]+')
+                ->name('planejamentos.edit-section');
             Route::put('/planejamentos/{planejamento}/update-section/{section}', [PlanejamentoController::class, 'updateSection'])->name('planejamentos.update-section');
             Route::put('/planejamentos/{planejamento}', [PlanejamentoController::class, 'update'])->name('planejamentos.update');
         });
@@ -722,7 +798,7 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
         Route::middleware(['permission:planejamentos.aprovar'])->group(function () {
             Route::post('/planejamentos/{planejamento}/aprovar', [PlanejamentoController::class, 'aprovar'])->name('planejamentos.aprovar');
             Route::post('/planejamentos/{planejamento}/rejeitar', [PlanejamentoController::class, 'rejeitar'])->name('planejamentos.rejeitar');
-            
+
             // Rota de exclusão de conflito específico (mantida aqui por usar parâmetro de planejamento)
             Route::delete('/planejamentos/{planejamento}/conflitos', [PlanejamentoController::class, 'excluirConflito'])->name('planejamentos.conflitos.excluir');
         });
@@ -747,11 +823,11 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
         Route::post('/admin/configuracao-educacional/{escola}/nivel', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'storeNivel'])->name('admin.configuracao-educacional.store-nivel');
         Route::delete('/admin/configuracao-educacional/{escola}/modalidade/{modalidadeConfig}', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'destroyModalidade'])->name('admin.configuracao-educacional.destroy-modalidade');
         Route::delete('/admin/configuracao-educacional/{escola}/nivel/{nivelConfig}', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'destroyNivel'])->name('admin.configuracao-educacional.destroy-nivel');
-        
+
         // Rotas para Templates BNCC
         Route::get('/admin/configuracao-educacional/{escola}/templates-bncc', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'getTemplatesBncc'])->name('admin.configuracao-educacional.templates-bncc');
         Route::post('/admin/configuracao-educacional/{escola}/aplicar-templates-bncc', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'aplicarTemplatesBncc'])->name('admin.configuracao-educacional.aplicar-templates-bncc');
-        
+
         // Rotas para Disciplinas
         Route::get('/admin/configuracao-educacional/{escola}/disciplinas', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'getDisciplinas'])->name('admin.configuracao-educacional.disciplinas');
         Route::put('/admin/configuracao-educacional/{escola}/disciplina', [\App\Http\Controllers\Admin\ConfiguracaoEducacionalController::class, 'updateDisciplina'])->name('admin.configuracao-educacional.update-disciplina');
@@ -762,18 +838,18 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
     Route::middleware(['permission:usuarios.editar'])->group(function () {
         Route::get('/admin/grupos', [GrupoController::class, 'index'])->name('admin.grupos.index');
         Route::get('/admin/grupos/create', [GrupoController::class, 'create'])->name('admin.grupos.create');
-        
+
         // Rotas AJAX para modais (devem vir ANTES das rotas com parâmetros)
         Route::get('/admin/grupos/listar', [GrupoController::class, 'listar'])->name('admin.grupos.listar');
         Route::get('/admin/grupos/listar-por-modalidade', [GrupoController::class, 'listarPorModalidade'])->name('admin.grupos.listar-por-modalidade');
         Route::get('/admin/grupos/modalidades-ensino', [GrupoController::class, 'getModalidadesEnsino'])->name('admin.grupos.modalidades-ensino');
-        
+
         Route::post('/admin/grupos', [GrupoController::class, 'store'])->name('admin.grupos.store');
         Route::get('/admin/grupos/{grupo}', [GrupoController::class, 'show'])->name('admin.grupos.show');
         Route::get('/admin/grupos/{grupo}/edit', [GrupoController::class, 'edit'])->name('admin.grupos.edit');
         Route::put('/admin/grupos/{grupo}', [GrupoController::class, 'update'])->name('admin.grupos.update');
         Route::delete('/admin/grupos/{grupo}', [GrupoController::class, 'destroy'])->name('admin.grupos.destroy');
-        
+
         Route::get('/admin/grupos/{grupo}/edit-modal', [GrupoController::class, 'editModal'])->name('admin.grupos.edit-modal');
         Route::get('/admin/grupos/{grupo}/show-modal', [GrupoController::class, 'showModal'])->name('admin.grupos.show-modal');
     });
@@ -789,7 +865,7 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
         Route::put('/admin/turnos/{turno}', [TurnoController::class, 'update'])->name('admin.turnos.update');
         Route::delete('/admin/turnos/{turno}', [TurnoController::class, 'destroy'])->name('admin.turnos.destroy');
         Route::patch('/admin/turnos/{turno}/toggle-status', [TurnoController::class, 'toggleStatus'])->name('admin.turnos.toggle-status');
-        
+
         // Rotas de Tempo Slots - Administração
         Route::get('/admin/turnos/{turno}/tempo-slots', [TempoSlotController::class, 'index'])->name('admin.turnos.tempo-slots.index');
         Route::get('/admin/turnos/{turno}/tempo-slots/create', [TempoSlotController::class, 'create'])->name('admin.turnos.tempo-slots.create');
@@ -798,7 +874,7 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
         Route::get('/admin/turnos/{turno}/tempo-slots/{tempoSlot}/edit', [TempoSlotController::class, 'edit'])->name('admin.turnos.tempo-slots.edit');
         Route::put('/admin/turnos/{turno}/tempo-slots/{tempoSlot}', [TempoSlotController::class, 'update'])->name('admin.turnos.tempo-slots.update');
         Route::delete('/admin/turnos/{turno}/tempo-slots/{tempoSlot}', [TempoSlotController::class, 'destroy'])->name('admin.turnos.tempo-slots.destroy');
-        
+
         // Rotas AJAX para modais
         Route::get('/admin/turnos/{turno}/tempo-slots/{tempoSlot}/modal-show', [TempoSlotController::class, 'showModal'])->name('admin.turnos.tempo-slots.modal-show');
         Route::get('/admin/turnos/{turno}/tempo-slots/{tempoSlot}/modal-edit', [TempoSlotController::class, 'editModal'])->name('admin.turnos.tempo-slots.modal-edit');
@@ -819,6 +895,7 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
     // Visualizar lista de despesas
     Route::middleware(['module.license:financeiro_module', 'permission:despesas.ver'])->group(function () {
         Route::get('/admin/despesas', [DespesaController::class, 'index'])->name('admin.despesas.index');
+        Route::get('/admin/despesas/recorrencias', [DespesaController::class, 'recorrenciasIndex'])->name('admin.despesas.recorrencias');
     });
 
     // Rotas de Recebimentos - Administração (visualização)
@@ -857,6 +934,14 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
     Route::middleware(['module.license:financeiro_module', 'permission:despesas.editar'])->group(function () {
         Route::get('/admin/despesas/{despesa}/modal-edit', [DespesaController::class, 'editModal'])->name('admin.despesas.modal-edit');
         Route::put('/admin/despesas/{despesa}', [DespesaController::class, 'update'])->name('admin.despesas.update');
+
+        // Recorrências
+        Route::post('/admin/despesas/recorrencias', [DespesaController::class, 'recorrenciasStore'])->name('admin.despesas.recorrencias.store');
+        Route::get('/admin/despesas/recorrencias/{recorrencia}/edit', [DespesaController::class, 'recorrenciaEdit'])->name('admin.despesas.recorrencias.edit');
+        Route::put('/admin/despesas/recorrencias/{recorrencia}', [DespesaController::class, 'recorrenciaUpdate'])->name('admin.despesas.recorrencias.update');
+        Route::patch('/admin/despesas/recorrencias/{recorrencia}/toggle', [DespesaController::class, 'recorrenciasToggle'])->name('admin.despesas.recorrencias.toggle');
+        Route::delete('/admin/despesas/recorrencias/{recorrencia}', [DespesaController::class, 'recorrenciasDestroy'])->name('admin.despesas.recorrencias.destroy');
+        Route::patch('/admin/despesas/{despesa}/liquidar', [DespesaController::class, 'liquidar'])->name('admin.despesas.liquidar');
     });
 
     // Cancelar despesas
@@ -867,14 +952,14 @@ Route::get('/planejamentos/{planejamento}/edit-section/{section}', [Planejamento
     // Rotas de Configurações - Página unificada com tabs
     Route::middleware(['permission:usuarios.editar'])->group(function () {
         Route::get('/admin/configuracoes', [\App\Http\Controllers\ConfiguracoesController::class, 'index'])->name('admin.configuracoes.index');
-        
+
         // Rotas para gerenciamento de turmas
         Route::get('/turmas', [\App\Http\Controllers\TurmaController::class, 'index'])->name('turmas.index');
-Route::get('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'show'])->name('admin.turmas.show');
-Route::get('/admin/turmas/{turma}/edit', [\App\Http\Controllers\TurmaController::class, 'edit'])->name('admin.turmas.edit');
-Route::post('/admin/turmas', [\App\Http\Controllers\TurmaController::class, 'store'])->name('admin.turmas.store');
-Route::put('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'update'])->name('admin.turmas.update');
-Route::delete('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'destroy'])->name('admin.turmas.destroy');
+        Route::get('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'show'])->name('admin.turmas.show');
+        Route::get('/admin/turmas/{turma}/edit', [\App\Http\Controllers\TurmaController::class, 'edit'])->name('admin.turmas.edit');
+        Route::post('/admin/turmas', [\App\Http\Controllers\TurmaController::class, 'store'])->name('admin.turmas.store');
+        Route::put('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'update'])->name('admin.turmas.update');
+        Route::delete('/admin/turmas/{turma}', [\App\Http\Controllers\TurmaController::class, 'destroy'])->name('admin.turmas.destroy');
 
         // Rotas para modais de turmas
         Route::get('/admin/turmas/listar-todas', [\App\Http\Controllers\TurmaController::class, 'listarTodas'])->name('admin.turmas.listar-todas');
@@ -967,7 +1052,7 @@ if (app()->environment('local')) {
                     \App\Services\AlertService::warning($message);
                     break;
                 case 'validation':
-                    \App\Services\AlertService::validation($message, ['Campo 1 é obrigatório', 'Campo 2 deve ser um email válido']);
+                    \App\Services\AlertService::validationErrors(['Campo 1 é obrigatório', 'Campo 2 deve ser um email válido'], ['message' => $message]);
                     break;
                 case 'system_error':
                     \App\Services\AlertService::systemError($message);
@@ -1059,23 +1144,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/clear-cache', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('clear.cache');
-    
+
     Route::post('/optimize-system', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('optimize.system');
-    
+
     Route::post('/run-maintenance', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('run.maintenance');
-    
+
     Route::post('/generate-report', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('generate.report');
-    
+
     Route::get('/table-info/{tableName}', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('table.info');
-    
+
     Route::get('/table-columns/{tableName}', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('table.columns');
@@ -1088,7 +1173,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/database-relationships', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('database.relationships');
-    
+
     Route::get('/api/database-relationships', function () {
         return redirect()->route('corporativo.dashboard');
     })->name('api.database.relationships');
@@ -1097,7 +1182,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/logout', function () {
         return redirect()->route('corporativo.login');
     })->name('logout');
-    
+
     // Capturar qualquer outra rota de admin e redirecionar
     Route::any('{any}', function () {
         return redirect()->route('corporativo.login');
@@ -1113,7 +1198,7 @@ use App\Http\Controllers\CorporativoModulesController;
 Route::prefix('corporativo')->name('corporativo.')->group(function () {
     Route::post('/login', [CorporativoController::class, 'login'])->name('login.post');
     Route::get('/login', [CorporativoController::class, 'showLogin'])->name('login');
-    
+
 });
 
 // Rotas protegidas do painel corporativo
@@ -1176,7 +1261,7 @@ Route::middleware(['admin.auth'])->prefix('corporativo')->name('corporativo.')->
     Route::get('/relatorios', [CorporativoController::class, 'relatorios'])->name('relatorios');
     // KPIs
     Route::get('/kpis', [CorporativoController::class, 'kpis'])->name('kpis');
-    
+
     // Query Builder
     Route::post('/query-builder', [CorporativoController::class, 'executeQueryBuilder'])->name('query.execute');
     Route::get('/query-builder', [CorporativoController::class, 'showQueryBuilder'])->name('query.builder');
@@ -1223,6 +1308,7 @@ Route::middleware(['auth', 'escola.context', 'module.license:comunicacao_module'
         Route::middleware(['permission:conversas.ver'])->group(function () {
             Route::get('/', [ConversaController::class, 'index'])->name('index');
             Route::get('/lista', [ConversaController::class, 'carregarListaConversas'])->name('lista');
+            Route::get('/total-nao-lidas', [ConversaController::class, 'totalMensagensNaoLidas'])->name('total-nao-lidas');
             Route::get('/{conversa}', [ConversaController::class, 'show'])
                 ->whereNumber('conversa')->name('show');
             Route::get('/{conversa}/mensagens', [ConversaController::class, 'mensagens'])
@@ -1320,7 +1406,7 @@ Route::middleware(['auth', 'escola.context', 'module.license:comunicacao_module'
                 Route::get('/turma/{turma}/grade', [\App\Http\Controllers\GradeAulaController::class, 'gradeTurma'])->name('turma.grade');
                 Route::get('/sala/{sala}/ocupacao', [\App\Http\Controllers\GradeAulaController::class, 'ocupacaoSala'])->name('sala.ocupacao');
                 Route::post('/verificar-conflitos', [\App\Http\Controllers\GradeAulaController::class, 'verificarConflitos'])->name('verificar.conflitos');
-                
+
                 // Novas rotas para sugestões inteligentes
                 Route::post('/sugestoes/horarios', [\App\Http\Controllers\GradeAulaController::class, 'obterSugestoesHorarios'])->name('sugestoes.horarios');
                 Route::post('/sugestoes/salas', [\App\Http\Controllers\GradeAulaController::class, 'obterSugestoesSalas'])->name('sugestoes.salas');

@@ -83,6 +83,11 @@ class User extends Authenticatable
      */
     public function temPermissao(string $permissao): bool
     {
+        // Super Administradores e Suporte têm acesso total por padrão
+        if ($this->isSuperAdmin() || $this->hasRole('suporte')) {
+            return true;
+        }
+
         return $this->cargos()->whereHas('permissoes', function ($query) use ($permissao) {
             $query->where('nome', $permissao)->where('ativo', true);
         })->exists();
@@ -132,7 +137,7 @@ class User extends Authenticatable
     {
 
         return $this->belongsToMany(Sala::class, 'user_salas', 'user_id', 'sala_id')
-                    ->withPivot('ativo');
+            ->withPivot('ativo');
     }
 
     /**
@@ -160,7 +165,7 @@ class User extends Authenticatable
         if ($this->temCargo('Administrador') || $this->temCargo('Coordenador')) {
             return true;
         }
-        
+
         // Verificar se o usuário está vinculado à sala
         return $this->salas()->where('sala_id', $salaId)->exists();
     }
@@ -178,9 +183,9 @@ class User extends Authenticatable
      */
     public function isProfessor(): bool
     {
-        return $this->cargos()->where(function($query) {
+        return $this->cargos()->where(function ($query) {
             $query->where('tipo_cargo', 'professor')
-                  ->orWhere('nome', 'like', '%professor%');
+                ->orWhere('nome', 'like', '%professor%');
         })->where('ativo', true)->exists();
     }
 
@@ -189,9 +194,9 @@ class User extends Authenticatable
      */
     public function isCoordenador(): bool
     {
-        return $this->cargos()->where(function($query) {
+        return $this->cargos()->where(function ($query) {
             $query->where('tipo_cargo', 'coordenador')
-                  ->orWhere('nome', 'like', '%coordenador%');
+                ->orWhere('nome', 'like', '%coordenador%');
         })->where('ativo', true)->exists();
     }
 
@@ -200,9 +205,9 @@ class User extends Authenticatable
      */
     public function isAdministrador(): bool
     {
-        return $this->cargos()->where(function($query) {
+        return $this->cargos()->where(function ($query) {
             $query->where('tipo_cargo', 'administrador')
-                  ->orWhere('nome', 'like', '%administrador%');
+                ->orWhere('nome', 'like', '%administrador%');
         })->where('ativo', true)->exists();
     }
 
@@ -224,11 +229,11 @@ class User extends Authenticatable
             'suporte' => 'Suporte Técnico',
             'analista' => 'Analista de Dados'
         ];
-        
+
         $cargoNome = $roleMap[$role] ?? $role;
         return $this->temCargo($cargoNome);
     }
-    
+
     /**
      * Relacionamento com disciplinas
      */
@@ -253,8 +258,8 @@ class User extends Authenticatable
     public function escolas(): BelongsToMany
     {
         return $this->belongsToMany(Escola::class, 'user_escola')
-                    ->withPivot('is_current')
-                    ->withTimestamps();
+            ->withPivot('is_current')
+            ->withTimestamps();
     }
 
     /**
@@ -274,10 +279,10 @@ class User extends Authenticatable
         if ($this->isSuperAdmin() || $this->temCargo('Suporte')) {
             return true;
         }
-        
+
         // Verificar se o usuário está associado à escola
-        return $this->escolas()->where('escola_id', $escolaId)->exists() || 
-               $this->escola_id == $escolaId;
+        return $this->escolas()->where('escola_id', $escolaId)->exists() ||
+            $this->escola_id == $escolaId;
     }
 
     /**
@@ -288,10 +293,10 @@ class User extends Authenticatable
         if (!$this->podeAcessarEscola($escolaId)) {
             return false;
         }
-        
+
         // Remover escola atual
         $this->escolas()->updateExistingPivot($this->escolas()->pluck('id')->toArray(), ['is_current' => false]);
-        
+
         // Definir nova escola atual
         if ($this->escolas()->where('escola_id', $escolaId)->exists()) {
             $this->escolas()->updateExistingPivot($escolaId, ['is_current' => true]);
@@ -299,10 +304,10 @@ class User extends Authenticatable
             // Se não existe na tabela pivot, adicionar
             $this->escolas()->attach($escolaId, ['is_current' => true]);
         }
-        
+
         // Atualizar escola_id principal
         $this->update(['escola_id' => $escolaId]);
-        
+
         return true;
     }
 
@@ -312,9 +317,9 @@ class User extends Authenticatable
     public function resolveRouteBinding($value, $field = null)
     {
         $field = $field ?: $this->getRouteKeyName();
-        
+
         $query = $this->where($field, $value);
-        
+
         // Em rotas do corporativo, Super Admin e Suporte podem acessar qualquer usuário
         if (request()->routeIs('corporativo.*')) {
             $authUser = auth()->user();
@@ -322,7 +327,7 @@ class User extends Authenticatable
                 return $query->first();
             }
         }
-        
+
         // Aplicar filtro de escola baseado no usuário autenticado
         $user = auth()->user();
         if ($user) {
@@ -348,14 +353,14 @@ class User extends Authenticatable
             // Usuário não autenticado, negar acesso
             return null;
         }
-        
+
         return $query->first();
     }
 
     /**
      * Verifica se o usu�rio � o primeiro usu�rio (dono inicial) da sua escola
      */
-    
+
     /**
      * Verifica se o usu�rio � o primeiro usu�rio (dono inicial) da sua escola
      */
@@ -378,9 +383,9 @@ class User extends Authenticatable
     public function isSchoolAdmin(): bool
     {
         return $this->temCargo('Administrador de Escola') ||
-               $this->temCargo('Administrador') ||
-               $this->temCargo('Diretor') ||
-               $this->isSchoolOwner();
+            $this->temCargo('Administrador') ||
+            $this->temCargo('Diretor') ||
+            $this->isSchoolOwner();
     }
 
     /**
@@ -405,5 +410,19 @@ class User extends Authenticatable
     public function multas()
     {
         return $this->hasMany(\App\Models\Multa::class, 'usuario_id');
+    }
+
+    /**
+     * Obtém a URL do avatar do usuário ou uma URL padrão baseada no nome
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar) {
+            return \Illuminate\Support\Facades\Storage::url($this->avatar);
+        }
+
+        // Retorna um avatar gerado se não houver um carregado
+        $name = urlencode($this->name);
+        return "https://ui-avatars.com/api/?name={$name}&color=7F9CF5&background=EBF4FF";
     }
 }

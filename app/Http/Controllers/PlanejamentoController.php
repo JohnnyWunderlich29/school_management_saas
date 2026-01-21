@@ -18,6 +18,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+use App\Actions\Planejamento\CreatePlanejamentoAction;
+use App\Actions\Planejamento\UpdatePlanejamentoAction;
+
 class PlanejamentoController extends Controller
 {
     /**
@@ -508,226 +511,32 @@ class PlanejamentoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
-
-
-    public function store(Request $request)
+    public function store(Request $request, CreatePlanejamentoAction $createPlanejamentoAction)
     {
-        dd($request->all());
-
         try {
-            // Converter os campos para os nomes corretos
-            $data = $request->all();
-
-            // Log para debug
-            \Log::info('Dados recebidos no store', $data);
-
-            // Converter modalidade_id para modalidade se necessário
-            if (isset($data['modalidade_id']) && !isset($data['modalidade'])) {
-                $data['modalidade'] = $data['modalidade_id'];
-            }
-
-            // Garantir que modalidade não seja nulo
-            if (!isset($data['modalidade']) && isset($data['modalidade_id'])) {
-                $data['modalidade'] = $data['modalidade_id'];
-            }
-
-            // Converter turno_id para turno se necessário
-            if (isset($data['turno_id']) && !isset($data['turno'])) {
-                $data['turno'] = $data['turno_id'];
-            }
-
-            // Garantir que turno não seja nulo
-            if (!isset($data['turno']) && isset($data['turno_id'])) {
-                $data['turno'] = $data['turno_id'];
-            }
-
-            // Converter grupo para grupo_id se necessário
-            if (isset($data['grupo']) && !isset($data['grupo_id'])) {
-                $data['grupo_id'] = $data['grupo'];
-            }
-
-            // Garantir que grupo_educacional_id seja convertido para grupo_id
-            if (isset($data['grupo_educacional_id']) && !isset($data['grupo_id'])) {
-                $data['grupo_id'] = $data['grupo_educacional_id'];
-            }
-
-            $validator = Validator::make($data, [
-                'modalidade' => 'required|exists:modalidades_ensino,id',
-                'escola_id' => 'nullable|exists:escolas,id',
-                'unidade_escolar' => 'nullable|string',
-                'turno_id' => 'nullable|exists:turnos,id',
-                'grupo_id' => 'required|exists:grupos,id',
-                'turma_id' => 'required|exists:turmas,id',
-                'disciplina_id' => 'required|exists:disciplinas,id',
-                'data_inicio' => 'required|date',
-                'numero_dias' => 'required|integer|min:1|max:20',
-            ]);
-
-            if ($validator->fails()) {
-                \Illuminate\Support\Facades\Log::error('Erro de validação ao criar planejamento', ['errors' => $validator->errors()->toArray()]);
-                $processedErrors = AlertService::validationErrors($validator->errors());
-                return response()->json([
-                    'errors' => $validator->errors(),
-                    'processed_errors' => $processedErrors,
-                    'message' => 'Por favor, corrija os seguintes erros:'
-                ], 422);
-            }
-
-            // Detectar automaticamente o user_id baseado no usuário logado
-            $user = Auth::user();
-
-            // Verificar se o usuário tem permissão para criar planejamentos
-            if (!$user->isSuperAdmin() && !$user->isProfessor() && !$user->isCoordenador()) {
-                AlertService::accessDenied('Você não tem permissão para criar planejamentos.');
-                return response()->json(['errors' => ['permission' => ['Você não tem permissão para criar planejamentos.']]], 403);
-            }
-
-            // Atualizar o request com os dados convertidos
-            $request->replace($data);
-
-            // Verificar validação de data sequencial
-            $dataInicio = Carbon::parse($data['data_inicio']);
-            $dataFim = $dataInicio->copy()->addDays($data['numero_dias'] - 1);
-
-            // Buscar o último planejamento do professor para a mesma turma e disciplina
-            $ultimoPlanejamento = Planejamento::where('turma_id', $data['turma_id'])
-                ->where('user_id', $user->id)
-                ->where('disciplina_id', $data['disciplina_id'])
-                ->whereIn('status', ['rascunho', 'aberto', 'finalizado', 'aprovado']) // Excluir apenas rejeitados
-                ->orderBy('data_fim', 'desc')
-                ->first();
-
-            // Validar data sequencial (apenas para professores)
-            if ($ultimoPlanejamento && !$user->isAdminOrCoordinator()) {
-                if ($dataInicio->lte($ultimoPlanejamento->data_fim)) {
-                    $proximaDataDisponivel = $ultimoPlanejamento->data_fim->copy()->addDay();
-                    $message = 'A data de início deve ser posterior ao último planejamento da disciplina (' . $ultimoPlanejamento->data_fim->format('d/m/Y') . '). Próxima data disponível: ' . $proximaDataDisponivel->format('d/m/Y');
-                    AlertService::error($message);
-                    return response()->json([
-                        'errors' => [
-                            'data_inicio' => [$message]
-                        ]
-                    ], 422);
-                }
-            }
-
-            // Verificar sobreposição com outros planejamentos da mesma disciplina
-            // Excluir o planejamento atual da verificação se estiver editando
-            $planejamentoExistente = Planejamento::where('turma_id', $data['turma_id'])
-                ->where('disciplina_id', $data['disciplina_id'])
-                ->where('user_id', $user->id) // Adicionar filtro por usuário
-                ->whereIn('status', ['rascunho', 'aberto', 'finalizado', 'aprovado'])
-                ->when(isset($data['id']), function ($query) use ($data) {
-                    return $query->where('id', '!=', $data['id']);
-                })
-                ->where(function ($query) use ($dataInicio, $dataFim) {
-                    // Verifica se há sobreposição de datas
-                    $query->where(function ($q) use ($dataInicio, $dataFim) {
-                        $q->where('data_inicio', '<=', $dataFim->format('Y-m-d'))
-                            ->where('data_fim', '>=', $dataInicio->format('Y-m-d'));
-                    });
-                })
-                ->first();
-
-            // Log para debug
-            \Illuminate\Support\Facades\Log::info('Verificação de conflito de datas', [
-                'turma_id' => $data['turma_id'],
-                'user_id' => $user->id,
-                'disciplina_id' => $data['disciplina_id'],
-                'data_inicio' => $dataInicio->format('Y-m-d'),
-                'data_fim' => $dataFim->format('Y-m-d'),
-                'planejamento_existente' => $planejamentoExistente ? [
-                    'id' => $planejamentoExistente->id,
-                    'data_inicio' => $planejamentoExistente->data_inicio->format('Y-m-d'),
-                    'data_fim' => $planejamentoExistente->data_fim->format('Y-m-d')
-                ] : null
-            ]);
-
-            if ($planejamentoExistente) {
-                $message = 'Já existe um planejamento para esta disciplina e turma no período de ' .
-                    $planejamentoExistente->data_inicio->format('d/m/Y') . ' a ' .
-                    $planejamentoExistente->data_fim->format('d/m/Y') . '. ' .
-                    'Escolha um período diferente.';
-                AlertService::error($message);
-                return response()->json([
-                    'errors' => [
-                        'data_inicio' => [$message]
-                    ]
-                ], 422);
-            }
-
-            // Buscar a turma
-            $turma = \App\Models\Turma::find($request->turma_id);
-            if (!$turma) {
-                $message = 'Turma não encontrada.';
-                AlertService::error($message);
-                return response()->json([
-                    'errors' => [
-                        'turma_id' => [$message]
-                    ]
-                ], 422);
-            }
-
-            $planejamento = new Planejamento();
-            $planejamento->user_id = Auth::id();
-
-            // Garantir que escola_id nunca seja nulo
-            if ($user->isAdminOrCoordinator() && $request->filled('escola_id')) {
-                $planejamento->escola_id = $request->escola_id;
-            } else {
-                $planejamento->escola_id = $user->escola_id;
-            }
-
-            $planejamento->unidade_escolar = $request->unidade_escolar;
-            $planejamento->modalidade = $request->modalidade; // Usando modalidade em vez de modalidade_id
-
-            // Corrigindo o problema com o campo turno vazio
-            // Usar turno em vez de turno_id para compatibilidade com o modelo
-            if (isset($data['turno']) && !empty($data['turno'])) {
-                $planejamento->turno = $data['turno'];
-            } elseif (isset($data['turno_id']) && !empty($data['turno_id'])) {
-                $planejamento->turno = $data['turno_id'];
-            }
-            // Não usar turno_id, pois a coluna não existe na tabela planejamentos
-
-            // Removido nivel_ensino_id pois não existe mais na tabela
-            $planejamento->turma_id = $turma->id;
-            $planejamento->disciplina_id = $request->disciplina_id;
-            // Removido tipo_professor pois não existe mais na tabela
-            $planejamento->data_inicio = $request->data_inicio;
-            $planejamento->numero_dias = $request->numero_dias;
-            $planejamento->data_fim = Carbon::parse($request->data_inicio)->addDays($request->numero_dias - 1);
-            $planejamento->status = 'rascunho'; // Status inicial
-            $planejamento->save();
-
-            // Notificar professor se coordenador/diretor criou planejamento com data anterior
-            if ($ultimoPlanejamento && $user->isAdminOrCoordinator() && $dataInicio->lt($ultimoPlanejamento->data_fim)) {
-                // Buscar o professor responsável pela turma (último planejamento)
-                $professor = \App\Models\User::find($ultimoPlanejamento->user_id);
-                if ($professor) {
-                    \App\Models\Notification::createForUser(
-                        $professor->id,
-                        'warning',
-                        'Planejamento Reaberto',
-                        'Um coordenador/diretor reabriu o período de planejamentos para a turma ' . $turma->nome . '. Você pode criar novos planejamentos para datas anteriores.',
-                        ['planejamento_id' => $planejamento->id, 'turma_id' => $turma->id],
-                        route('planejamentos.index'),
-                        'Ver Planejamentos'
-                    );
-                }
-            }
+            $planejamento = $createPlanejamentoAction->execute($request->all());
 
             return response()->json([
                 'message' => 'Planejamento criado com sucesso!',
                 'planejamento' => $planejamento,
                 'id' => $planejamento->id
             ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'errors' => $e->errors(),
+                'message' => 'Por favor, corrija os seguintes erros:'
+            ], 422);
         } catch (\Exception $e) {
+            $code = $e->getCode();
+            if ($code === 403) {
+                return response()->json(['errors' => ['permission' => [$e->getMessage()]]], 403);
+            }
+
             AlertService::systemError('Erro ao criar planejamento', $e);
             return response()->json(['error' => 'Erro interno do servidor'], 500);
         }
     }
+
 
     /**
      * Display the specified resource.
@@ -759,6 +568,19 @@ class PlanejamentoController extends Controller
     {
         $this->authorize('update', $planejamento);
 
+        // Prevent editing approved plannings
+        if ($planejamento->status === 'aprovado') {
+            return redirect()->route('planejamentos.show', $planejamento)
+                ->with('warning', 'Planejamentos aprovados não podem ser editados. Apenas visualização.');
+        }
+        
+        // Prevent editing plannings under review (unless user has approve permission)
+        // 'finalizado' is used for "Aguardando Aprovação"
+        if (($planejamento->status === 'finalizado' || $planejamento->status === 'revisao') && !auth()->user()->can('planejamentos.aprovar')) {
+            return redirect()->route('planejamentos.show', $planejamento)
+                ->with('warning', 'Este planejamento está em revisão e não pode ser editado.');
+        }
+
         $modalidades = Planejamento::getModalidadesOptions();
         $turnos = Planejamento::getTurnosOptions();
         $tiposProfessor = Planejamento::getTiposProfessorOptions();
@@ -780,68 +602,19 @@ class PlanejamentoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Planejamento $planejamento)
+    public function update(Request $request, Planejamento $planejamento, UpdatePlanejamentoAction $updatePlanejamentoAction)
     {
         $this->authorize('update', $planejamento);
 
-        $validator = Validator::make($request->all(), [
-            'modalidade' => 'required|in:' . implode(',', array_keys(Planejamento::getModalidadesOptions())),
-            'turno' => 'required|in:' . implode(',', array_keys(Planejamento::getTurnosOptions())),
-            // 'sala_id' => 'required|exists:salas,id', // Removido - sala será implementada futuramente
-            'tipo_professor' => 'required|in:' . implode(',', array_keys(Planejamento::getTiposProfessorOptions())),
-            'turma_id' => 'required|exists:turmas,id',
-            'numero_dias' => 'required|integer|min:1|max:20',
-            'data_inicio' => 'required|date',
-            'titulo' => 'nullable|string|max:255',
-            'objetivo_geral' => 'nullable|string',
-            'objetivos_especificos' => 'nullable|array',
-            'competencias_bncc' => 'nullable|array',
-            'habilidades_bncc' => 'nullable|array',
-            'metodologia' => 'nullable|string',
-            'recursos_didaticos' => 'nullable|string',
-            'avaliacao' => 'nullable|string',
-            'status' => 'required|in:rascunho,finalizado,aprovado'
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
         try {
-            // Calcular data fim baseada no número de dias
-            $dataInicio = Carbon::parse($request->data_inicio);
-            $dataFim = $dataInicio->copy()->addDays($request->numero_dias - 1);
-
-            $planejamento->update([
-                'modalidade' => $request->modalidade,
-                'turno' => $request->turno,
-                // 'sala_id' => $request->sala_id, // Removido - sala será implementada futuramente
-                'tipo_professor' => $request->tipo_professor,
-                'turma_id' => $request->turma_id,
-                'numero_dias' => $request->numero_dias,
-                'data_inicio' => $request->data_inicio,
-                'data_fim' => $dataFim,
-                'titulo' => $request->titulo,
-                'objetivo_geral' => $request->objetivo_geral,
-                'objetivos_especificos' => $request->objetivos_especificos,
-                'competencias_bncc' => $request->competencias_bncc,
-                'habilidades_bncc' => $request->habilidades_bncc,
-                'metodologia' => $request->metodologia,
-                'recursos_didaticos' => $request->recursos_didaticos,
-                'avaliacao' => $request->avaliacao,
-                'status' => $request->status
-            ]);
-
-            // Se o professor finalizou, notificar coordenadores para revisão
-            if ($request->status === 'finalizado') {
-                $this->notificarCoordenadoresFinalizacao($planejamento);
-            }
+            $updatePlanejamentoAction->execute($planejamento, $request->all());
 
             return redirect()->route('planejamentos.show', $planejamento)
                 ->with('success', 'Planejamento atualizado com sucesso!');
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
         } catch (\Exception $e) {
             AlertService::systemError('Erro ao atualizar planejamento', $e);
             return redirect()->back()->withInput();
@@ -1357,6 +1130,32 @@ class PlanejamentoController extends Controller
                 'status' => 'aprovado'
             ]);
 
+            // Notificar o professor responsável
+            try {
+                $turma = $planejamento->turma;
+                $sala = $turma ? $turma->sala : null;
+                $destinatarioId = $planejamento->professor_id ?: $planejamento->user_id;
+
+                if ($destinatarioId) {
+                    \App\Models\Notification::createForUser(
+                        $destinatarioId,
+                        'success',
+                        'Planejamento Aprovado',
+                        'Seu planejamento foi aprovado pelo coordenador.' .
+                        ($turma ? ' Turma: ' . $turma->nome : '') .
+                        ($sala ? ' | Sala: ' . $sala->codigo : ''),
+                        [
+                            'planejamento_id' => $planejamento->id,
+                            'turma_id' => $turma ? $turma->id : null
+                        ],
+                        route('planejamentos.show', $planejamento),
+                        'Visualizar Planejamento'
+                    );
+                }
+            } catch (\Exception $notifyEx) {
+                \Illuminate\Support\Facades\Log::warning('Falha ao notificar professor sobre aprovação: ' . $notifyEx->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Planejamento aprovado com sucesso!',
@@ -1474,66 +1273,6 @@ class PlanejamentoController extends Controller
         }
     }
 
-    /**
-     * Notifica coordenadores quando um professor finaliza um planejamento
-     */
-    private function notificarCoordenadoresFinalizacao(Planejamento $planejamento)
-    {
-        try {
-            // Buscar coordenadores da sala relacionada ao planejamento
-            $turma = $planejamento->turma;
-            if (!$turma || !$turma->sala) {
-                return;
-            }
-
-            $sala = $turma->sala;
-            $coordenadores = collect();
-
-            // Adicionar coordenador específico da sala
-            if ($sala->coordenador_id) {
-                $coordenador = \App\Models\User::find($sala->coordenador_id);
-                if ($coordenador) {
-                    $coordenadores->push($coordenador);
-                }
-            }
-
-            // Adicionar todos os coordenadores gerais usando sistema flexível
-            $escolaId = $planejamento->escola_id ?: auth()->user()->escola_id;
-            $coordenadoresGerais = \App\Models\User::whereHas('cargos', function ($query) use ($escolaId) {
-                $query->where(function ($q) {
-                    $q->where('tipo_cargo', 'coordenador')
-                        ->orWhere('nome', 'like', '%coordenador%');
-                })
-                    ->where('ativo', true)
-                    ->where(function ($subQuery) use ($escolaId) {
-                        $subQuery->whereNull('escola_id') // Cargos globais
-                            ->orWhere('escola_id', $escolaId); // Cargos da escola
-                    });
-            })->get();
-
-            $coordenadores = $coordenadores->merge($coordenadoresGerais)->unique('id');
-
-            // Criar notificação para cada coordenador
-            foreach ($coordenadores as $coordenador) {
-                \App\Models\Notification::createForUser(
-                    $coordenador->id,
-                    'info',
-                    'Planejamento Finalizado',
-                    'O professor ' . $planejamento->user->name . ' finalizou um planejamento para a turma ' . $turma->nome . ' (' . $sala->codigo . '). O planejamento está aguardando aprovação.',
-                    [
-                        'planejamento_id' => $planejamento->id,
-                        'professor_id' => $planejamento->user_id,
-                        'turma_id' => $turma->id,
-                        'sala_id' => $sala->id
-                    ],
-                    route('planejamentos.show', $planejamento),
-                    'Revisar Planejamento'
-                );
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Erro ao notificar coordenadores sobre finalização: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Verifica se um coordenador tem acesso à sala relacionada ao planejamento
@@ -1584,10 +1323,22 @@ class PlanejamentoController extends Controller
      */
     public function wizardStep(Request $request, $step)
     {
+        // Log wizard access for debugging
+        Log::info('Wizard step requested', [
+            'step' => $step,
+            'user_id' => auth()->id(),
+            'escola_atual' => session('escola_atual'),
+            'edit_param' => $request->get('edit'),
+            'is_super_admin' => auth()->user()->isSuperAdmin(),
+            'user_escola_id' => auth()->user()->escola_id,
+            'request_url' => $request->fullUrl()
+        ]);
+
         $validSteps = ['1', '2', '3', '4', '5', '6'];
 
         if (!in_array($step, $validSteps)) {
-            abort(404);
+            Log::warning('Invalid wizard step requested', ['step' => $step, 'user_id' => auth()->id()]);
+            abort(404, 'Etapa inválida');
         }
 
         $data = [];
@@ -1595,8 +1346,33 @@ class PlanejamentoController extends Controller
         // Carregar planejamento se estiver editando
         $planejamento = null;
         if ($request->has('edit') && $request->edit) {
-            $planejamento = Planejamento::findOrFail($request->edit);
-            $this->authorize('update', $planejamento);
+            try {
+                $planejamento = Planejamento::findOrFail($request->edit);
+                $this->authorize('update', $planejamento);
+                
+                Log::info('Wizard step loaded in edit mode', [
+                    'step' => $step,
+                    'planejamento_id' => $planejamento->id,
+                    'user_id' => auth()->id(),
+                    'escola_id' => session('escola_atual')
+                ]);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                Log::error('Planejamento not found in wizard', [
+                    'planejamento_id' => $request->edit,
+                    'user_id' => auth()->id(),
+                    'step' => $step
+                ]);
+                // Instead of aborting, redirect to start fresh wizard
+                return redirect()->route('planejamentos.wizard')
+                    ->with('warning', 'Planejamento não encontrado. Iniciando novo planejamento.');
+            } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+                Log::error('Authorization failed in wizard', [
+                    'planejamento_id' => $request->edit,
+                    'user_id' => auth()->id(),
+                    'step' => $step
+                ]);
+                abort(403, 'Você não tem permissão para editar este planejamento.');
+            }
         }
 
         // Sempre passar a variável $planejamento para a view (mesmo quando null)
@@ -1701,7 +1477,20 @@ class PlanejamentoController extends Controller
                     ]);
 
                     // Renomear para snake_case para consistência com atributos
-                    $data['campos_experiencia'] = \App\Models\CampoExperiencia::all();
+                    // Filtrar campos de experiência pela modalidade do nível de ensino selecionado
+                    $query = \App\Models\CampoExperiencia::ativos();
+
+                    if ($planejamento && $planejamento->nivelEnsino) {
+                        $modalidades = $planejamento->nivelEnsino->modalidades_compativeis ?? [];
+                        $query->porModalidade($modalidades);
+                    } elseif ($request->has('nivel_ensino_id')) {
+                        $nivel = \App\Models\NivelEnsino::find($request->nivel_ensino_id);
+                        if ($nivel) {
+                            $query->porModalidade($nivel->modalidades_compativeis ?? []);
+                        }
+                    }
+
+                    $data['campos_experiencia'] = $query->get();
 
                     // Se estiver em modo edição, carregar diários existentes do planejamento
                     if ($planejamento) {
@@ -4328,6 +4117,77 @@ class PlanejamentoController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Erro ao buscar turmas filtradas: ' . $e->getMessage());
             return response()->json(['error' => 'Erro ao buscar turmas.', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * Notifica coordenadores sobre a finalização de um planejamento para revisão
+     */
+    private function notificarCoordenadoresFinalizacao(Planejamento $planejamento)
+    {
+        try {
+            $turma = $planejamento->turma;
+            $sala = $turma ? $turma->sala : null;
+            $escolaId = $planejamento->escola_id;
+
+            $coordenadoresIds = collect();
+
+            // 1. Prioridade: Coordenador vinculado à Turma
+            if ($turma && $turma->coordenador_id) {
+                $coordenadoresIds->push($turma->coordenador_id);
+            }
+
+            // 2. Se não houver coordenador específico, buscar TODOS coordenadores e administradores da escola
+            if ($coordenadoresIds->isEmpty()) {
+                // Coordenadores
+                $coordenadoresEscola = User::where('escola_id', $escolaId)
+                    ->whereHas('cargos', function ($query) {
+                        $query->where('nome', 'like', '%Coordenador%')
+                              ->orWhere('tipo_cargo', 'coordenador');
+                    })
+                    ->pluck('id');
+                
+                $coordenadoresIds = $coordenadoresIds->merge($coordenadoresEscola);
+
+                // Administradores (apenas no fallback)
+                $admins = User::where('escola_id', $escolaId)
+                    ->whereHas('cargos', function ($query) {
+                        $query->where('nome', 'like', '%Administrador%')
+                              ->orWhere('tipo_cargo', 'admin');
+                    })
+                    ->pluck('id');
+                
+                $coordenadoresIds = $coordenadoresIds->merge($admins);
+            }
+            
+            // Garantir unicidade
+            $destinatarios = $coordenadoresIds->unique();
+
+            foreach ($destinatarios as $userId) {
+                // Evitar notificar o próprio autor se ele for coordenador/admin
+                if ($userId == $planejamento->user_id) {
+                    continue;
+                }
+
+                \App\Models\Notification::createForUser(
+                    $userId,
+                    'info',
+                    'Planejamento para Revisão',
+                    'O professor ' . ($planejamento->user ? $planejamento->user->name : 'N/A') . 
+                    ' enviou um planejamento para revisão (' . ($turma ? $turma->nome : 'N/A') . ').',
+                    [
+                        'planejamento_id' => $planejamento->id,
+                        'turma_id' => $turma ? $turma->id : null
+                    ],
+                    route('planejamentos.show', $planejamento),
+                    'Revisar Planejamento'
+                );
+            }
+
+        } catch (\Exception $e) {
+            // Silenciar erro de notificação para não bloquear o fluxo principal
+            Log::error('Erro ao notificar coordenadores: ' . $e->getMessage());
         }
     }
 }

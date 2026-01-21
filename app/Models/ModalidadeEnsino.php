@@ -12,6 +12,7 @@ class ModalidadeEnsino extends Model
     protected $table = 'modalidades_ensino';
 
     protected $fillable = [
+        'id',
         'codigo',
         'nome',
         'nivel',
@@ -92,7 +93,12 @@ class ModalidadeEnsino extends Model
      */
     public function configuracaoEscola(): HasMany
     {
-        return $this->hasMany(EscolaModalidadeConfig::class, 'modalidade_ensino_id');
+        if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
+            return $this->hasMany(EscolaModalidadeConfig::class, 'modalidade_ensino_id');
+        } else {
+            return $this->hasMany(EscolaModalidadeConfig::class, 'modalidade_ensino_id', 'escola_id', auth()->user()->escola_id);
+        }
+
     }
 
     /**

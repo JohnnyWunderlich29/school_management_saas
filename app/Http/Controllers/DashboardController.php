@@ -17,6 +17,7 @@ use App\Models\Conversa;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -36,7 +37,7 @@ class DashboardController extends Controller
             'is_super_admin' => auth()->user()->isSuperAdmin(),
             'url' => request()->url()
         ]);
-        
+
         // Período Analytics: persistência em sessão, limite 6 meses, default 30 dias
         $clearPeriodo = $request->boolean('clear_periodo');
         if ($clearPeriodo) {
@@ -46,8 +47,12 @@ class DashboardController extends Controller
         $inicioInput = $request->input('inicio', Session::get('dashboard_analytics_inicio'));
         $fimInput = $request->input('fim', Session::get('dashboard_analytics_fim'));
 
-        if ($inicioInput && !$fimInput) { $fimInput = $inicioInput; }
-        if ($fimInput && !$inicioInput) { $inicioInput = $fimInput; }
+        if ($inicioInput && !$fimInput) {
+            $fimInput = $inicioInput;
+        }
+        if ($fimInput && !$inicioInput) {
+            $inicioInput = $fimInput;
+        }
 
         $clamped = false;
         // Se limpar, restaurar mês atual como padrão
@@ -62,7 +67,9 @@ class DashboardController extends Controller
                 $fim = Carbon::today()->endOfDay();
                 $inicio = $fim->copy()->subDays(29)->startOfDay();
             }
-            if ($inicio->gt($fim)) { [$inicio, $fim] = [$fim, $inicio]; }
+            if ($inicio->gt($fim)) {
+                [$inicio, $fim] = [$fim, $inicio];
+            }
 
             // Limitar fim a no máximo 6 meses após início
             $limitEnd = $inicio->copy()->addMonths(6)->endOfDay();
@@ -81,14 +88,14 @@ class DashboardController extends Controller
         Session::put('dashboard_analytics_fim', $fim->toDateString());
 
         $hoje = Carbon::today();
-        
+
         // Determinar escola_id baseado no tipo de usuário
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             $escolaId = session('escola_atual') ?: auth()->user()->escola_id;
         } else {
             $escolaId = auth()->user()->escola_id;
         }
-        
+
         \Log::info('DEBUG DASHBOARD - Escola ID para filtros', [
             'escola_id_filtro' => $escolaId,
             'is_super_admin' => auth()->user()->isSuperAdmin(),
@@ -100,10 +107,10 @@ class DashboardController extends Controller
             'totalFuncionarios' => Funcionario::ativos()->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))->count(),
             'totalSalas' => Sala::ativas()->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))->count(),
         ]);
-        
+
         // Estatísticas de presenças do dia usando scopes
         $presencasEstatisticas = Presenca::hoje()
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->whereHas('aluno', fn($query) => $query->where('escola_id', $escolaId));
             })
             ->selectRaw('
@@ -112,17 +119,17 @@ class DashboardController extends Controller
                 SUM(CASE WHEN presente = false THEN 1 ELSE 0 END) as ausentes
             ')
             ->first();
-        
+
         $presencasHoje = $presencasEstatisticas->total_presencas ?? 0;
         $faltasHoje = $presencasEstatisticas->ausentes ?? 0;
-        
+
         // Escalas do dia
         $escalasHoje = Escala::where('data', $hoje)
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->whereHas('funcionario', fn($query) => $query->where('escola_id', $escolaId));
             })
             ->count();
-        
+
         // Últimos 5 alunos cadastrados usando scope
         $ultimosAlunos = Aluno::ativos()
             ->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
@@ -130,10 +137,10 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
-        
+
         // Presenças do dia usando scopes
         $presencasDoDia = Presenca::hoje()
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->whereHas('aluno', fn($query) => $query->where('escola_id', $escolaId));
             })
             ->comRelacionamentos()
@@ -141,7 +148,7 @@ class DashboardController extends Controller
             ->orderBy('hora_entrada', 'desc')
             ->limit(10)
             ->get();
-        
+
         // Dados analíticos para gráficos (usar período unificado)
         $dadosAnaliticos = $this->getDadosAnaliticos($inicio, $fim);
 
@@ -167,215 +174,279 @@ class DashboardController extends Controller
         // - Pendentes: total - recebido (considerando due_date do mês)
         // - Dinheiro/Gateway: apenas sobre as recebidas, dividido por método do pagamento
 
-        // Total faturado no mês (por due_date)
-        $totalFaturadoMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-            ->whereBetween('due_date', [$inicioMes, $fimMes])
-            ->sum('total_cents');
-
-        // Recebido no mês (por mês de pagamento): usar invoices com status 'paid' e paid_at no mês
-        $receitasRecebidasMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-            ->where('status', 'paid')
-            ->whereNotNull('paid_at')
-            ->whereBetween('paid_at', [$inicioMes, $fimMes])
-            ->sum('total_cents');
-
-        // Pendentes no mês (por due_date): faturas não pagas nem canceladas
-        $receitasPendentesMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-            ->whereBetween('due_date', [$inicioMes, $fimMes])
-            ->whereNotIn('status', ['paid','canceled'])
-            ->sum('total_cents');
-
-        // Receitas recebidas por método (dinheiro vs gateway) no mês por due_date da fatura
+        // Período Financeiro (mês selecionado ou atual)
         $cashMethods = ['dinheiro', 'cash'];
         $gatewayMethods = ['pix', 'boleto', 'card', 'cartao', 'cartao_credito', 'credit_card'];
-        $receitaDinheiroCents = Payment::whereBetween('paid_at', [$inicioMes, $fimMes])
-            ->whereIn(DB::raw('LOWER(status)'), ['received','confirmed'])
-            ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $cashMethods))
-            ->whereHas('invoice', function($q) use ($escolaId) { if ($escolaId) $q->where('school_id', $escolaId); })
-            ->sum('net_amount_cents');
 
-        $receitaGatewayCents = Payment::whereBetween('paid_at', [$inicioMes, $fimMes])
-            ->whereIn(DB::raw('LOWER(status)'), ['received','confirmed'])
-            ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $gatewayMethods))
-            ->whereHas('invoice', function($q) use ($escolaId) { if ($escolaId) $q->where('school_id', $escolaId); })
-            ->sum('net_amount_cents');
+        // Cache key based on school and selected month
+        $cacheKey = "dashboard_finance_{$escolaId}_" . ($mes ?: Carbon::now()->format('Y-m'));
 
-        // Recebidos totais (independente de mês) por escola
-        $receitasRecebidasTotalCents = Payment::whereIn(DB::raw('LOWER(status)'), ['received','confirmed'])
-            ->whereHas('invoice', function($q) use ($escolaId) { if ($escolaId) $q->where('school_id', $escolaId); })
-            ->sum('net_amount_cents');
+        $financeData = Cache::remember($cacheKey, 300, function () use ($escolaId, $inicioMes, $fimMes, $cashMethods, $gatewayMethods) {
+            // Total faturado no mês (por due_date)
+            $totalFaturadoMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+                ->whereBetween('due_date', [$inicioMes, $fimMes])
+                ->sum('total_cents');
 
-        // Despesas do mês (liquidadas e pendentes)
-        $despesaMensalLiquidadas = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-            ->whereBetween('data', [$inicioMes, $fimMes])
-            ->where('status', 'liquidada')
-            ->sum('valor');
+            // Recebido no mês (por mês de pagamento): usar invoices com status 'paid' e paid_at no mês
+            $receitasRecebidasMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+                ->where('status', 'paid')
+                ->whereNotNull('paid_at')
+                ->whereBetween('paid_at', [$inicioMes, $fimMes])
+                ->sum('total_cents');
 
-        $despesaMensalPendentes = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-            ->whereBetween('data', [$inicioMes, $fimMes])
-            ->where('status', 'pendente')
-            ->sum('valor');
-
-        $valorInadimplenciaCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-            ->whereBetween('due_date', [$inicioMes, $fimMes])
-            ->whereDate('due_date', '<', Carbon::today())
-            ->whereNotIn('status', ['paid', 'canceled'])
-            ->sum('total_cents');
-
-        $taxaInadimplenciaPercentual = $totalFaturadoMesCents > 0
-            ? round(($valorInadimplenciaCents / $totalFaturadoMesCents) * 100, 1)
-            : 0;
-
-        // Série de inadimplência (últimos 7 dias): faturas que venceram em cada dia e não foram pagas
-        $diasUltimosSete = collect(range(0, 6))->map(fn($i) => Carbon::today()->subDays(6 - $i));
-        $serieInadimplencia = $diasUltimosSete->map(function($dia) use ($escolaId) {
-            $count = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-                ->whereDate('due_date', $dia->toDateString())
+            // Pendentes no mês (por due_date): faturas não pagas nem canceladas
+            $receitasPendentesMesCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+                ->whereBetween('due_date', [$inicioMes, $fimMes])
                 ->whereNotIn('status', ['paid', 'canceled'])
-                ->count();
-            return [ 'data' => $dia->toDateString(), 'valor' => (int) $count ];
+                ->sum('total_cents');
+
+            // Receitas recebidas por método (dinheiro vs gateway) no mês por due_date da fatura
+            $receitaDinheiroCents = Payment::whereBetween('paid_at', [$inicioMes, $fimMes])
+                ->whereIn(DB::raw('LOWER(status)'), ['received', 'confirmed'])
+                ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $cashMethods))
+                ->whereHas('invoice', function ($q) use ($escolaId) {
+                    if ($escolaId)
+                        $q->where('school_id', $escolaId);
+                })
+                ->sum('net_amount_cents');
+
+            $receitaGatewayCents = Payment::whereBetween('paid_at', [$inicioMes, $fimMes])
+                ->whereIn(DB::raw('LOWER(status)'), ['received', 'confirmed'])
+                ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $gatewayMethods))
+                ->whereHas('invoice', function ($q) use ($escolaId) {
+                    if ($escolaId)
+                        $q->where('school_id', $escolaId);
+                })
+                ->sum('net_amount_cents');
+
+            // Recebidos totais (independente de mês) por escola
+            $receitasRecebidasTotalCents = Payment::whereIn(DB::raw('LOWER(status)'), ['received', 'confirmed'])
+                ->whereHas('invoice', function ($q) use ($escolaId) {
+                    if ($escolaId)
+                        $q->where('school_id', $escolaId);
+                })
+                ->sum('net_amount_cents');
+
+            // Despesas do mês (liquidadas e pendentes)
+            $despesaMensalLiquidadas = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+                ->whereBetween('data', [$inicioMes, $fimMes])
+                ->where('status', 'liquidada')
+                ->sum('valor');
+
+            $despesaMensalPendentes = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+                ->whereBetween('data', [$inicioMes, $fimMes])
+                ->where('status', 'pendente')
+                ->sum('valor');
+
+            $valorInadimplenciaCents = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+                ->whereBetween('due_date', [$inicioMes, $fimMes])
+                ->whereDate('due_date', '<', Carbon::today())
+                ->whereNotIn('status', ['paid', 'canceled'])
+                ->sum('total_cents');
+
+            $taxaInadimplenciaPercentual = $totalFaturadoMesCents > 0
+                ? round(($valorInadimplenciaCents / $totalFaturadoMesCents) * 100, 1)
+                : 0;
+
+            return compact(
+                'totalFaturadoMesCents',
+                'receitasRecebidasMesCents',
+                'receitasPendentesMesCents',
+                'receitaDinheiroCents',
+                'receitaGatewayCents',
+                'receitasRecebidasTotalCents',
+                'despesaMensalLiquidadas',
+                'despesaMensalPendentes',
+                'valorInadimplenciaCents',
+                'taxaInadimplenciaPercentual'
+            );
         });
+
+        extract($financeData);
 
         // Tickets abertos (Conversas de suporte ativas)
         $ticketsQueryBase = Conversa::where('tipo', 'suporte')->where('ativo', true);
         if ($escolaId) {
-            // filtrar pela escola via participantes ou criador
-            $ticketsQueryBase = $ticketsQueryBase->where(function($q) use ($escolaId) {
-                $q->whereHas('participantes', function($qp) use ($escolaId) {
+            $ticketsQueryBase = $ticketsQueryBase->where(function ($q) use ($escolaId) {
+                $q->whereHas('participantes', function ($qp) use ($escolaId) {
                     $qp->where('users.escola_id', $escolaId);
-                })->orWhereHas('mensagens', function($qm) use ($escolaId) {
-                    $qm->whereHas('remetente', function($qr) use ($escolaId) {
+                })->orWhereHas('mensagens', function ($qm) use ($escolaId) {
+                    $qm->whereHas('remetente', function ($qr) use ($escolaId) {
                         $qr->where('escola_id', $escolaId);
                     });
                 });
             });
         }
         $ticketsAbertosCount = (clone $ticketsQueryBase)->count();
-        $serieTickets = $diasUltimosSete->map(function($dia) use ($ticketsQueryBase) {
-            $count = (clone $ticketsQueryBase)->whereDate('created_at', $dia->toDateString())->count();
-            return [ 'data' => $dia->toDateString(), 'valor' => (int) $count ];
+
+        // Séries para sparklines: usar últimos 12 meses + próximos 2 meses
+        $inicioPeriodo = Carbon::now()->startOfMonth()->subMonths(11);
+        $fimPeriodo = Carbon::now()->copy()->addMonths(2)->endOfMonth();
+
+        // Grouped queries for all series at once
+        $serieInadimplenciaRaw = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+            ->whereBetween('due_date', [Carbon::today()->subDays(6), Carbon::today()])
+            ->whereNotIn('status', ['paid', 'canceled'])
+            ->selectRaw('DATE(due_date) as data, COUNT(*) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieTicketsRaw = (clone $ticketsQueryBase)
+            ->whereBetween('created_at', [Carbon::today()->subDays(6), Carbon::today()])
+            ->selectRaw('DATE(created_at) as data, COUNT(*) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieReceitasRaw = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$inicioPeriodo, $fimPeriodo])
+            ->selectRaw('DATE(paid_at) as data, SUM(total_cents) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieReceitasDinheiroRaw = Payment::whereIn(DB::raw('LOWER(status)'), ['received', 'confirmed'])
+            ->whereBetween('paid_at', [$inicioPeriodo, $fimPeriodo])
+            ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $cashMethods))
+            ->whereHas('invoice', function ($q) use ($escolaId) {
+                if ($escolaId)
+                    $q->where('school_id', $escolaId);
+            })
+            ->selectRaw('DATE(paid_at) as data, SUM(net_amount_cents) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieReceitasGatewayRaw = Payment::whereIn(DB::raw('LOWER(status)'), ['received', 'confirmed'])
+            ->whereBetween('paid_at', [$inicioPeriodo, $fimPeriodo])
+            ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $gatewayMethods))
+            ->whereHas('invoice', function ($q) use ($escolaId) {
+                if ($escolaId)
+                    $q->where('school_id', $escolaId);
+            })
+            ->selectRaw('DATE(paid_at) as data, SUM(net_amount_cents) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieReceitasTotalRaw = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+            ->whereBetween('due_date', [$inicioPeriodo, $fimPeriodo])
+            ->selectRaw('DATE(due_date) as data, SUM(total_cents) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieReceitasPendentesRaw = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+            ->whereBetween('due_date', [$inicioPeriodo, $fimPeriodo])
+            ->whereNotIn('status', ['paid', 'canceled'])
+            ->selectRaw('DATE(due_date) as data, SUM(total_cents) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieDespesasLiquidadasRaw = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+            ->whereBetween('data', [$inicioPeriodo, $fimPeriodo])
+            ->where('status', 'liquidada')
+            ->selectRaw('DATE(data) as data, SUM(valor) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieDespesasPendentesRaw = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+            ->whereBetween('data', [$inicioPeriodo, $fimPeriodo])
+            ->where('status', 'pendente')
+            ->selectRaw('DATE(data) as data, SUM(valor) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        $serieDespesasTotalRaw = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+            ->whereBetween('data', [$inicioPeriodo, $fimPeriodo])
+            ->selectRaw('DATE(data) as data, SUM(valor) as valor')
+            ->groupBy('data')
+            ->toBase()
+            ->get()->pluck('valor', 'data');
+
+        // Helper to fill gaps for series
+        $fillGaps = function ($inicio, $fim, $rawData, $isCents = true) {
+            $serie = collect();
+            $cursor = $inicio->copy();
+            while ($cursor->lte($fim)) {
+                $dataStr = $cursor->toDateString();
+                $valor = $rawData->get($dataStr) ?? 0;
+                $serie->push([
+                    'data' => $dataStr,
+                    'valor' => $isCents ? (int) $valor : (float) $valor,
+                    'valor_cents' => $isCents ? (int) $valor : null
+                ]);
+                $cursor->addDay();
+            }
+            return $serie;
+        };
+
+        $diasUltimosSete = collect(range(0, 6))->map(fn($i) => Carbon::today()->subDays(6 - $i));
+        $serieInadimplencia = collect($diasUltimosSete)->map(fn($dia) => ['data' => $dia->toDateString(), 'valor' => (int) ($serieInadimplenciaRaw->get($dia->toDateString()) ?? 0)]);
+        $serieTickets = collect($diasUltimosSete)->map(fn($dia) => ['data' => $dia->toDateString(), 'valor' => (int) ($serieTicketsRaw->get($dia->toDateString()) ?? 0)]);
+
+        // MRR Series (continues to be calculated per month for the last 6 months)
+        $serieMrr = collect(range(0, 5))->map(function ($i) use ($escolaId) {
+            $inicio = Carbon::now()->startOfMonth()->subMonths(5 - $i);
+            $fim = (clone $inicio)->endOfMonth();
+            $total = Subscription::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
+                ->where(function ($q) use ($inicio, $fim) {
+                    $q->whereDate('start_at', '<=', $fim->toDateString())
+                        ->where(function ($qq) use ($inicio) {
+                            $qq->whereNull('end_at')->orWhereDate('end_at', '>=', $inicio->toDateString());
+                        });
+                })
+                ->where('status', 'active')
+                ->sum('amount_cents');
+            return ['mes' => $inicio->format('Y-m'), 'valor_cents' => (int) $total];
         });
 
-        // MRR: soma de amount_cents das assinaturas ativas da escola
+        // Fill gaps for long period series
+        $diasPeriodo = collect();
+        $cursor = $inicioPeriodo->copy();
+        while ($cursor->lte($fimPeriodo)) {
+            $diasPeriodo->push(clone $cursor);
+            $cursor->addDay();
+        }
+
+        $serieReceitas = $fillGaps($inicioPeriodo, $fimPeriodo, $serieReceitasRaw);
+        $serieReceitasDinheiro = $fillGaps($inicioPeriodo, $fimPeriodo, $serieReceitasDinheiroRaw);
+        $serieReceitasGateway = $fillGaps($inicioPeriodo, $fimPeriodo, $serieReceitasGatewayRaw);
+        $serieReceitasTotal = $fillGaps($inicioPeriodo, $fimPeriodo, $serieReceitasTotalRaw);
+        $serieReceitasPendentes = $fillGaps($inicioPeriodo, $fimPeriodo, $serieReceitasPendentesRaw);
+        $serieDespesasLiquidadas = $fillGaps($inicioPeriodo, $fimPeriodo, $serieDespesasLiquidadasRaw, false);
+        $serieDespesasPendentes = $fillGaps($inicioPeriodo, $fimPeriodo, $serieDespesasPendentesRaw, false);
+        $serieDespesas = $fillGaps($inicioPeriodo, $fimPeriodo, $serieDespesasTotalRaw, false);
+
+        // MRR total
         $mrrCents = Subscription::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
             ->where('status', 'active')
             ->sum('amount_cents');
 
-        // Histórico MRR (últimos 6 meses): assinaturas ativas em cada mês
-        $serieMrr = collect(range(0, 5))->map(function($i) use ($escolaId) {
-            $inicio = Carbon::now()->startOfMonth()->subMonths(5 - $i);
-            $fim = (clone $inicio)->endOfMonth();
-            $total = Subscription::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-                ->where(function($q) use ($inicio, $fim) {
-                    $q->whereDate('start_at', '<=', $fim->toDateString())
-                      ->where(function($qq) use ($inicio) {
-                          $qq->whereNull('end_at')->orWhereDate('end_at', '>=', $inicio->toDateString());
-                      });
-                })
-                ->where('status', 'active')
-                ->sum('amount_cents');
-            return [ 'mes' => $inicio->format('Y-m'), 'valor_cents' => (int) $total ];
-        });
-
-        // Método de pagamento predominante (mês atual)
+        // Método predominante (mês selecionado)
         $metodoPredominante = Payment::whereBetween('paid_at', [$inicioMes, $fimMes])
-            ->whereHas('invoice', function($q) use ($escolaId) {
-                if ($escolaId) $q->where('school_id', $escolaId);
+            ->whereHas('invoice', function ($q) use ($escolaId) {
+                if ($escolaId)
+                    $q->where('school_id', $escolaId);
             })
             ->select('method', DB::raw('COUNT(*) as total'))
             ->groupBy('method')
             ->orderByDesc('total')
             ->first();
 
-        $metodoPredominanteLabel = $metodoPredominante ? match(strtolower($metodoPredominante->method)) {
+        $metodoPredominanteLabel = $metodoPredominante ? match (strtolower($metodoPredominante->method)) {
             'pix' => 'PIX',
             'boleto' => 'Boleto',
             'cartao', 'cartao_credito', 'credit_card' => 'Cartão',
             default => ucfirst($metodoPredominante->method)
         } : '—';
 
-        // Séries para sparklines: usar últimos 12 meses + próximos 2 meses para permitir troca de mês (inclui futuros)
-        $diasPeriodo = collect();
-        $cursor = Carbon::now()->startOfMonth()->subMonths(11);
-        $fimPeriodo = Carbon::now()->copy()->addMonths(2)->endOfMonth();
-        while ($cursor->lte($fimPeriodo)) {
-            $diasPeriodo->push(clone $cursor);
-            $cursor->addDay();
-        }
-
-        // Séries de Receitas por paid_at (base em recebimentos via invoices)
-        // - Recebidas: somatório de invoices.total_cents com status 'paid' por paid_at do dia
-        // - Dinheiro/Gateway (abaixo): continuam por payments para quebra por método
-        // - Total faturado: somatório de invoices.total_cents por due_date
-        // - Pendentes (por due_date): faturas do dia não pagas nem canceladas
-
-        $serieReceitas = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $valor = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-                ->where('status', 'paid')
-                ->whereDate('paid_at', $dia->toDateString())
-                ->sum('total_cents');
-            return [ 'data' => $dia->toDateString(), 'valor_cents' => (int) $valor ];
-        });
-
-        $serieReceitasDinheiro = $diasPeriodo->map(function($dia) use ($escolaId, $cashMethods) {
-            $valor = Payment::whereIn(DB::raw('LOWER(status)'), ['received','confirmed'])
-                ->whereDate('paid_at', $dia->toDateString())
-                ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $cashMethods))
-                ->whereHas('invoice', function($q) use ($escolaId) { if ($escolaId) $q->where('school_id', $escolaId); })
-                ->sum('net_amount_cents');
-            return [ 'data' => $dia->toDateString(), 'valor_cents' => (int) $valor ];
-        });
-        
-        $serieReceitasGateway = $diasPeriodo->map(function($dia) use ($escolaId, $gatewayMethods) {
-            $valor = Payment::whereIn(DB::raw('LOWER(status)'), ['received','confirmed'])
-                ->whereDate('paid_at', $dia->toDateString())
-                ->whereIn(DB::raw('LOWER(method)'), array_map('strtolower', $gatewayMethods))
-                ->whereHas('invoice', function($q) use ($escolaId) { if ($escolaId) $q->where('school_id', $escolaId); })
-                ->sum('net_amount_cents');
-            return [ 'data' => $dia->toDateString(), 'valor_cents' => (int) $valor ];
-        });
-
-        $serieReceitasTotal = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $valor = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-                ->whereDate('due_date', $dia->toDateString())
-                ->sum('total_cents');
-            return [ 'data' => $dia->toDateString(), 'valor_cents' => (int) $valor ];
-        });
-
-        $serieReceitasPendentes = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $pend = Invoice::when($escolaId, fn($q) => $q->where('school_id', $escolaId))
-                ->whereDate('due_date', $dia->toDateString())
-                ->whereNotIn('status', ['paid','canceled'])
-                ->sum('total_cents');
-            return [ 'data' => $dia->toDateString(), 'valor_cents' => (int) $pend ];
-        });
-
-        $serieDespesasLiquidadas = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $valor = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-                ->whereDate('data', $dia->toDateString())
-                ->where('status', 'liquidada')
-                ->sum('valor');
-            return [ 'data' => $dia->toDateString(), 'valor' => (float) $valor ];
-        });
-
-        $serieDespesasPendentes = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $valor = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-                ->whereDate('data', $dia->toDateString())
-                ->where('status', 'pendente')
-                ->sum('valor');
-            return [ 'data' => $dia->toDateString(), 'valor' => (float) $valor ];
-        });
-
-        // Total diário (liq + pend)
-        $serieDespesas = $diasPeriodo->map(function($dia) use ($escolaId) {
-            $valorTotal = Despesa::when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-                ->whereDate('data', $dia->toDateString())
-                ->sum('valor');
-            return [ 'data' => $dia->toDateString(), 'valor' => (float) $valorTotal ];
-        });
-
         // Recebimentos pendentes (lista): a vencer e vencidos
-        // Incluir nome do responsável (payer) via joins e preparar dataset para filtro por mês no front-end
         $pendentesBase = Invoice::when($escolaId, fn($q) => $q->where('invoices.school_id', $escolaId))
             ->whereNotIn('invoices.status', ['paid', 'canceled'])
             ->leftJoin('subscriptions', 'invoices.subscription_id', '=', 'subscriptions.id')
@@ -386,8 +457,14 @@ class DashboardController extends Controller
             ->orderBy('invoices.due_date', 'asc')
             ->limit(8)
             ->get([
-                'invoices.id','invoices.number','invoices.due_date','invoices.total_cents','invoices.status','invoices.gateway_alias',
-                'responsaveis.nome as payer_nome','responsaveis.sobrenome as payer_sobrenome'
+                'invoices.id',
+                'invoices.number',
+                'invoices.due_date',
+                'invoices.total_cents',
+                'invoices.status',
+                'invoices.gateway_alias',
+                'responsaveis.nome as payer_nome',
+                'responsaveis.sobrenome as payer_sobrenome'
             ]);
 
         $pendentesVencidas = (clone $pendentesBase)
@@ -395,8 +472,14 @@ class DashboardController extends Controller
             ->orderBy('invoices.due_date', 'asc')
             ->limit(8)
             ->get([
-                'invoices.id','invoices.number','invoices.due_date','invoices.total_cents','invoices.status','invoices.gateway_alias',
-                'responsaveis.nome as payer_nome','responsaveis.sobrenome as payer_sobrenome'
+                'invoices.id',
+                'invoices.number',
+                'invoices.due_date',
+                'invoices.total_cents',
+                'invoices.status',
+                'invoices.gateway_alias',
+                'responsaveis.nome as payer_nome',
+                'responsaveis.sobrenome as payer_sobrenome'
             ]);
 
         $totalPendentesAVencerCents = (clone $pendentesBase)
@@ -406,15 +489,18 @@ class DashboardController extends Controller
             ->whereDate('invoices.due_date', '<', Carbon::today())
             ->sum('invoices.total_cents');
 
-        // Dataset bruto para filtro de mês (últimos 12 meses + próximos 2 meses)
-        $inicioPeriodo = Carbon::now()->startOfMonth()->subMonths(11);
-        $fimPeriodoPend = Carbon::now()->copy()->addMonths(2)->endOfMonth();
         $pendentesTodos = (clone $pendentesBase)
-            ->whereBetween('invoices.due_date', [$inicioPeriodo->toDateString(), $fimPeriodoPend->toDateString()])
+            ->whereBetween('invoices.due_date', [$inicioPeriodo->toDateString(), $fimPeriodo->toDateString()])
             ->orderBy('invoices.due_date', 'asc')
             ->get([
-                'invoices.id','invoices.number','invoices.due_date','invoices.total_cents','invoices.status','invoices.gateway_alias',
-                'responsaveis.nome as payer_nome','responsaveis.sobrenome as payer_sobrenome'
+                'invoices.id',
+                'invoices.number',
+                'invoices.due_date',
+                'invoices.total_cents',
+                'invoices.status',
+                'invoices.gateway_alias',
+                'responsaveis.nome as payer_nome',
+                'responsaveis.sobrenome as payer_sobrenome'
             ]);
 
         // Despesas pendentes (lista): a vencer e vencidas
@@ -425,13 +511,13 @@ class DashboardController extends Controller
             ->whereDate('data', '>=', Carbon::today())
             ->orderBy('data', 'asc')
             ->limit(8)
-            ->get(['id','descricao','categoria','data','valor','status']);
+            ->get(['id', 'descricao', 'categoria', 'data', 'valor', 'status']);
 
         $despesasPendVencidas = (clone $despesasPendentesBase)
             ->whereDate('data', '<', Carbon::today())
             ->orderBy('data', 'asc')
             ->limit(8)
-            ->get(['id','descricao','categoria','data','valor','status']);
+            ->get(['id', 'descricao', 'categoria', 'data', 'valor', 'status']);
 
         $totalDespesasPendAVencer = (clone $despesasPendentesBase)
             ->whereDate('data', '>=', Carbon::today())
@@ -440,11 +526,10 @@ class DashboardController extends Controller
             ->whereDate('data', '<', Carbon::today())
             ->sum('valor');
 
-        // Dataset bruto para filtro de mês (últimos 12 meses + próximos 2 meses)
         $despesasPendTodos = (clone $despesasPendentesBase)
-            ->whereBetween('data', [$inicioPeriodo->toDateString(), $fimPeriodoPend->toDateString()])
+            ->whereBetween('data', [$inicioPeriodo->toDateString(), $fimPeriodo->toDateString()])
             ->orderBy('data', 'asc')
-            ->get(['id','descricao','categoria','data','valor','status']);
+            ->get(['id', 'descricao', 'categoria', 'data', 'valor', 'status']);
 
         // Se for AJAX, retornar JSON com os dados analíticos e metadados do período
         if ($request->ajax() || $request->boolean('ajax')) {
@@ -461,7 +546,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'totalAlunos' => $estatisticas['totalAlunos'],
-            'totalResponsaveis' => $estatisticas['totalResponsaveis'], 
+            'totalResponsaveis' => $estatisticas['totalResponsaveis'],
             'totalFuncionarios' => $estatisticas['totalFuncionarios'],
             'totalSalas' => $estatisticas['totalSalas'],
             'presencasHoje' => $presencasHoje,
@@ -516,7 +601,7 @@ class DashboardController extends Controller
             'despesasPendTodos' => $despesasPendTodos,
         ]);
     }
-    
+
     /**
      * Coleta dados analíticos para o dashboard
      */
@@ -532,17 +617,17 @@ class DashboardController extends Controller
         $fimTrinta = $fim;
         $ultimosQuinze = $inicio;
         $fimQuinze = $fim;
-        
+
         // Determinar escola_id baseado no tipo de usuário
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             $escolaId = session('escola_atual') ?: auth()->user()->escola_id;
         } else {
             $escolaId = auth()->user()->escola_id;
         }
-        
+
         // Gráfico de presenças em período selecionado (ou últimos 7 dias)
         $presencasPorDia = Presenca::whereBetween('data', [$ultimosSete->toDateString(), $fimSete->toDateString()])
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->whereHas('aluno', fn($query) => $query->where('escola_id', $escolaId));
             })
             ->selectRaw('DATE(data) as dia, COUNT(*) as total, SUM(CASE WHEN presente = true THEN 1 ELSE 0 END) as presentes')
@@ -560,7 +645,7 @@ class DashboardController extends Controller
         // Presenças por sala no período (usando presencas.sala_id para manter histórico)
         $presencasPorSala = Presenca::whereBetween('data', [$ultimosSete->toDateString(), $fimSete->toDateString()])
             ->join('salas', 'presencas.sala_id', '=', 'salas.id')
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->where('salas.escola_id', $escolaId);
             })
             ->whereNotNull('presencas.sala_id')
@@ -577,43 +662,43 @@ class DashboardController extends Controller
         $professoresBase = Funcionario::ativos()
             ->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
             ->withCount([
-                'escalas as total_escalas' => function($query) use ($ultimosTrinta, $fimTrinta) {
+                'escalas as total_escalas' => function ($query) use ($ultimosTrinta, $fimTrinta) {
                     $query->whereBetween('data', [$ultimosTrinta->toDateString(), $fimTrinta->toDateString()]);
                 },
-                'presencasRegistradas as presencas_registradas' => function($query) use ($ultimosTrinta, $fimTrinta) {
+                'presencasRegistradas as presencas_registradas' => function ($query) use ($ultimosTrinta, $fimTrinta) {
                     $query->whereBetween('data', [$ultimosTrinta->toDateString(), $fimTrinta->toDateString()]);
                 }
             ])
             ->get();
 
-        $professoresComAtividade = $professoresBase->filter(function($funcionario) {
+        $professoresComAtividade = $professoresBase->filter(function ($funcionario) {
             return $funcionario->total_escalas > 0;
         });
         $totalProfessoresComAtividade = $professoresComAtividade->count();
         $desempenhoProfessores = $professoresComAtividade->sortByDesc('total_escalas')->take(5);
-        
+
         // Alertas de baixa frequência (período selecionado)
         $ultimosQuinze = $inicio;
         $fimQuinze = $fim;
         $alertasBaixaFrequencia = Aluno::ativos()
             ->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
             ->withCount([
-                'presencas as total_registros' => function($query) use ($ultimosQuinze, $fimQuinze) {
+                'presencas as total_registros' => function ($query) use ($ultimosQuinze, $fimQuinze) {
                     $query->whereBetween('data', [$ultimosQuinze->toDateString(), $fimQuinze->toDateString()]);
                 },
-                'presencas as presencas_confirmadas' => function($query) use ($ultimosQuinze, $fimQuinze) {
+                'presencas as presencas_confirmadas' => function ($query) use ($ultimosQuinze, $fimQuinze) {
                     $query->whereBetween('data', [$ultimosQuinze->toDateString(), $fimQuinze->toDateString()])
-                          ->where('presente', true);
+                        ->where('presente', true);
                 }
             ])
             ->get()
-            ->map(function($aluno) {
+            ->map(function ($aluno) {
                 $total = (int) ($aluno->total_registros ?? 0);
                 $confirmadas = (int) ($aluno->presencas_confirmadas ?? 0);
                 $aluno->frequencia = $total > 0 ? round(($confirmadas / $total) * 100, 1) : 0.0;
                 return $aluno;
             })
-            ->filter(function($aluno) {
+            ->filter(function ($aluno) {
                 return ($aluno->total_registros ?? 0) > 0 && ($aluno->frequencia ?? 0) < 70;
             })
             ->sortBy('frequencia')
@@ -622,26 +707,26 @@ class DashboardController extends Controller
 
         // Taxa de presença geral (período selecionado)
         $taxaPresencaGeral = Presenca::whereBetween('data', [$inicio->toDateString(), $fim->toDateString()])
-            ->when($escolaId, function($q) use ($escolaId) {
+            ->when($escolaId, function ($q) use ($escolaId) {
                 $q->whereHas('aluno', fn($query) => $query->where('escola_id', $escolaId));
             })
             ->selectRaw('COUNT(*) as total, SUM(CASE WHEN presente = true THEN 1 ELSE 0 END) as presentes')
             ->first();
-        
-        $taxaPresencaPercentual = $taxaPresencaGeral->total > 0 ? 
+
+        $taxaPresencaPercentual = $taxaPresencaGeral->total > 0 ?
             round(($taxaPresencaGeral->presentes / $taxaPresencaGeral->total) * 100, 1) : 0;
-        
+
         // Normalizar série de dias garantindo presença de todos os dias do período
         $periodoInicio = $ultimosSete->copy();
         $periodoFim = $fimSete->copy();
         $diasSerie = collect();
         $cursor = $periodoInicio->copy();
         while ($cursor->lte($periodoFim)) {
-            $diasSerie->push((object) [ 'data' => $cursor->toDateString(), 'total' => 0, 'presentes' => 0 ]);
+            $diasSerie->push((object) ['data' => $cursor->toDateString(), 'total' => 0, 'presentes' => 0]);
             $cursor->addDay();
         }
         $presencasPorDiaIndex = $presencasPorDia->keyBy('data');
-        $presencasPorDiaNormalizado = $diasSerie->map(function($dia) use ($presencasPorDiaIndex) {
+        $presencasPorDiaNormalizado = $diasSerie->map(function ($dia) use ($presencasPorDiaIndex) {
             if ($presencasPorDiaIndex->has($dia->data)) {
                 $reg = $presencasPorDiaIndex->get($dia->data);
                 return (object) [

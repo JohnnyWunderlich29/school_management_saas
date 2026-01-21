@@ -257,6 +257,7 @@ class ConfiguracaoEducacionalController extends Controller
      */
     public function aplicarTemplatesBncc(Request $request, Escola $escola)
     {
+        dd($request->all());
         // Verificar acesso à escola
         $this->verificarAcessoEscola($escola->id);
 

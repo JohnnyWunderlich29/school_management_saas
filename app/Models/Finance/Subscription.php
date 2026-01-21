@@ -22,7 +22,11 @@ class Subscription extends Model
         'start_at',
         'end_at',
         'discount_percent',
+        'early_discount_value',
+        'early_discount_days',
+        'early_discount_active',
         'notes',
+        'last_billed_at',
     ];
 
     protected $casts = [
@@ -31,6 +35,10 @@ class Subscription extends Model
         'discount_percent' => 'integer',
         'amount_cents' => 'integer',
         'day_of_month' => 'integer',
+        'last_billed_at' => 'date',
+        'early_discount_active' => 'boolean',
+        'early_discount_value' => 'integer',
+        'early_discount_days' => 'integer',
     ];
 
     public function payer()

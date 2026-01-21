@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Finance;
 use App\Models\Finance\FinanceGateway;
 use App\Models\Finance\FinanceSettings;
 use App\Models\Finance\MailSettings;
+use App\Models\Finance\BillingAutomation;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Validator;
@@ -20,12 +21,15 @@ class FinanceAdminController extends Controller
     {
         $user = $request->user();
         if ($user) {
-            if (isset($user->escola_id) && $user->escola_id) return (int) $user->escola_id;
-            if (isset($user->school_id) && $user->school_id) return (int) $user->school_id;
+            if (isset($user->escola_id) && $user->escola_id)
+                return (int) $user->escola_id;
+            if (isset($user->school_id) && $user->school_id)
+                return (int) $user->school_id;
         }
         // Fallback para escola selecionada em sessão (suporte/superadmin via escola-switcher)
         $sessionSchool = session('escola_atual');
-        if ($sessionSchool) return (int) $sessionSchool;
+        if ($sessionSchool)
+            return (int) $sessionSchool;
 
         // Último recurso: parâmetro explícito na requisição
         $schoolId = $request->input('school_id') ?? $request->input('escola_id');
@@ -41,7 +45,11 @@ class FinanceAdminController extends Controller
         $settings = FinanceSettings::firstOrCreate(['school_id' => $schoolId], ['currency' => 'BRL']);
         $gateways = FinanceGateway::where('school_id', $schoolId)->orderBy('alias')->get();
         $financeEnv = config('features.finance_env', 'production');
-        return view('finance.settings', compact('settings', 'gateways', 'financeEnv'));
+        $automation = BillingAutomation::firstOrCreate(
+            ['school_id' => $schoolId],
+            ['name' => 'Automação Padrão', 'days_advance' => 5, 'consolidate_default' => true, 'active' => true]
+        );
+        return view('finance.settings', compact('settings', 'gateways', 'financeEnv', 'automation'));
     }
 
     public function saveSettings(Request $request)
@@ -60,6 +68,9 @@ class FinanceAdminController extends Controller
             'allowed_payment_methods' => 'nullable|array',
             'dunning_schedule' => 'nullable|array',
             'timezone' => 'nullable|string|max:64',
+            'automation_active' => 'nullable|boolean',
+            'automation_days_advance' => 'nullable|integer|min:1|max:60',
+            'automation_consolidate' => 'nullable|boolean',
         ]);
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -73,12 +84,12 @@ class FinanceAdminController extends Controller
         }
         // Montar penalty_policy como JSON
         $penalty = [
-            'fine_percent' => $request->input('fine_percent') !== null ? (float)$request->input('fine_percent') : null,
-            'daily_interest_percent' => $request->input('daily_interest_percent') !== null ? (float)$request->input('daily_interest_percent') : null,
-            'grace_days' => $request->input('grace_days') !== null ? (int)$request->input('grace_days') : null,
+            'fine_percent' => $request->input('fine_percent') !== null ? (float) $request->input('fine_percent') : null,
+            'daily_interest_percent' => $request->input('daily_interest_percent') !== null ? (float) $request->input('daily_interest_percent') : null,
+            'grace_days' => $request->input('grace_days') !== null ? (int) $request->input('grace_days') : null,
         ];
         if ($request->filled('max_interest_percent')) {
-            $penalty['max_interest_percent'] = (float)$request->input('max_interest_percent');
+            $penalty['max_interest_percent'] = (float) $request->input('max_interest_percent');
         }
         $settings->penalty_policy = $penalty;
 
@@ -97,15 +108,15 @@ class FinanceAdminController extends Controller
             // enabled
             $schedule['enabled'] = !empty($schedule['enabled']);
             // dias da semana
-            $validDays = ['seg','ter','qua','qui','sex','sab','dom'];
+            $validDays = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
             $days = isset($schedule['days_of_week']) && is_array($schedule['days_of_week']) ? $schedule['days_of_week'] : [];
             $schedule['days_of_week'] = array_values(array_intersect($validDays, array_map('strtolower', $days)));
             // time windows
             $windows = isset($schedule['time_windows']) && is_array($schedule['time_windows']) ? $schedule['time_windows'] : [];
             $normWindows = [];
             foreach ($windows as $w) {
-                $start = isset($w['start']) ? (string)$w['start'] : null;
-                $end = isset($w['end']) ? (string)$w['end'] : null;
+                $start = isset($w['start']) ? (string) $w['start'] : null;
+                $end = isset($w['end']) ? (string) $w['end'] : null;
                 if ($start && $end) {
                     $normWindows[] = ['start' => $start, 'end' => $end];
                 }
@@ -120,7 +131,8 @@ class FinanceAdminController extends Controller
                 if (is_string($pre)) {
                     $pre = array_filter(array_map('intval', preg_split('/[,\s]+/', $pre)));
                 }
-                if (!is_array($pre)) $pre = [];
+                if (!is_array($pre))
+                    $pre = [];
                 $schedule['pre_due_offsets'] = array_values($pre);
             }
             // due_day
@@ -131,21 +143,30 @@ class FinanceAdminController extends Controller
                 if (is_string($post)) {
                     $post = array_filter(array_map('intval', preg_split('/[,\s]+/', $post)));
                 }
-                if (!is_array($post)) $post = [];
+                if (!is_array($post))
+                    $post = [];
                 $schedule['overdue_offsets'] = array_values($post);
             }
             // channels
-            $allowedChannels = ['email','whatsapp'];
+            $allowedChannels = ['email', 'whatsapp'];
             $channels = isset($schedule['channels']) && is_array($schedule['channels']) ? $schedule['channels'] : [];
             $schedule['channels'] = array_values(array_intersect($allowedChannels, $channels));
             // throttle_per_run
-            $thr = isset($schedule['throttle_per_run']) ? (int)$schedule['throttle_per_run'] : null;
+            $thr = isset($schedule['throttle_per_run']) ? (int) $schedule['throttle_per_run'] : null;
             $schedule['throttle_per_run'] = max(1, $thr ?: 50);
 
             $settings->dunning_schedule = $schedule;
         }
 
         $settings->save();
+
+        // Salvar Automação
+        $automation = BillingAutomation::firstOrCreate(['school_id' => $schoolId]);
+        $automation->active = $request->has('automation_active');
+        $automation->days_advance = $request->input('automation_days_advance', 5);
+        $automation->consolidate_default = $request->has('automation_consolidate');
+        $automation->save();
+
         AlertService::success('Configurações salvas com sucesso.');
         return redirect()->route('finance.settings');
     }
@@ -190,10 +211,12 @@ class FinanceAdminController extends Controller
 
         // Normaliza alias e força mapeamento pelo provedor
         $alias = strtolower($data['alias']);
-        if ($alias === 'assas') { $alias = 'asaas'; }
+        if ($alias === 'assas') {
+            $alias = 'asaas';
+        }
 
         $gateway->name = $data['name'] ?? null;
-        $gateway->active = isset($data['active']) ? (bool)$data['active'] : true;
+        $gateway->active = isset($data['active']) ? (bool) $data['active'] : true;
         $gateway->environment = $data['environment'] ?? 'production';
         if (!empty($data['webhook_secret'])) {
             $gateway->webhook_secret = $data['webhook_secret'];
@@ -202,8 +225,10 @@ class FinanceAdminController extends Controller
             try {
                 $creds = json_decode($data['credentials_json'], true) ?: [];
                 // Se o provedor foi selecionado na UI, vincula alias automaticamente
-                $provider = strtolower((string)($creds['provider'] ?? ''));
-                if ($provider === 'asaas') { $alias = 'asaas'; }
+                $provider = strtolower((string) ($creds['provider'] ?? ''));
+                if ($provider === 'asaas') {
+                    $alias = 'asaas';
+                }
                 $gateway->credentials = $creds;
             } catch (\Throwable $e) {
                 // ignora erro e não salva credenciais
@@ -253,10 +278,14 @@ class FinanceAdminController extends Controller
         }
         $gateway = FinanceGateway::where('school_id', $schoolId)->findOrFail($id);
         $data = $validator->validated();
-        if (array_key_exists('name', $data)) $gateway->name = $data['name'];
-        if (array_key_exists('active', $data)) $gateway->active = (bool)$data['active'];
-        if (array_key_exists('environment', $data)) $gateway->environment = $data['environment'] ?? 'production';
-        if (array_key_exists('webhook_secret', $data)) $gateway->webhook_secret = $data['webhook_secret'];
+        if (array_key_exists('name', $data))
+            $gateway->name = $data['name'];
+        if (array_key_exists('active', $data))
+            $gateway->active = (bool) $data['active'];
+        if (array_key_exists('environment', $data))
+            $gateway->environment = $data['environment'] ?? 'production';
+        if (array_key_exists('webhook_secret', $data))
+            $gateway->webhook_secret = $data['webhook_secret'];
         if (!empty($data['credentials_json'])) {
             try {
                 $creds = json_decode($data['credentials_json'], true) ?: [];
@@ -431,11 +460,16 @@ class FinanceAdminController extends Controller
         $ms = MailSettings::firstOrCreate(['school_id' => $schoolId]);
         $data = $validator->validated();
         $ms->provider = $data['provider'];
-        if (array_key_exists('sending_domain', $data)) $ms->sending_domain = $data['sending_domain'];
-        if (array_key_exists('from_email', $data)) $ms->from_email = $data['from_email'];
-        if (array_key_exists('from_name', $data)) $ms->from_name = $data['from_name'];
-        if (array_key_exists('reply_to_email', $data)) $ms->reply_to_email = $data['reply_to_email'];
-        if (array_key_exists('active', $data)) $ms->active = (bool) $data['active'];
+        if (array_key_exists('sending_domain', $data))
+            $ms->sending_domain = $data['sending_domain'];
+        if (array_key_exists('from_email', $data))
+            $ms->from_email = $data['from_email'];
+        if (array_key_exists('from_name', $data))
+            $ms->from_name = $data['from_name'];
+        if (array_key_exists('reply_to_email', $data))
+            $ms->reply_to_email = $data['reply_to_email'];
+        if (array_key_exists('active', $data))
+            $ms->active = (bool) $data['active'];
         if (!empty($data['credentials_json'])) {
             try {
                 $creds = json_decode($data['credentials_json'], true) ?: [];
@@ -477,7 +511,8 @@ class FinanceAdminController extends Controller
             $ms->dns_requirements = $requirements;
             $ms->dns_status = $status;
             $ms->last_checked_at = now();
-            $ms->verified = collect($status)->every(function ($r) { return !empty($r['ok']); });
+            $ms->verified = collect($status)->every(function ($r) {
+                return !empty($r['ok']); });
             $ms->save();
             return response()->json([
                 'verified' => $ms->verified,
@@ -538,7 +573,8 @@ class FinanceAdminController extends Controller
     private function extractRootDomain(string $domain): string
     {
         $parts = explode('.', $domain);
-        if (count($parts) <= 2) return $domain;
+        if (count($parts) <= 2)
+            return $domain;
         return implode('.', array_slice($parts, -2));
     }
 
@@ -546,13 +582,15 @@ class FinanceAdminController extends Controller
     {
         $results = [];
         foreach ($requirements as $req) {
-            $ok = false; $found = [];
+            $ok = false;
+            $found = [];
             try {
                 switch ($req['type']) {
                     case 'TXT':
                         $records = dns_get_record($req['name'], DNS_TXT) ?: [];
                         foreach ($records as $r) {
-                            if (!empty($r['txt'])) $found[] = $r['txt'];
+                            if (!empty($r['txt']))
+                                $found[] = $r['txt'];
                         }
                         foreach ($found as $txt) {
                             if (stripos($txt, 'v=spf1') === 0 && stripos($req['expected'], 'v=spf1') === 0) {
@@ -567,14 +605,16 @@ class FinanceAdminController extends Controller
                     case 'CNAME':
                         $records = dns_get_record($req['name'], DNS_CNAME) ?: [];
                         foreach ($records as $r) {
-                            if (!empty($r['target'])) $found[] = rtrim($r['target'], '.');
+                            if (!empty($r['target']))
+                                $found[] = rtrim($r['target'], '.');
                         }
                         $ok = in_array(rtrim($req['expected'], '.'), $found, true);
                         break;
                     case 'MX':
                         $records = dns_get_record($req['name'], DNS_MX) ?: [];
                         foreach ($records as $r) {
-                            if (!empty($r['target'])) $found[] = rtrim($r['target'], '.');
+                            if (!empty($r['target']))
+                                $found[] = rtrim($r['target'], '.');
                         }
                         $expected = (array) $req['expected'];
                         $ok = empty(array_diff($expected, $found)) && empty(array_diff($found, $expected));
@@ -617,7 +657,7 @@ class FinanceAdminController extends Controller
         $validator = Validator::make($request->all(), [
             'test_email' => 'required|email',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -625,12 +665,12 @@ class FinanceAdminController extends Controller
                 'message' => 'E-mail inválido',
             ], 422);
         }
-    
+
         $email = $request->input('test_email');
-    
+
         try {
             Mail::to($email)->send(new TestDunningEmail($schoolId));
-    
+
             return response()->json([
                 'success' => true,
                 'message' => 'E-mail de teste enviado com sucesso.',
@@ -639,7 +679,7 @@ class FinanceAdminController extends Controller
             Log::error('Falha ao enviar e-mail de teste de cobranças', [
                 'error' => $e->getMessage(),
             ]);
-    
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao enviar e-mail de teste.',

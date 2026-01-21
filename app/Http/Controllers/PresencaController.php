@@ -30,27 +30,27 @@ class PresencaController extends Controller
             // Por padrÃ£o, mostrar presenÃ§as do dia atual
             $dataInicio = $dataFim = Carbon::today()->format('Y-m-d');
         }
-        
+
         // Verificar se o usuÃ¡rio Ã© superadmin ou suporte
         $user = auth()->user();
         $isSuperAdminOrSupport = $user->isSuperAdmin() || $user->hasRole('suporte');
-        
+
         // Determinar a escola atual
-        $escolaId = $isSuperAdminOrSupport && session('escola_atual') 
-            ? session('escola_atual') 
+        $escolaId = $isSuperAdminOrSupport && session('escola_atual')
+            ? session('escola_atual')
             : $user->escola_id;
-            
+
         // Base de salas (sem join com alunos): estatÃ­sticas serÃ£o calculadas via GradeAula->turma
         $salasQuery = \App\Models\Sala::withoutGlobalScope('escola')
             ->select('salas.*');
-            
+
         // Aplicar filtro de escola apenas se nÃ£o for superadmin ou suporte, ou se tiver uma escola selecionada
         if (!$isSuperAdminOrSupport || $escolaId) {
             $salasQuery->where('salas.escola_id', $escolaId);
         }
-        
+
         $salasQuery->where('salas.ativo', true);
-        
+
         // Aplicar filtros de sala se necessÃ¡rio
         if ($request->has('sala_id')) {
             $salasQuery->where('salas.id', $request->sala_id);
@@ -88,7 +88,7 @@ class PresencaController extends Controller
         }
 
         // Transformer para calcular estatÃ­sticas por sala via turmas agendadas (GradeAula)
-        $calcEstatisticasSala = function($sala) use ($datasPeriodo, $diaSemanaMap, $dataInicio, $dataFim, $diasPeriodo, $escolaId) {
+        $calcEstatisticasSala = function ($sala) use ($datasPeriodo, $diaSemanaMap, $dataInicio, $dataFim, $diasPeriodo, $escolaId) {
             // Coletar turmas agendadas na sala no perÃ­odo
             $turmaIds = collect();
             foreach ($datasPeriodo as $dataCarbon) {
@@ -101,8 +101,8 @@ class PresencaController extends Controller
                 $gradesDia = \App\Models\GradeAula::where('sala_id', $sala->id)
                     ->where('ativo', true)
                     ->where('dia_semana', $diaSlug)
-                    ->when($escolaId, function($q) use ($escolaId) {
-                        $q->whereHas('turma', function($qt) use ($escolaId) {
+                    ->when($escolaId, function ($q) use ($escolaId) {
+                        $q->whereHas('turma', function ($qt) use ($escolaId) {
                             $qt->where('escola_id', $escolaId);
                         });
                     })
@@ -174,30 +174,30 @@ class PresencaController extends Controller
             // Calcular estatÃ­sticas somente para a pÃ¡gina atual
             $salasComEstatisticas->getCollection()->transform($calcEstatisticasSala);
         }
-        
+
         // Carregar dados para os selects (apenas quando necessÃ¡rio)
         $alunosQuery = Aluno::select('id', 'nome', 'sobrenome')->where('ativo', true);
         $funcionariosQuery = Funcionario::select('id', 'nome', 'sobrenome')->where('ativo', true);
         $todasSalasQuery = \App\Models\Sala::select('id', 'codigo', 'nome')->where('ativo', true);
-        
+
         // Aplicar filtro de escola apenas se nÃ£o for superadmin ou suporte, ou se tiver uma escola selecionada
         if (!$isSuperAdminOrSupport || $escolaId) {
             $alunosQuery->where('escola_id', $escolaId);
             $funcionariosQuery->where('escola_id', $escolaId);
             $todasSalasQuery->where('escola_id', $escolaId);
         }
-        
+
         $alunos = $alunosQuery->orderBy('nome')->get();
         $funcionarios = $funcionariosQuery->orderBy('nome')->get();
         $todasSalas = $todasSalasQuery->orderBy('codigo')->get();
-        
+
         // Adicionar log para debug
         if ($isSuperAdminOrSupport) {
-            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de presenÃ§as por usuÃ¡rio " . 
-                ($user->isSuperAdmin() ? 'superadmin' : 'suporte') . 
+            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de presenÃ§as por usuÃ¡rio " .
+                ($user->isSuperAdmin() ? 'superadmin' : 'suporte') .
                 ". Total de salas: " . $salasComEstatisticas->total());
         }
-        
+
         return view('presencas.index', compact('salasComEstatisticas', 'alunos', 'funcionarios', 'todasSalas', 'dataInicio', 'dataFim'));
     }
 
@@ -208,31 +208,31 @@ class PresencaController extends Controller
     {
         $user = auth()->user();
         $isSuperAdminOrSupport = $user->isSuperAdmin() || $user->hasRole('suporte');
-        
-        $escolaId = $isSuperAdminOrSupport && session('escola_atual') 
-            ? session('escola_atual') 
+
+        $escolaId = $isSuperAdminOrSupport && session('escola_atual')
+            ? session('escola_atual')
             : $user->escola_id;
-            
+
         $alunosQuery = Aluno::where('ativo', true);
         $funcionariosQuery = Funcionario::where('ativo', true);
-        
+
         // Aplicar filtro de escola apenas se nÃ£o for superadmin ou suporte, ou se tiver uma escola selecionada
         if (!$isSuperAdminOrSupport || $escolaId) {
             $alunosQuery->where('escola_id', $escolaId);
             $funcionariosQuery->where('escola_id', $escolaId);
         }
-        
+
         $alunos = $alunosQuery->orderBy('nome')->get();
         $funcionarios = $funcionariosQuery->orderBy('nome')->get();
         $dataAtual = Carbon::now()->format('Y-m-d');
         $horaAtual = Carbon::now()->format('H:i');
-        
+
         // Adicionar log para debug
         if ($isSuperAdminOrSupport) {
-            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de criaÃ§Ã£o de presenÃ§as por usuÃ¡rio " . 
+            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de criaÃ§Ã£o de presenÃ§as por usuÃ¡rio " .
                 ($user->isSuperAdmin() ? 'superadmin' : 'suporte'));
         }
-        
+
         return view('presencas.create', compact('alunos', 'funcionarios', 'dataAtual', 'horaAtual'));
     }
 
@@ -244,34 +244,34 @@ class PresencaController extends Controller
         $user = Auth::user();
         $dataAtual = Carbon::now()->format('Y-m-d');
         $horaAtual = Carbon::now()->format('H:i');
-        
+
         $isSuperAdminOrSupport = $user->isSuperAdmin() || $user->hasRole('suporte');
-        
-        $escolaId = $isSuperAdminOrSupport && session('escola_atual') 
-            ? session('escola_atual') 
+
+        $escolaId = $isSuperAdminOrSupport && session('escola_atual')
+            ? session('escola_atual')
             : $user->escola_id;
-        
+
         if ($user->isAdminOrCoordinator() || $isSuperAdminOrSupport) {
             // Admin/Coordenador/Superadmin/Suporte vÃª todos os alunos da escola
             $alunosQuery = Aluno::with('sala')->where('ativo', true);
-            
+
             // Aplicar filtro de escola apenas se nÃ£o for superadmin ou suporte, ou se tiver uma escola selecionada
             if (!$isSuperAdminOrSupport || $escolaId) {
                 $alunosQuery->where('escola_id', $escolaId);
             }
-            
+
             $alunos = $alunosQuery->orderBy('nome')->get();
         } else {
             // Verificar se o professor estÃ¡ em sala neste momento
             $professorEmSala = $this->verificarProfessorEmSala($user, $dataAtual, $horaAtual);
-            
+
             if (!$professorEmSala) {
                 return redirect()->back()->with('warning', 'VocÃª sÃ³ pode lanÃ§ar presenÃ§as nos horÃ¡rios em que estÃ¡ escalado em sala de aula.');
             }
-            
+
             // Professor vÃª apenas alunos das salas onde estÃ¡ escalado neste momento
             $salasAtivas = $this->getSalasAtivasProfessor($user, $dataAtual, $horaAtual);
-            
+
             if ($salasAtivas->isEmpty()) {
                 $alunos = collect();
             } else {
@@ -282,7 +282,7 @@ class PresencaController extends Controller
                     ->get();
             }
         }
-        
+
         // Verificar se jÃ¡ existem registros para hoje
         $presencasHoje = Presenca::whereDate('data', $dataAtual)
             ->pluck('aluno_id')
@@ -291,12 +291,12 @@ class PresencaController extends Controller
         // Obter salas baseado nas permissÃµes do usuÃ¡rio
         if ($user->isAdminOrCoordinator() || $isSuperAdminOrSupport) {
             $salasQuery = \App\Models\Sala::ativas();
-            
+
             // Aplicar filtro de escola apenas se nÃ£o for superadmin ou suporte, ou se tiver uma escola selecionada
             if (!$isSuperAdminOrSupport || $escolaId) {
                 $salasQuery->where('escola_id', $escolaId);
             }
-            
+
             $salas = $salasQuery->orderBy('codigo')->get();
         } else {
             $salas = $user->salas()
@@ -305,15 +305,15 @@ class PresencaController extends Controller
                 ->orderBy('codigo')
                 ->get();
         }
-        
+
         // Adicionar log para debug
         if ($isSuperAdminOrSupport) {
-            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de registro rÃ¡pido de presenÃ§as por usuÃ¡rio " . 
-                ($user->isSuperAdmin() ? 'superadmin' : 'suporte') . 
-                ". Total de alunos: " . $alunos->count() . 
+            \Illuminate\Support\Facades\Log::info("Acesso Ã  tela de registro rÃ¡pido de presenÃ§as por usuÃ¡rio " .
+                ($user->isSuperAdmin() ? 'superadmin' : 'suporte') .
+                ". Total de alunos: " . $alunos->count() .
                 ". Total de salas: " . $salas->count());
         }
-        
+
         return view('presencas.registro-rapido', compact('alunos', 'dataAtual', 'horaAtual', 'presencasHoje', 'salas'));
     }
 
@@ -323,11 +323,11 @@ class PresencaController extends Controller
     private function verificarProfessorEmSala($user, $data, $hora)
     {
         $funcionario = $user->funcionario;
-        
+
         if (!$funcionario) {
             return false;
         }
-        
+
         return \App\Models\Escala::where('funcionario_id', $funcionario->id)
             ->where('data', $data)
             ->where('tipo_atividade', 'em_sala')
@@ -342,11 +342,11 @@ class PresencaController extends Controller
     private function getSalasAtivasProfessor($user, $data, $hora)
     {
         $funcionario = $user->funcionario;
-        
+
         if (!$funcionario) {
             return collect();
         }
-        
+
         $escalasAtivas = \App\Models\Escala::with('sala')
             ->where('funcionario_id', $funcionario->id)
             ->where('data', $data)
@@ -355,7 +355,7 @@ class PresencaController extends Controller
             ->where('hora_fim', '>=', $hora)
             ->whereNotNull('sala_id')
             ->get();
-            
+
         return $escalasAtivas->pluck('sala')->filter();
     }
 
@@ -373,14 +373,14 @@ class PresencaController extends Controller
                 }
             }
         }
-        
+
         // Atualizar o request com as presenÃ§as filtradas
         $request->merge(['presencas' => $presencasFiltradas]);
-        
+
         // Usar sempre a data e hora atuais
         $dataAtual = Carbon::now()->format('Y-m-d');
         $horaAtual = Carbon::now()->format('H:i');
-        
+
         $validator = Validator::make($request->all(), [
             'presencas' => 'required|array|min:1',
             'presencas.*.aluno_id' => 'required|exists:alunos,id',
@@ -415,7 +415,7 @@ class PresencaController extends Controller
                 $tempoAula = $presencaData['tempo_aula'] ?? null;
                 $existente = Presenca::where('aluno_id', $presencaData['aluno_id'])
                     ->whereDate('data', $dataAtual)
-                    ->where(function($query) use ($tempoAula) {
+                    ->where(function ($query) use ($tempoAula) {
                         if ($tempoAula) {
                             $query->where('tempo_aula', $tempoAula);
                         } else {
@@ -423,7 +423,7 @@ class PresencaController extends Controller
                         }
                     })
                     ->first();
-                    
+
                 if ($existente) {
                     $registrosIgnorados++;
                     continue;
@@ -454,7 +454,7 @@ class PresencaController extends Controller
                     'justificativa' => $presencaData['justificativa'] ?? null,
                     'observacoes' => null,
                 ]);
-                
+
                 // Registrar no histÃ³rico
                 Historico::registrar(
                     'criado',
@@ -464,7 +464,7 @@ class PresencaController extends Controller
                     $presenca->toArray(),
                     'PresenÃ§a registrada via registro rÃ¡pido'
                 );
-                
+
                 $registrosProcessados++;
             }
 
@@ -478,7 +478,7 @@ class PresencaController extends Controller
 
             return redirect()->route('presencas.registro-rapido')
                 ->with('success', $mensagem);
-                
+
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Erro ao registrar presenÃ§as: ' . $e->getMessage())
@@ -526,12 +526,12 @@ class PresencaController extends Controller
             }
 
             $dadosAntigos = $presenca->toArray();
-            
+
             $presenca->update([
                 'hora_saida' => $request->hora_saida,
                 'justificativa' => $request->justificativa
             ]);
-            
+
             // Registrar no histÃ³rico
             Historico::registrar(
                 'atualizado',
@@ -579,30 +579,30 @@ class PresencaController extends Controller
 
         try {
             $user = Auth::user();
-            
+
             // Verificar se o professor tem acesso a este aluno (se nÃ£o for admin/coordenador)
             if (!$user->isAdminOrCoordinator()) {
                 $aluno = Aluno::find($request->aluno_id);
                 $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
-                
+
                 if (!$aluno || !in_array($aluno->sala_id, $salasDoUsuario)) {
                     return redirect()->back()
                         ->with('error', 'VocÃª nÃ£o tem permissÃ£o para registrar presenÃ§a deste aluno.')
                         ->withInput();
                 }
             }
-            
+
             // Verificar se jÃ¡ existe registro para este aluno nesta data
             $existente = Presenca::where('aluno_id', $request->aluno_id)
                 ->whereDate('data', $request->data)
                 ->first();
-                
+
             if ($existente) {
                 return redirect()->back()
                     ->with('error', 'JÃ¡ existe um registro de presenÃ§a para este aluno nesta data.')
                     ->withInput();
             }
-            
+
             // Garantir que o aluno está carregado para obter sala_id
             $aluno = \App\Models\Aluno::find($request->aluno_id);
 
@@ -618,7 +618,7 @@ class PresencaController extends Controller
                 'justificativa' => $request->justificativa,
                 'observacoes' => $request->observacoes,
             ]);
-            
+
             // Registrar no histÃ³rico
             Historico::registrar(
                 'criado',
@@ -661,12 +661,12 @@ class PresencaController extends Controller
             $hoje = Carbon::today();
             $agora = Carbon::now()->format('H:i');
             $funcionarioId = $user->funcionario->id ?? $request->funcionario_id;
-            
+
             // Verificar se o professor tem acesso a este aluno (se nÃ£o for admin/coordenador)
             if (!$user->isAdminOrCoordinator()) {
                 $aluno = Aluno::find($request->aluno_id);
                 $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
-                
+
                 if (!$aluno || !in_array($aluno->sala_id, $salasDoUsuario)) {
                     return response()->json([
                         'success' => false,
@@ -674,12 +674,12 @@ class PresencaController extends Controller
                     ], 403);
                 }
             }
-            
+
             // Verificar se jÃ¡ existe registro para este aluno hoje
             $presenca = Presenca::where('aluno_id', $request->aluno_id)
                 ->whereDate('data', $hoje)
                 ->first();
-                
+
             if ($request->tipo === 'entrada') {
                 if ($presenca) {
                     // Atualizar hora de entrada
@@ -689,7 +689,7 @@ class PresencaController extends Controller
                         'hora_entrada' => $agora,
                         'funcionario_id' => $funcionarioId,
                     ]);
-                    
+
                     // Registrar no histÃ³rico
                     Historico::registrar(
                         'atualizado',
@@ -711,7 +711,7 @@ class PresencaController extends Controller
                         'presente' => true,
                         'hora_entrada' => $agora,
                     ]);
-                    
+
                     // Registrar no histÃ³rico
                     Historico::registrar(
                         'criado',
@@ -722,7 +722,7 @@ class PresencaController extends Controller
                         'Entrada registrada via registro rÃ¡pido'
                     );
                 }
-                
+
                 $mensagem = 'Entrada registrada com sucesso!';
             } else { // saida
                 if ($presenca) {
@@ -731,7 +731,7 @@ class PresencaController extends Controller
                     $presenca->update([
                         'hora_saida' => $agora,
                     ]);
-                    
+
                     // Registrar no histÃ³rico
                     Historico::registrar(
                         'atualizado',
@@ -741,7 +741,7 @@ class PresencaController extends Controller
                         $presenca->fresh()->toArray(),
                         'SaÃ­da registrada via registro rÃ¡pido'
                     );
-                    
+
                     $mensagem = 'SaÃ­da registrada com sucesso!';
                 } else {
                     return response()->json([
@@ -750,9 +750,9 @@ class PresencaController extends Controller
                     ], 400);
                 }
             }
-            
+
             $aluno = Aluno::find($request->aluno_id);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $mensagem,
@@ -776,7 +776,7 @@ class PresencaController extends Controller
         $data = $request->get('data', now()->format('Y-m-d'));
         // Corrige casos em que o front envia &amp; no href e o PHP recebe "amp;sala_id"
         $salaId = $request->get('sala_id', $request->get('amp;sala_id'));
-        
+
         // Se sala_id não foi fornecida, usar a primeira sala do usuário ou todas se for admin
         if (!$salaId) {
             if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('coordenador')) {
@@ -791,7 +791,11 @@ class PresencaController extends Controller
         } else {
             // Ignorar escopo global de escola ao buscar sala espec difica
             $sala = \App\Models\Sala::withoutGlobalScope('escola')
-                ->with(['alunos' => function($q){ $q->withoutGlobalScope('escola'); }])
+                ->with([
+                    'alunos' => function ($q) {
+                        $q->withoutGlobalScope('escola');
+                    }
+                ])
                 ->where('ativo', true)
                 ->find($salaId);
         }
@@ -808,7 +812,7 @@ class PresencaController extends Controller
                 session(['escola_atual' => $sala->escola_id]);
             }
         }
-        
+
         // Verificar permissÃµes (liberar superadmin/suporte)
         $isSuperAdminOrSupport = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte');
         if (!$isSuperAdminOrSupport && !auth()->user()->hasRole('admin') && !auth()->user()->hasRole('coordenador')) {
@@ -817,7 +821,7 @@ class PresencaController extends Controller
                 return redirect()->route('presencas.index')->with('error', 'VocÃª nÃ£o tem permissÃ£o para visualizar esta sala.');
             }
         }
-        
+
         // Obter alunos pela GradeAula no dia informado (em vez da sala fixa)
         // Determinar o dia da semana no formato usado pela GradeAula
         $dow = (int) \Carbon\Carbon::parse($data)->dayOfWeek; // 0=domingo ... 6=sábado
@@ -841,11 +845,11 @@ class PresencaController extends Controller
                 // Dentro do período: início <= data e fim >= data, aceitando nulos como indefinidos
                 ->where(function ($q) use ($data) {
                     $q->whereNull('data_inicio')
-                      ->orWhere('data_inicio', '<=', $data);
+                        ->orWhere('data_inicio', '<=', $data);
                 })
                 ->where(function ($q) use ($data) {
                     $q->whereNull('data_fim')
-                      ->orWhere('data_fim', '>=', $data);
+                        ->orWhere('data_fim', '>=', $data);
                 });
 
             $turmaIds = $gradesQuery->pluck('turma_id')->unique()->filter()->values();
@@ -857,32 +861,34 @@ class PresencaController extends Controller
                     ->get();
             }
         }
-        
+
         // Obter presenÃ§as da data especÃ­fica
         $presencas = Presenca::whereDate('data', $data)
             ->whereIn('aluno_id', $alunos->pluck('id'))
             ->get();
-        
+
         // Montar grade/aulas do dia para esta sala (acontecimentos do dia)
         $gradesDia = collect();
         $resumoAulas = collect();
         $temposDia = collect();
         $turmasOptionsDia = [];
         if ($diaSlug && $diaSlug !== 'domingo') {
-            $gradesDia = \App\Models\GradeAula::with(['turma:id,nome','disciplina:id,nome','professor:id,nome','tempoSlot:id,ordem,hora_inicio,hora_fim,tipo'])
+            $gradesDia = \App\Models\GradeAula::with(['turma:id,nome', 'disciplina:id,nome', 'professor:id,nome', 'tempoSlot:id,ordem,hora_inicio,hora_fim,tipo'])
                 ->where('ativo', true)
                 ->where('sala_id', $sala->id)
                 ->where('dia_semana', $diaSlug)
                 ->where(function ($q) use ($data) {
                     $q->whereNull('data_inicio')
-                      ->orWhere('data_inicio', '<=', $data);
+                        ->orWhere('data_inicio', '<=', $data);
                 })
                 ->where(function ($q) use ($data) {
                     $q->whereNull('data_fim')
-                      ->orWhere('data_fim', '>=', $data);
+                        ->orWhere('data_fim', '>=', $data);
                 })
                 ->get()
-                ->sortBy(function($g){ return optional($g->tempoSlot)->ordem ?? 999; })
+                ->sortBy(function ($g) {
+                    return optional($g->tempoSlot)->ordem ?? 999;
+                })
                 ->values();
 
             foreach ($gradesDia as $grade) {
@@ -920,7 +926,7 @@ class PresencaController extends Controller
 
             // Opções de turmas e tempos
             $temposDia = $temposDia->unique()->sort()->values();
-            $turmasOptionsDia = $gradesDia->pluck('turma')->filter()->unique('id')->mapWithKeys(function($t){
+            $turmasOptionsDia = $gradesDia->pluck('turma')->filter()->unique('id')->mapWithKeys(function ($t) {
                 return [$t->id => $t->nome];
             })->toArray();
         }
@@ -928,7 +934,7 @@ class PresencaController extends Controller
         $presencasPorTempo = [];
         foreach ($presencas as $p) {
             if (!is_null($p->tempo_aula)) {
-                $presencasPorTempo[$p->aluno_id][(int)$p->tempo_aula] = $p;
+                $presencasPorTempo[$p->aluno_id][(int) $p->tempo_aula] = $p;
             }
         }
 
@@ -966,7 +972,7 @@ class PresencaController extends Controller
             // tempos por turma
             $temposPorTurma = [];
             foreach ($gradesDia as $g) {
-                $ordem = optional($g->tempoSlot)->ordem ? (int)$g->tempoSlot->ordem : null;
+                $ordem = optional($g->tempoSlot)->ordem ? (int) $g->tempoSlot->ordem : null;
                 if ($ordem) {
                     $temposPorTurma[$g->turma_id] = isset($temposPorTurma[$g->turma_id]) ? array_unique(array_merge($temposPorTurma[$g->turma_id], [$ordem])) : [$ordem];
                 }
@@ -999,12 +1005,12 @@ class PresencaController extends Controller
                 ]);
             }
         }
-        
+
         // Preparar opÃ§Ãµes de salas para o filtro (apenas para admin/coordenador)
         $salasOptions = [];
         if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('coordenador')) {
             $salasQuery = \App\Models\Sala::where('ativo', true);
-            
+
             // Aplicar filtro de escola
             if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
                 if (session('escola_atual')) {
@@ -1015,18 +1021,30 @@ class PresencaController extends Controller
                     $salasQuery->where('escola_id', auth()->user()->escola_id);
                 }
             }
-            
+
             $salasOptions = $salasQuery->orderBy('codigo')
                 ->get()
                 ->pluck('nome_completo', 'id')
                 ->toArray();
         }
-        
+
         return view('presencas.show', compact(
-            'sala', 'data', 'alunos', 'presencas',
-            'presentes', 'ausentes', 'naoRegistrados', 'salasOptions',
-            'gradesDia', 'resumoAulas', 'temposDia', 'turmasOptionsDia',
-            'presencasPorTempo', 'filtroTurmaId', 'filtroTempo', 'resumoPorTurma'
+            'sala',
+            'data',
+            'alunos',
+            'presencas',
+            'presentes',
+            'ausentes',
+            'naoRegistrados',
+            'salasOptions',
+            'gradesDia',
+            'resumoAulas',
+            'temposDia',
+            'turmasOptionsDia',
+            'presencasPorTempo',
+            'filtroTurmaId',
+            'filtroTempo',
+            'resumoPorTurma'
         ));
     }
 
@@ -1038,7 +1056,7 @@ class PresencaController extends Controller
         $presenca = Presenca::findOrFail($id);
         $alunos = Aluno::where('ativo', true)->orderBy('nome')->get();
         $funcionarios = Funcionario::where('ativo', true)->orderBy('nome')->get();
-        
+
         return view('presencas.edit', compact('presenca', 'alunos', 'funcionarios'));
     }
 
@@ -1067,33 +1085,33 @@ class PresencaController extends Controller
         try {
             $user = Auth::user();
             $presenca = Presenca::findOrFail($id);
-            
+
             // Verificar se o professor tem acesso a este aluno (se nÃ£o for admin/coordenador)
             if (!$user->isAdminOrCoordinator()) {
                 $aluno = Aluno::find($request->aluno_id);
                 $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
-                
+
                 if (!$aluno || !in_array($aluno->sala_id, $salasDoUsuario)) {
                     return redirect()->back()
                         ->with('error', 'VocÃª nÃ£o tem permissÃ£o para editar presenÃ§a deste aluno.')
                         ->withInput();
                 }
             }
-            
+
             // Verificar se jÃ¡ existe outro registro para este aluno nesta data
             $existente = Presenca::where('aluno_id', $request->aluno_id)
                 ->whereDate('data', $request->data)
                 ->where('id', '!=', $id)
                 ->first();
-                
+
             if ($existente) {
                 return redirect()->back()
                     ->with('error', 'JÃ¡ existe outro registro de presenÃ§a para este aluno nesta data.')
                     ->withInput();
             }
-            
+
             $dadosAntigos = $presenca->toArray();
-            
+
             $presenca->update([
                 'aluno_id' => $request->aluno_id,
                 'funcionario_id' => $request->funcionario_id,
@@ -1104,7 +1122,7 @@ class PresencaController extends Controller
                 'justificativa' => $request->justificativa,
                 'observacoes' => $request->observacoes,
             ]);
-            
+
             // Registrar no histÃ³rico
             Historico::registrar(
                 'atualizado',
@@ -1132,21 +1150,21 @@ class PresencaController extends Controller
         try {
             $user = Auth::user();
             $presenca = Presenca::with('aluno')->findOrFail($id);
-            
+
             // Verificar se o professor tem acesso a este aluno (se nÃ£o for admin/coordenador)
             if (!$user->isAdminOrCoordinator()) {
                 $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
-                
+
                 if (!$presenca->aluno || !in_array($presenca->aluno->sala_id, $salasDoUsuario)) {
                     return redirect()->route('presencas.index')
                         ->with('error', 'VocÃª nÃ£o tem permissÃ£o para remover presenÃ§a deste aluno.');
                 }
             }
-            
+
             $dadosAntigos = $presenca->toArray();
-            
+
             $presenca->delete();
-            
+
             // Registrar no histÃ³rico
             Historico::registrar(
                 'excluido',
@@ -1156,7 +1174,7 @@ class PresencaController extends Controller
                 null,
                 'PresenÃ§a removida'
             );
-            
+
             return redirect()->route('presencas.index')
                 ->with('success', 'Registro de presenÃ§a removido com sucesso!');
         } catch (\Exception $e) {
@@ -1171,14 +1189,14 @@ class PresencaController extends Controller
         $hoje = now()->format('Y-m-d');
         $dataInicio = $request->get('data_inicio', now()->subDays(4)->format('Y-m-d'));
         $dataFim = $request->get('data_fim', $hoje);
-        
+
         // Validar se a data de inÃ­cio nÃ£o Ã© futura
         if ($dataInicio > $hoje) {
             $dataInicio = $hoje;
         }
-        
+
         $salaId = $request->get('sala_id');
-        
+
         // Determinar contexto de escola para filtragem
         $user = auth()->user();
         $isSuperAdminOrSupport = $user->isSuperAdmin() || $user->hasRole('suporte');
@@ -1204,7 +1222,7 @@ class PresencaController extends Controller
                 ->wherePivot('ativo', true);
             $todasSalas = $user->salas()->orderBy('codigo')->get();
         }
-        
+
         // Aplicar filtro de sala se especificado
         if ($salaId) {
             $salasQuery->where('salas.id', $salaId);
@@ -1238,60 +1256,49 @@ class PresencaController extends Controller
                 $diasContadosTmp++;
             }
 
+            // OTIMIZAÇÃO: Pré-carregar todas as grades necessárias para as salas e período
+            $salaIds = $salas->pluck('id')->toArray();
+            $diaSlugsPeriodo = collect($datasPeriodo)->map(fn($d) => $diaSemanaMap[(int) $d->dayOfWeek] ?? null)->filter()->unique()->toArray();
+
+            $todasGrades = \App\Models\GradeAula::with(['turma:id,nome', 'tempoSlot:id,ordem'])
+                ->whereIn('sala_id', $salaIds)
+                ->whereIn('dia_semana', $diaSlugsPeriodo)
+                ->where('ativo', true)
+                ->get();
+
             foreach ($salas as $sala) {
-                $turmaIds = collect();
+                $turmaIds = $todasGrades->where('sala_id', $sala->id)->pluck('turma_id')->filter()->unique();
 
-                foreach ($datasPeriodo as $dataCarbon) {
-                    // Obter slug do dia da semana conforme GradeAula::DIAS_SEMANA
-                    $dow = (int) $dataCarbon->dayOfWeek; // 0=domingo, 1=segunda, ... 6=sabado
-                    $diaSlug = $diaSemanaMap[$dow] ?? null;
-                    if (!$diaSlug || $diaSlug === 'domingo') {
-                        // Ignorar domingo por padrÃ£o
-                        continue;
-                    }
-
-                    // Buscar turmas agendadas nesta sala para o diaSlug
-                    $gradesDia = \App\Models\GradeAula::with(['turma:id,nome', 'turma.alunos' => function($q) {
-                            $q->select('id','nome','sobrenome','turma_id');
-                        }])
-                        ->where('sala_id', $sala->id)
-                        ->where('ativo', true)
-                        ->where('dia_semana', $diaSlug)
-                        ->get();
-
-                    if ($gradesDia->count() > 0) {
-                        $turmaIds = $turmaIds->merge($gradesDia->pluck('turma_id')->filter());
-                    }
-                }
-
-                $turmaIds = $turmaIds->filter()->unique()->values();
-
-                // Carregar alunos de todas as turmas encontradas (Ãºnicos)
+                // OTIMIZAÇÃO: Paginar alunos para evitar estouro de memória em salas grandes (ex: 200+ alunos)
                 if ($turmaIds->count() > 0) {
-                    $alunosDasTurmas = \App\Models\Aluno::select('id','nome','sobrenome','turma_id')
+                    $alunosDasTurmasQuery = \App\Models\Aluno::select('id', 'nome', 'sobrenome', 'turma_id')
                         ->whereIn('turma_id', $turmaIds)
                         ->where('ativo', true)
-                        ->orderBy('nome')
-                        ->get();
+                        ->orderBy('nome');
 
-                    // Sobrescrever a relaÃ§Ã£o 'alunos' da sala com a coleÃ§Ã£o baseada em turmas via grade
+                    // Solo paginar se houver uma sala selecionada ou se for a primeira sala (previne lentidão extrema)
+                    if ($salaId || $salas->count() === 1) {
+                        $alunosDasTurmas = $alunosDasTurmasQuery->paginate(100)->withQueryString();
+                    } else {
+                        $alunosDasTurmas = $alunosDasTurmasQuery->get();
+                    }
+
                     $sala->setRelation('alunos', $alunosDasTurmas);
                 } else {
-                    // Nenhuma turma agendada para o perÃ­odo filtrado: zera alunos exibidos para esta sala
                     $sala->setRelation('alunos', collect());
                 }
             }
         }
-        
+
         // Obter todas as datas no intervalo (limitado a 5 dias)
         $datas = [];
         $dataAtual = \Carbon\Carbon::parse($dataInicio);
         $dataFinal = \Carbon\Carbon::parse($dataFim);
-        
+
         // Garantir que nÃ£o mostramos mais de 5 dias
         $maxDias = 5;
         $diasContados = 0;
-        
+
         while ($dataAtual <= $dataFinal && $diasContados < $maxDias) {
             $datas[] = [
                 'data' => $dataAtual->format('Y-m-d'),
@@ -1301,19 +1308,36 @@ class PresencaController extends Controller
             $dataAtual->addDay();
             $diasContados++;
         }
-        
-        // Obter presenÃ§as existentes no perÃ­odo
+
+        // Obter presenças existentes no período
         $datasSimples = array_column($datas, 'data');
-        $presencasExistentes = Presenca::whereIn(DB::raw('DATE(data)'), $datasSimples)->get();
+
+        // OTIMIZAÇÃO: Filtrar presenças pela escola para evitar carregar milhares de registros de outros clientes
+        // Também selecionamos apenas as colunas necessárias para economizar memória
+        $alunoIds = $salas->flatMap(fn($s) => $s->alunos->pluck('id'))->unique()->toArray();
+
+        $presencasExistentes = Presenca::whereIn(DB::raw('DATE(data)'), $datasSimples)
+            ->whereIn('aluno_id', $alunoIds)
+            ->select(['id', 'aluno_id', 'data', 'tempo_aula', 'presente', 'justificativa'])
+            ->get();
         // Reorganizar as presenÃ§as para suportar mÃºltiplos tempos por data
+        // OTIMIZAÇÃO: Armazenar apenas os dados necessários em vez do objeto Model completo
         $presencasFormatadas = [];
         foreach ($presencasExistentes as $presenca) {
             $dataKey = $presenca->data->format('Y-m-d');
             $alunoId = $presenca->aluno_id;
-            $tempo = $presenca->tempo_aula ?? 0; // 0 indica registro sem tempo especÃ­fico
-            if (!isset($presencasFormatadas[$dataKey])) $presencasFormatadas[$dataKey] = [];
-            if (!isset($presencasFormatadas[$dataKey][$alunoId])) $presencasFormatadas[$dataKey][$alunoId] = [];
-            $presencasFormatadas[$dataKey][$alunoId][$tempo] = $presenca;
+            $tempo = $presenca->tempo_aula ?? 0;
+
+            if (!isset($presencasFormatadas[$dataKey]))
+                $presencasFormatadas[$dataKey] = [];
+            if (!isset($presencasFormatadas[$dataKey][$alunoId]))
+                $presencasFormatadas[$dataKey][$alunoId] = [];
+
+            $presencasFormatadas[$dataKey][$alunoId][$tempo] = (object) [
+                'id' => $presenca->id,
+                'presente' => $presenca->presente,
+                'justificativa' => $presenca->justificativa
+            ];
         }
 
         // Calcular tempos de aula disponÃ­veis por sala e data, considerando o professor logado
@@ -1329,21 +1353,22 @@ class PresencaController extends Controller
         ];
         $funcionarioIdLogado = $user->funcionario ? $user->funcionario->id : null;
         $filtrarPorProfessor = !$user->hasRole('admin') && !$user->hasRole('coordenador') && !$isSuperAdminOrSupport;
+
+        // OTIMIZAÇÃO: Usar a coleção $todasGrades já carregada para evitar novas consultas em loop
         foreach ($salas as $sala) {
             foreach ($datas as $dInfo) {
                 $dataStr = $dInfo['data'];
                 $dow = (int) \Carbon\Carbon::parse($dataStr)->dayOfWeek;
                 $diaSlug = $diaSemanaMap[$dow] ?? null;
                 $tempos = [];
+
                 if ($diaSlug && $diaSlug !== 'domingo') {
-                    $gradesQuery = \App\Models\GradeAula::with(['tempoSlot' => function($q){ $q->select('id','ordem','tipo'); }])
-                        ->where('sala_id', $sala->id)
-                        ->where('ativo', true)
-                        ->where('dia_semana', $diaSlug);
+                    $grades = $todasGrades->where('sala_id', $sala->id)->where('dia_semana', $diaSlug);
+
                     if ($filtrarPorProfessor && $funcionarioIdLogado) {
-                        $gradesQuery->where('funcionario_id', $funcionarioIdLogado);
+                        $grades = $grades->where('funcionario_id', $funcionarioIdLogado);
                     }
-                    $grades = $gradesQuery->get();
+
                     foreach ($grades as $grade) {
                         $ordem = $grade->tempoSlot ? (int) $grade->tempoSlot->ordem : null;
                         if ($ordem && $ordem >= 1 && $ordem <= 5) {
@@ -1362,7 +1387,7 @@ class PresencaController extends Controller
     {
         // Validar se as datas nÃ£o sÃ£o futuras
         $hoje = now()->format('Y-m-d');
-        
+
         $request->validate([
             'data_inicio' => 'required|date|before_or_equal:' . $hoje,
             'data_fim' => 'required|date|after_or_equal:data_inicio|before_or_equal:' . $hoje,
@@ -1375,9 +1400,9 @@ class PresencaController extends Controller
 
         // Verificar permissÃµes do usuÃ¡rio antes de processar
         $user = auth()->user();
-        $temPermissaoTotal = $user->hasRole('superadmin') || $user->hasRole('suporte') || 
-                             $user->hasRole('admin') || $user->hasRole('coordenador');
-        
+        $temPermissaoTotal = $user->hasRole('superadmin') || $user->hasRole('suporte') ||
+            $user->hasRole('admin') || $user->hasRole('coordenador');
+
         $funcionarioId = null;
         if ($user->funcionario) {
             $funcionarioId = $user->funcionario->id;
@@ -1397,10 +1422,10 @@ class PresencaController extends Controller
                     $erros[] = "NÃ£o Ã© possÃ­vel registrar presenÃ§as para datas futuras: {$data}";
                     continue;
                 }
-                
+
                 // Verificar permissÃµes do usuÃ¡rio
                 $aluno = \App\Models\Aluno::find($alunoId);
-                
+
                 if (!$temPermissaoTotal) {
                     $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
                     if (!$aluno || !in_array($aluno->sala_id, $salasDoUsuario)) {
@@ -1482,7 +1507,7 @@ class PresencaController extends Controller
             $user = auth()->user();
             $isSuperAdminOrSupport = $user->isSuperAdmin() || $user->hasRole('suporte') || $user->temCargo('Suporte TÃ©cnico');
             $aluno = \App\Models\Aluno::find($request->aluno_id);
-            
+
             // Permitir admin/coordenador e tambÃ©m superadmin/suporte (com contexto de escola)
             if (!$user->isAdminOrCoordinator() && !$isSuperAdminOrSupport) {
                 $salasDoUsuario = $user->salas()->pluck('salas.id')->toArray();
@@ -1517,7 +1542,7 @@ class PresencaController extends Controller
             if (!is_string($data)) {
                 $data = date('Y-m-d', strtotime($data));
             }
-            
+
             $query = Presenca::where('aluno_id', $request->aluno_id)
                 ->whereDate('data', $data);
 
@@ -1533,7 +1558,7 @@ class PresencaController extends Controller
             if ($presencaExistente) {
                 // Atualizar presenÃ§a existente
                 $dadosAntigos = $presencaExistente->toArray();
-                
+
                 $presencaExistente->update([
                     'presente' => $request->presente,
                     'hora_entrada' => $request->presente ? ($presencaExistente->hora_entrada ?? now()->format('H:i')) : null,

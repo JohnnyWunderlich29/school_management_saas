@@ -51,7 +51,7 @@
         <h4 class="text-sm font-medium text-gray-900 mb-3">Informações da Turma</h4>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
             <div>
-                <span class="font-medium">Série:</span>
+                <span class="font-medium">Nível de ensino:</span>
                 <span id="turma-serie">-</span>
             </div>
             <div>
@@ -65,15 +65,18 @@
         </div>
         
         <!-- Lista de Alunos -->
+         <!--
         <div class="mt-4">
             <button type="button" onclick="toggleAlunosList()" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                 <i class="fas fa-users mr-1"></i>
                 Ver lista de alunos
             </button>
             <div id="alunos-list" class="hidden mt-2 max-h-32 overflow-y-auto bg-white border border-gray-200 rounded p-2">
-                <!-- Lista será carregada via JavaScript -->
+                <Lista será carregada via JavaScript>
+                
             </div>
         </div>
+        -->
     </div>
 
     <!-- Informações da Disciplina Selecionada -->
@@ -233,10 +236,10 @@ window.wizardData.step3 = window.wizardData.step3 || {};
                 option.value = turma.id;
                 option.textContent = `${turma.nome}`;
                 if (turma.grupo && turma.grupo.nome) {
-                    option.textContent += ` - ${turma.grupo.nome}`;
+                    option.textContent += ` - GRUPO: ${turma.grupo.nome}`;
                 }
                 if (turma.nivel_ensino && turma.nivel_ensino.nome) {
-                    option.textContent += ` (${turma.nivel_ensino.nome})`;
+                    option.textContent += ` - NIVEL: ${turma.nivel_ensino.nome}`;
                 }
                 
                 // Adicionar dados para uso posterior

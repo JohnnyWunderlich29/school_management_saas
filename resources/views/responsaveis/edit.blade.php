@@ -83,9 +83,13 @@
                     <div>
                         <x-input type="text" name="cep" label="CEP" :value="old('cep') ?? $responsavel->cep" placeholder="00000-000"
                             id="cep" maxlength="9" class="pr-12" help="Digite o CEP e clique na lupa para buscar.">
-                            <button type="button" id="btn-buscar-cep-resp-edit" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-indigo-600" title="Buscar CEP" aria-label="Buscar CEP">
-                                <svg id="icon-cep-resp-edit" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.1-4.4a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" />
+                            <button type="button" id="btn-buscar-cep-resp-edit"
+                                class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-indigo-600"
+                                title="Buscar CEP" aria-label="Buscar CEP">
+                                <svg id="icon-cep-resp-edit" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-4.35-4.35m1.1-4.4a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" />
                                 </svg>
                             </button>
                         </x-input>
@@ -174,6 +178,22 @@
                         </label>
                     </div>
 
+                    <div class="flex flex-row gap-4">
+                        <div>
+                            <h6 class="block text-sm font-medium text-gray-700 mb-1">Consolidar Faturas?</h6>
+                            <p class="text-xs text-gray-500">Agrupa várias mensalidades em um único boleto/pix.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="hidden" name="consolidate_billing" value="0" />
+                            <input type="checkbox" name="consolidate_billing" value="1"
+                                {{ old('consolidate_billing') ?? $responsavel->consolidate_billing ? 'checked' : '' }}
+                                class="sr-only peer" />
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-3 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
+                        </label>
+                    </div>
+
                 </div>
             </div>
 
@@ -204,70 +224,125 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const cepInput = document.getElementById('cep');
-    const btnBuscar = document.getElementById('btn-buscar-cep-resp-edit');
-    const iconCep = document.getElementById('icon-cep-resp-edit');
-    const enderecoInput = document.getElementById('endereco');
-    const bairroInput = document.getElementById('bairro');
-    const cidadeInput = document.getElementById('cidade');
-    const estadoInput = document.getElementById('estado');
-    const numeroInput = document.getElementById('numero');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const cepInput = document.getElementById('cep');
+            const btnBuscar = document.getElementById('btn-buscar-cep-resp-edit');
+            const iconCep = document.getElementById('icon-cep-resp-edit');
+            const enderecoInput = document.getElementById('endereco');
+            const bairroInput = document.getElementById('bairro');
+            const cidadeInput = document.getElementById('cidade');
+            const estadoInput = document.getElementById('estado');
+            const numeroInput = document.getElementById('numero');
 
-    function sanitizeCep(v){ return (v||'').toString().replace(/\D/g,'').slice(0,8); }
-    function maskCEP(v){ const s = sanitizeCep(v); return s.length <= 5 ? s : s.slice(0,5)+'-'+s.slice(5,8); }
-
-    function setCepLoading(loading){
-        if(btnBuscar){ btnBuscar.disabled = !!loading; btnBuscar.classList.toggle('opacity-50', !!loading); }
-        if(iconCep){ iconCep.classList.toggle('animate-spin', !!loading); }
-        [enderecoInput, cidadeInput].forEach(el => { if(!el) return; el.readOnly = !!loading; el.classList.toggle('bg-gray-50', !!loading); });
-    }
-
-    function ensureCepAlertContainer(){
-        const wrapper = cepInput?.closest('.mb-4');
-        if(!wrapper) return null;
-        let alertDiv = wrapper.querySelector('.cep-alert');
-        if(!alertDiv){ alertDiv = document.createElement('div'); alertDiv.className = 'cep-alert mt-2 text-sm'; wrapper.appendChild(alertDiv); }
-        return alertDiv;
-    }
-    function showCepAlert(type, message){
-        const alertDiv = ensureCepAlertContainer(); if(!alertDiv) return;
-        alertDiv.textContent = message || '';
-        alertDiv.classList.remove('text-red-600','text-yellow-600','text-green-600');
-        if(type === 'error') alertDiv.classList.add('text-red-600');
-        else if(type === 'warn') alertDiv.classList.add('text-yellow-600');
-        else if(type === 'ok') alertDiv.classList.add('text-green-600');
-    }
-
-    async function buscarCep(){
-        if(!cepInput) return;
-        const cep = sanitizeCep(cepInput.value);
-        if(cep.length !== 8){ showCepAlert('error','CEP inválido. Digite 8 dígitos (ex.: 12345-678).'); cepInput.focus(); return; }
-        showCepAlert(null,''); setCepLoading(true);
-        try{
-            const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { headers: { 'Accept': 'application/json' } });
-            if(!resp.ok) throw new Error('Falha ao consultar o CEP');
-            const data = await resp.json();
-            if(data.erro){ showCepAlert('error','CEP não encontrado. Verifique e tente novamente.'); return; }
-            if(enderecoInput){
-                enderecoInput.value = data.logradouro || '';
-                if(!data.logradouro){ showCepAlert('warn','Logradouro não informado pelo CEP. Preencha manualmente.'); }
+            function sanitizeCep(v) {
+                return (v || '').toString().replace(/\D/g, '').slice(0, 8);
             }
-            if(bairroInput) bairroInput.value = data.bairro || '';
-            if(cidadeInput) cidadeInput.value = data.localidade || '';
-            if(estadoInput) estadoInput.value = data.uf || '';
-            if(numeroInput){ numeroInput.focus(); }
-        } catch(e){ console.error(e); showCepAlert('error','Não foi possível buscar o CEP agora. Tente novamente.'); }
-        finally { setCepLoading(false); }
-    }
 
-    if(btnBuscar){ btnBuscar.addEventListener('click', buscarCep); }
-    if(cepInput){
-        cepInput.addEventListener('keydown', (ev) => { if(ev.key === 'Enter'){ ev.preventDefault(); buscarCep(); } });
-        cepInput.addEventListener('blur', () => { const v = sanitizeCep(cepInput.value); if(v.length === 8){ buscarCep(); } });
-        cepInput.addEventListener('input', () => { cepInput.value = maskCEP(cepInput.value); });
-    }
-});
-</script>
+            function maskCEP(v) {
+                const s = sanitizeCep(v);
+                return s.length <= 5 ? s : s.slice(0, 5) + '-' + s.slice(5, 8);
+            }
+
+            function setCepLoading(loading) {
+                if (btnBuscar) {
+                    btnBuscar.disabled = !!loading;
+                    btnBuscar.classList.toggle('opacity-50', !!loading);
+                }
+                if (iconCep) {
+                    iconCep.classList.toggle('animate-spin', !!loading);
+                }
+                [enderecoInput, cidadeInput].forEach(el => {
+                    if (!el) return;
+                    el.readOnly = !!loading;
+                    el.classList.toggle('bg-gray-50', !!loading);
+                });
+            }
+
+            function ensureCepAlertContainer() {
+                const wrapper = cepInput?.closest('.mb-4');
+                if (!wrapper) return null;
+                let alertDiv = wrapper.querySelector('.cep-alert');
+                if (!alertDiv) {
+                    alertDiv = document.createElement('div');
+                    alertDiv.className = 'cep-alert mt-2 text-sm';
+                    wrapper.appendChild(alertDiv);
+                }
+                return alertDiv;
+            }
+
+            function showCepAlert(type, message) {
+                const alertDiv = ensureCepAlertContainer();
+                if (!alertDiv) return;
+                alertDiv.textContent = message || '';
+                alertDiv.classList.remove('text-red-600', 'text-yellow-600', 'text-green-600');
+                if (type === 'error') alertDiv.classList.add('text-red-600');
+                else if (type === 'warn') alertDiv.classList.add('text-yellow-600');
+                else if (type === 'ok') alertDiv.classList.add('text-green-600');
+            }
+
+            async function buscarCep() {
+                if (!cepInput) return;
+                const cep = sanitizeCep(cepInput.value);
+                if (cep.length !== 8) {
+                    showCepAlert('error', 'CEP inválido. Digite 8 dígitos (ex.: 12345-678).');
+                    cepInput.focus();
+                    return;
+                }
+                showCepAlert(null, '');
+                setCepLoading(true);
+                try {
+                    const resp = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    if (!resp.ok) throw new Error('Falha ao consultar o CEP');
+                    const data = await resp.json();
+                    if (data.erro) {
+                        showCepAlert('error', 'CEP não encontrado. Verifique e tente novamente.');
+                        return;
+                    }
+                    if (enderecoInput) {
+                        enderecoInput.value = data.logradouro || '';
+                        if (!data.logradouro) {
+                            showCepAlert('warn', 'Logradouro não informado pelo CEP. Preencha manualmente.');
+                        }
+                    }
+                    if (bairroInput) bairroInput.value = data.bairro || '';
+                    if (cidadeInput) cidadeInput.value = data.localidade || '';
+                    if (estadoInput) estadoInput.value = data.uf || '';
+                    if (numeroInput) {
+                        numeroInput.focus();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showCepAlert('error', 'Não foi possível buscar o CEP agora. Tente novamente.');
+                } finally {
+                    setCepLoading(false);
+                }
+            }
+
+            if (btnBuscar) {
+                btnBuscar.addEventListener('click', buscarCep);
+            }
+            if (cepInput) {
+                cepInput.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        buscarCep();
+                    }
+                });
+                cepInput.addEventListener('blur', () => {
+                    const v = sanitizeCep(cepInput.value);
+                    if (v.length === 8) {
+                        buscarCep();
+                    }
+                });
+                cepInput.addEventListener('input', () => {
+                    cepInput.value = maskCEP(cepInput.value);
+                });
+            }
+        });
+    </script>
 @endpush

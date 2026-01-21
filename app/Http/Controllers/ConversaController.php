@@ -47,14 +47,14 @@ class ConversaController extends Controller
                 });
             }
         }
-        
+
         // Verificar se existe alguma conversa e redirecionar para a primeira
         $primeiraConversa = $conversasQuery->orderBy('ultima_mensagem_at', 'desc')->first();
-        
+
         if ($primeiraConversa) {
             return redirect()->route('conversas.show', $primeiraConversa);
         }
-        
+
         // Se não existir nenhuma conversa, mostrar a página de índice
         $conversas = $conversasQuery->orderBy('ultima_mensagem_at', 'desc')
             ->paginate(20);
@@ -125,10 +125,10 @@ class ConversaController extends Controller
         }
 
         $todasConversas = $conversasQuery->orderBy('ultima_mensagem_at', 'desc')->get();
-        
+
         // Carregar turmas para o modal de nova conversa
         $turmasQuery = Turma::ativas();
-        
+
         // Filtrar turmas por escola
         if ($user->isSuperAdmin() || $user->temCargo('Suporte')) {
             if (session('escola_atual')) {
@@ -139,7 +139,7 @@ class ConversaController extends Controller
                 $turmasQuery->where('escola_id', $user->escola_id);
             }
         }
-        
+
         $turmas = $turmasQuery->orderBy('nome')->get();
 
         return view('comunicacao.conversas.show', compact('conversa', 'mensagens', 'participantes', 'usuariosDisponiveis', 'todasConversas', 'turmas'));
@@ -266,26 +266,26 @@ class ConversaController extends Controller
             \Log::info('Mensagem inicial criada:', ['mensagem_id' => $mensagem->id]);
 
             // Criar notificações para os participantes
-             \Log::info('Criando notificações para participantes...');
-             foreach ($request->participantes as $participanteId) {
-                 if ($participanteId != Auth::id()) {
-                     Notification::createForUser(
-                         $participanteId,
-                         'info',
-                         'Nova conversa criada',
-                         'Você foi adicionado à conversa: ' . $conversa->titulo . ' por ' . Auth::user()->name,
-                         [
-                             'conversa_id' => $conversa->id,
-                             'criador_id' => Auth::id(),
-                             'criador_nome' => Auth::user()->name,
-                             'tipo_conversa' => $conversa->tipo
-                         ],
-                         route('conversas.show', $conversa->id),
-                         'Ver conversa'
-                     );
-                     \Log::info('Notificação criada para participante:', ['participante_id' => $participanteId]);
-                 }
-             }
+            \Log::info('Criando notificações para participantes...');
+            foreach ($request->participantes as $participanteId) {
+                if ($participanteId != Auth::id()) {
+                    Notification::createForUser(
+                        $participanteId,
+                        'info',
+                        'Nova conversa criada',
+                        'Você foi adicionado à conversa: ' . $conversa->titulo . ' por ' . Auth::user()->name,
+                        [
+                            'conversa_id' => $conversa->id,
+                            'criador_id' => Auth::id(),
+                            'criador_nome' => Auth::user()->name,
+                            'tipo_conversa' => $conversa->tipo
+                        ],
+                        route('conversas.show', $conversa->id),
+                        'Ver conversa'
+                    );
+                    \Log::info('Notificação criada para participante:', ['participante_id' => $participanteId]);
+                }
+            }
 
             \Log::info('Conversa criada com sucesso, redirecionando...', ['conversa_id' => $conversa->id]);
             return redirect()->route('conversas.show', $conversa)
@@ -315,7 +315,7 @@ class ConversaController extends Controller
 
         // Validação robusta de arquivos
         $rules = [
-            'conteudo' => 'required_without:arquivo|string|max:2000',
+            'conteudo' => 'required_without:arquivo|string|max:300',
             'importante' => 'boolean'
         ];
 
@@ -439,49 +439,55 @@ class ConversaController extends Controller
      */
     public function mensagens(Request $request, Conversa $conversa): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (!$conversa->isParticipante($user->id)) {
-            return response()->json(['error' => 'Você não tem acesso a esta conversa.'], 403);
+            if (!$conversa->isParticipante($user->id)) {
+                return response()->json(['error' => 'Você não tem acesso a esta conversa.'], 403);
+            }
+
+            $after = $request->get('after');
+
+            $query = $conversa->mensagens()
+                ->select('id', 'conversa_id', 'remetente_id', 'conteudo', 'tipo', 'importante', 'arquivo_path', 'arquivo_nome', 'arquivo_tamanho', 'created_at', 'updated_at')
+                ->with([
+                    'remetente:id,name,email,avatar',
+                    'leituras:id,mensagem_id,user_id,lida_em'
+                ])
+                ->orderBy('created_at', 'asc');
+
+            if ($after) {
+                $query->where('id', '>', $after);
+            }
+
+            $mensagens = $query->get();
+
+            return response()->json([
+                'mensagens' => $mensagens->map(function ($mensagem) {
+                    return [
+                        'id' => $mensagem->id,
+                        'conteudo' => $mensagem->conteudo,
+                        'tipo' => $mensagem->tipo,
+                        'importante' => $mensagem->importante,
+                        'remetente_id' => $mensagem->remetente_id,
+                        'arquivo_url' => $mensagem->arquivo_url,
+                        'arquivo_nome' => $mensagem->arquivo_nome,
+                        'arquivo_tamanho_formatado' => $mensagem->arquivo_tamanho_formatado,
+                        'remetente' => [
+                            'id' => $mensagem->remetente->id,
+                            'name' => $mensagem->remetente->name,
+                            'initials' => $this->getInitials($mensagem->remetente->name),
+                            'avatar' => $mensagem->remetente->avatar_url ?? null
+                        ],
+                        'created_at' => $mensagem->created_at->format('d/m/Y H:i'),
+                        'foi_editada' => $mensagem->foiEditada(),
+                        'is_own' => $mensagem->remetente_id === Auth::id()
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro ao carregar mensagens: ' . $e->getMessage()], 500);
         }
-
-        $after = $request->get('after');
-
-        $query = $conversa->mensagens()
-            ->select('id', 'conversa_id', 'remetente_id', 'conteudo', 'tipo', 'importante', 'arquivo_path', 'arquivo_nome', 'arquivo_tamanho', 'created_at', 'updated_at')
-            ->with([
-                'remetente:id,name,email,avatar',
-                'leituras:id,mensagem_id,user_id,lida_em'
-            ])
-            ->orderBy('created_at', 'asc');
-
-        if ($after) {
-            $query->where('id', '>', $after);
-        }
-
-        $mensagens = $query->get();
-
-        return response()->json([
-            'mensagens' => $mensagens->map(function ($mensagem) {
-                return [
-                    'id' => $mensagem->id,
-                    'conteudo' => $mensagem->conteudo,
-                    'tipo' => $mensagem->tipo,
-                    'importante' => $mensagem->importante,
-                    'remetente_id' => $mensagem->remetente_id,
-                    'arquivo_url' => $mensagem->arquivo_url,
-                    'arquivo_nome' => $mensagem->arquivo_nome,
-                    'arquivo_tamanho_formatado' => $mensagem->arquivo_tamanho_formatado,
-                    'remetente' => [
-                        'id' => $mensagem->remetente->id,
-                        'name' => $mensagem->remetente->name,
-                        'avatar' => $mensagem->remetente->avatar_url ?? null
-                    ],
-                    'created_at' => $mensagem->created_at->format('d/m/Y H:i'),
-                    'foi_editada' => $mensagem->foiEditada()
-                ];
-            })
-        ]);
     }
 
     /**
@@ -489,51 +495,57 @@ class ConversaController extends Controller
      */
     public function mensagensAnteriores(Request $request, Conversa $conversa): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        if (!$conversa->isParticipante($user->id)) {
-            return response()->json(['error' => 'Você não tem acesso a esta conversa.'], 403);
+            if (!$conversa->isParticipante($user->id)) {
+                return response()->json(['error' => 'Você não tem acesso a esta conversa.'], 403);
+            }
+
+            $before = $request->get('before');
+            $limit = min($request->get('limit', 20), 50);
+
+            $query = $conversa->mensagens()
+                ->select('id', 'conversa_id', 'remetente_id', 'conteudo', 'tipo', 'importante', 'arquivo_path', 'arquivo_nome', 'arquivo_tamanho', 'created_at', 'updated_at')
+                ->with([
+                    'remetente:id,name,email,avatar',
+                    'leituras:id,mensagem_id,user_id,lida_em'
+                ])
+                ->orderBy('created_at', 'desc');
+
+            if ($before) {
+                $query->where('id', '<', $before);
+            }
+
+            $mensagens = $query->limit($limit)->get();
+
+            return response()->json([
+                'mensagens' => $mensagens->map(function ($mensagem) {
+                    return [
+                        'id' => $mensagem->id,
+                        'conteudo' => $mensagem->conteudo,
+                        'tipo' => $mensagem->tipo,
+                        'importante' => $mensagem->importante,
+                        'remetente_id' => $mensagem->remetente_id,
+                        'arquivo_url' => $mensagem->arquivo_url,
+                        'arquivo_nome' => $mensagem->arquivo_nome,
+                        'arquivo_tamanho_formatado' => $mensagem->arquivo_tamanho_formatado,
+                        'remetente' => [
+                            'id' => $mensagem->remetente->id,
+                            'name' => $mensagem->remetente->name,
+                            'initials' => $this->getInitials($mensagem->remetente->name),
+                            'avatar' => $mensagem->remetente->avatar_url ?? null
+                        ],
+                        'created_at' => $mensagem->created_at->format('d/m/Y H:i'),
+                        'foi_editada' => $mensagem->foiEditada(),
+                        'is_own' => $mensagem->remetente_id === Auth::id()
+                    ];
+                }),
+                'has_more' => $mensagens->count() === $limit
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro ao carregar mensagens anteriores: ' . $e->getMessage()], 500);
         }
-
-        $before = $request->get('before'); // ID da mensagem mais antiga já carregada
-        $limit = $request->get('limit', 20); // Quantidade de mensagens a carregar
-
-        $query = $conversa->mensagens()
-            ->select('id', 'conversa_id', 'remetente_id', 'conteudo', 'tipo', 'importante', 'arquivo_path', 'arquivo_nome', 'arquivo_tamanho', 'created_at', 'updated_at')
-            ->with([
-                'remetente:id,name,email,avatar',
-                'leituras:id,mensagem_id,user_id,lida_em'
-            ])
-            ->orderBy('created_at', 'desc');
-
-        if ($before) {
-            $query->where('id', '<', $before);
-        }
-
-        $mensagens = $query->limit($limit)->get()->reverse()->values();
-
-        return response()->json([
-            'mensagens' => $mensagens->map(function ($mensagem) {
-                return [
-                    'id' => $mensagem->id,
-                    'conteudo' => $mensagem->conteudo,
-                    'tipo' => $mensagem->tipo,
-                    'importante' => $mensagem->importante,
-                    'remetente_id' => $mensagem->remetente_id,
-                    'arquivo_url' => $mensagem->arquivo_url,
-                    'arquivo_nome' => $mensagem->arquivo_nome,
-                    'arquivo_tamanho_formatado' => $mensagem->arquivo_tamanho_formatado,
-                    'remetente' => [
-                        'id' => $mensagem->remetente->id,
-                        'name' => $mensagem->remetente->name,
-                        'avatar' => $mensagem->remetente->avatar_url ?? null
-                    ],
-                    'created_at' => $mensagem->created_at->format('d/m/Y H:i'),
-                    'foi_editada' => $mensagem->foiEditada()
-                ];
-            }),
-            'has_more' => $mensagens->count() === $limit
-        ]);
     }
 
 
@@ -971,74 +983,75 @@ class ConversaController extends Controller
 
             $latest = filter_var($request->get('latest', false), FILTER_VALIDATE_BOOLEAN);
 
-        $query = $conversa->mensagens()
-            ->with([
-                'remetente:id,name,email,avatar',
-                'leituras:id,mensagem_id,user_id,lida_em'
-            ]);
+            $query = $conversa->mensagens()
+                ->with([
+                    'remetente:id,name,email,avatar',
+                    'leituras:id,mensagem_id,user_id,lida_em'
+                ]);
 
-        if ($latest) {
-            $lastMessageId = (int) $request->get('last_message_id', 0);
-            
-            // Verificar se o ID da última mensagem é válido
-            if ($lastMessageId <= 0) {
-                $lastMessageId = $conversa->mensagens()->max('id') ?? 0;
+            if ($latest) {
+                $lastMessageId = (int) $request->get('last_message_id', 0);
+
+                // Verificar se o ID da última mensagem é válido
+                if ($lastMessageId <= 0) {
+                    $lastMessageId = $conversa->mensagens()->max('id') ?? 0;
+                }
+
+                $mensagens = $query->where('id', '>', $lastMessageId)
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+
+                $totalMensagens = $conversa->mensagens()->count() ?? 0;
+                $mensagensData = $mensagens;
+            } else {
+                $mensagens = $query->orderBy('created_at', 'desc')
+                    ->paginate($perPage, ['*'], 'page', $page);
+
+                $mensagensData = $mensagens->getCollection()->reverse()->values();
+                $totalMensagens = $mensagens->total();
             }
 
-            $mensagens = $query->where('id', '>', $lastMessageId)
-                ->orderBy('created_at', 'asc')
-                ->get();
+            $mensagensFormatadas = $mensagensData->map(function ($mensagem) use ($user) {
+                $isOwn = $mensagem->remetente_id === $user->id;
+                $leitura = $mensagem->leituras?->where('user_id', $user->id)->first();
 
-            $totalMensagens = $conversa->mensagens()->count() ?? 0;
-            $mensagensData = $mensagens;
-        } else {
-            $mensagens = $query->orderBy('created_at', 'desc')
-                ->paginate($perPage, ['*'], 'page', $page);
+                $remetente = $mensagem->remetente;
 
-            $mensagensData = $mensagens->getCollection()->reverse()->values();
-            $totalMensagens = $mensagens->total();
-        }
+                return [
+                    'id' => $mensagem->id,
+                    'conteudo' => $mensagem->conteudo,
+                    'created_at' => optional($mensagem->created_at)->format('H:i') ?? '',
+                    'remetente' => [
+                        'id' => $remetente?->id ?? null,
+                        'name' => $remetente?->name ?? 'Usuário desconhecido',
+                        'initials' => $this->getInitials($remetente?->name ?? 'U'),
+                        'avatar' => $remetente?->avatar_url ?? null
+                    ],
+                    'is_own' => $isOwn,
+                    'status' => $isOwn ? ($leitura ? 'Lido' : 'Enviado') : null
+                ];
+            });
 
-        $mensagensFormatadas = $mensagensData->map(function ($mensagem) use ($user) {
-            $isOwn = $mensagem->remetente_id === $user->id;
-            $leitura = $mensagem->leituras?->where('user_id', $user->id)->first();
+            if ($latest) {
+                return response()->json([
+                    'mensagens' => $mensagensFormatadas,
+                    'total' => $totalMensagens
+                ]);
+            }
 
-            $remetente = $mensagem->remetente;
-
-            return [
-                'id' => $mensagem->id,
-                'conteudo' => $mensagem->conteudo,
-                'created_at' => optional($mensagem->created_at)->format('H:i') ?? '',
-                'remetente' => [
-                    'id' => $remetente?->id ?? null,
-                    'name' => $remetente?->name ?? 'Usuário desconhecido',
-                    'initials' => $this->getInitials($remetente?->name ?? 'U')
-                ],
-                'is_own' => $isOwn,
-                'status' => $isOwn ? ($leitura ? 'Lido' : 'Enviado') : null
-            ];
-        });
-
-        if ($latest) {
             return response()->json([
                 'mensagens' => $mensagensFormatadas,
+                'current_page' => $mensagens->currentPage(),
+                'last_page' => $mensagens->lastPage(),
+                'has_more' => $mensagens->hasMorePages(),
                 'total' => $totalMensagens
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Erro ao carregar mensagens: ' . $e->getMessage(),
+                'mensagens' => []
+            ], 200); // Retornando 200 para evitar erros no cliente
         }
-
-        return response()->json([
-            'mensagens' => $mensagensFormatadas,
-            'current_page' => $mensagens->currentPage(),
-            'last_page' => $mensagens->lastPage(),
-            'has_more' => $mensagens->hasMorePages(),
-            'total' => $totalMensagens
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Erro ao carregar mensagens: ' . $e->getMessage(),
-            'mensagens' => []
-        ], 200); // Retornando 200 para evitar erros no cliente
-    }
     }
 
 
@@ -1072,9 +1085,14 @@ class ConversaController extends Controller
         $conversasQuery = Conversa::participante($user->id)
             ->ativas()
             ->comContagemMensagensNaoLidas($user->id)
-            ->with(['ultimaMensagem.remetente', 'participantesAtivos', 'turma', 'mensagens' => function($query) {
-                $query->latest()->limit(1);
-            }]);
+            ->with([
+                'ultimaMensagem.remetente',
+                'participantesAtivos',
+                'turma',
+                'mensagens' => function ($query) {
+                    $query->latest()->limit(1);
+                }
+            ]);
 
         // Filtrar conversas por escola
         if ($user->isSuperAdmin() || $user->temCargo('Suporte')) {
@@ -1103,12 +1121,52 @@ class ConversaController extends Controller
                 'participantes_count' => $conversa->participantes->count(),
                 'ultima_mensagem' => $ultimaMensagem ? Str::limit($ultimaMensagem->conteudo, 50) : '',
                 'iniciais' => substr($conversa->titulo, 0, 2),
-                'mensagens_nao_lidas' => $conversa->mensagens_nao_lidas ?? 0
+                'mensagens_nao_lidas' => $conversa->mensagens_nao_lidas ?? 0,
+                'tipo' => $conversa->tipo
             ];
         });
 
         return response()->json([
             'conversas' => $conversasFormatadas
+        ]);
+    }
+
+    /**
+     * Retorna o total de mensagens não lidas para o badge global
+     */
+    public function totalMensagensNaoLidas(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $totalNaoLidas = 0;
+
+        $conversasQuery = Conversa::participante($user->id)
+            ->ativas()
+            ->comContagemMensagensNaoLidas($user->id);
+
+        // Filtrar conversas por escola (mesma lógica)
+        if ($user->isSuperAdmin() || $user->temCargo('Suporte')) {
+            if (session('escola_atual')) {
+                $conversasQuery->whereHas('participantes', function ($query) {
+                    $query->where('escola_id', session('escola_atual'));
+                });
+            }
+        } else {
+            if ($user->escola_id) {
+                $conversasQuery->whereHas('participantes', function ($query) use ($user) {
+                    $query->where('escola_id', $user->escola_id);
+                });
+            }
+        }
+
+        $conversas = $conversasQuery->get();
+
+        foreach ($conversas as $conversa) {
+            $totalNaoLidas += $conversa->mensagens_nao_lidas;
+        }
+
+        return response()->json([
+            'total' => $totalNaoLidas
         ]);
     }
 }

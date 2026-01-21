@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Funcionario extends Model
 {
@@ -29,7 +29,7 @@ class Funcionario extends Model
         'data_demissao',
         'salario',
         'ativo',
-        'observacoes'
+        'observacoes',
     ];
 
     protected $casts = [
@@ -61,10 +61,10 @@ class Funcionario extends Model
      */
     public function scopeBuscarPorNome($query, $nome)
     {
-        return $query->where(function($q) use ($nome) {
-            $q->where('nome', 'like', '%' . $nome . '%')
-              ->orWhere('sobrenome', 'like', '%' . $nome . '%')
-              ->orWhereRaw("CONCAT(nome, ' ', sobrenome) LIKE ?", ['%' . $nome . '%']);
+        return $query->where(function ($q) use ($nome) {
+            $q->where('nome', 'like', '%'.$nome.'%')
+                ->orWhere('sobrenome', 'like', '%'.$nome.'%')
+                ->orWhereRaw("CONCAT(nome, ' ', sobrenome) LIKE ?", ['%'.$nome.'%']);
         });
     }
 
@@ -73,7 +73,7 @@ class Funcionario extends Model
      */
     public function scopePorCargo($query, $cargo)
     {
-        return $query->whereHas('user.cargos', function($q) use ($cargo) {
+        return $query->whereHas('user.cargos', function ($q) use ($cargo) {
             $q->where('nome', $cargo);
         });
     }
@@ -149,7 +149,7 @@ class Funcionario extends Model
             'id' // Local key on users table
         );
     }
-    
+
     /**
      * Helper para acessar os cargos do funcionário através do usuário
      */
@@ -157,8 +157,7 @@ class Funcionario extends Model
     {
         return $this->user ? $this->user->cargos : collect();
     }
-    
-    
+
     /**
      * Relacionamento com disciplinas
      */

@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::table('transferencias', function (Blueprint $table) {
@@ -15,12 +14,18 @@ return new class extends Migration
             $table->foreignId('turma_destino_id')->nullable()->after('turma_id')->constrained('turmas')->cascadeOnDelete();
         });
 
-        // Backfill turma_id and turma_destino_id from existing sala relations (PostgreSQL syntax)
+        // Backfill turma_id and turma_destino_id from existing sala relations
         // 1) turma_id from aluno.turma_id (mais confiável no contexto atual)
-        DB::statement("UPDATE transferencias t
-            SET turma_id = a.turma_id
-            FROM alunos a
-            WHERE a.id = t.aluno_id AND t.turma_id IS NULL");
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement("UPDATE transferencias 
+                SET turma_id = (SELECT a.turma_id FROM alunos a WHERE a.id = transferencias.aluno_id) 
+                WHERE turma_id IS NULL");
+        } else {
+            DB::statement("UPDATE transferencias t
+                SET turma_id = a.turma_id
+                FROM alunos a
+                WHERE a.id = t.aluno_id AND t.turma_id IS NULL");
+        }
 
         // 2) turma_destino_id: não há mapeamento confiável sem vínculo direto sala->turma
         // Mantemos NULL para registros antigos; novos registros usarão turma_destino_id diretamente.
@@ -46,19 +51,30 @@ return new class extends Migration
             $table->foreignId('sala_destino_id')->nullable()->constrained('salas')->nullOnDelete();
         });
 
-        // Optionally try to backfill sala columns from turmas via salas.turma_id (PostgreSQL syntax)
-        // This may not be perfect if multiple salas share a turma; it will pick an arbitrary matching sala.
-        // 1) sala_origem_id from turma_id
-        DB::statement("UPDATE transferencias t
-            SET sala_origem_id = so.id
-            FROM salas so
-            WHERE so.turma_id = t.turma_id AND t.sala_origem_id IS NULL");
+        // Optionally try to backfill sala columns from turmas via salas.turma_id
+        if (DB::getDriverName() === 'sqlite') {
+            // 1) sala_origem_id from turma_id
+            DB::statement("UPDATE transferencias 
+                SET sala_origem_id = (SELECT so.id FROM salas so WHERE so.turma_id = transferencias.turma_id LIMIT 1) 
+                WHERE sala_origem_id IS NULL AND turma_id IS NOT NULL");
 
-        // 2) sala_destino_id from turma_destino_id
-        DB::statement("UPDATE transferencias t
-            SET sala_destino_id = sd.id
-            FROM salas sd
-            WHERE sd.turma_id = t.turma_destino_id AND t.sala_destino_id IS NULL");
+            // 2) sala_destino_id from turma_destino_id
+            DB::statement("UPDATE transferencias 
+                SET sala_destino_id = (SELECT sd.id FROM salas sd WHERE sd.turma_id = transferencias.turma_destino_id LIMIT 1) 
+                WHERE sala_destino_id IS NULL AND turma_destino_id IS NOT NULL");
+        } else {
+            // 1) sala_origem_id from turma_id
+            DB::statement("UPDATE transferencias t
+                SET sala_origem_id = so.id
+                FROM salas so
+                WHERE so.turma_id = t.turma_id AND t.sala_origem_id IS NULL");
+
+            // 2) sala_destino_id from turma_destino_id
+            DB::statement("UPDATE transferencias t
+                SET sala_destino_id = sd.id
+                FROM salas sd
+                WHERE sd.turma_id = t.turma_destino_id AND t.sala_destino_id IS NULL");
+        }
 
         Schema::table('transferencias', function (Blueprint $table) {
             // Remove turma columns

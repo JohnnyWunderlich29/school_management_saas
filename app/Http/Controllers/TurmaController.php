@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Historico;
+use App\Models\NivelEnsino;
 use App\Models\Turma;
 use App\Models\Turno;
-use App\Models\Grupo;
-use App\Models\NivelEnsino;
-use App\Models\Historico;
 use App\Services\AlertService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class TurmaController extends Controller
 {
@@ -22,7 +20,7 @@ class TurmaController extends Controller
     public function index(Request $request)
     {
         $query = Turma::with(['turno', 'nivelEnsino'])->withCount('alunos');
-        
+
         // Para super admins e suporte, filtrar pela escola da sessão se definida
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico')) {
             if (session('escola_atual')) {
@@ -31,10 +29,10 @@ class TurmaController extends Controller
             // Se não há escola na sessão, super admins veem todas as turmas (incluindo as com escola_id NULL)
         } else {
             // Para usuários normais, verificar permissão e filtrar por sua escola
-            if (!auth()->user()->temPermissao('turmas.ver')) {
+            if (! auth()->user()->temPermissao('turmas.ver')) {
                 abort(403, 'Acesso negado');
             }
-            
+
             if (auth()->user()->escola_id) {
                 $query->where('escola_id', auth()->user()->escola_id);
             } else {
@@ -45,17 +43,17 @@ class TurmaController extends Controller
         // Filtro de busca (aceita 'busca' e 'buscar')
         if ($request->filled('busca') || $request->filled('buscar')) {
             $busca = $request->input('busca', $request->input('buscar'));
-            $query->where(function($q) use ($busca) {
+            $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'like', "%{$busca}%")
-                  ->orWhere('codigo', 'like', "%{$busca}%")
-                  ->orWhere('descricao', 'like', "%{$busca}%");
+                    ->orWhere('codigo', 'like', "%{$busca}%")
+                    ->orWhere('descricao', 'like', "%{$busca}%");
             });
         }
 
         // Filtro de status
         if ($request->filled('status')) {
             $status = $request->status;
-            if (in_array($status, ['1','0',1,0], true)) {
+            if (in_array($status, ['1', '0', 1, 0], true)) {
                 $query->where('ativo', (int) $status);
             } else {
                 switch ($status) {
@@ -82,14 +80,14 @@ class TurmaController extends Controller
 
         // Filtro de turno
         if ($request->filled('turno')) {
-            $query->whereHas('turno', function($q) use ($request) {
+            $query->whereHas('turno', function ($q) use ($request) {
                 $q->where('nome', $request->turno);
             });
         }
         if ($request->filled('turno_id')) {
             $query->where('turno_id', $request->turno_id);
         }
-        
+
         // Filtro de nível de ensino
         if ($request->filled('nivel_ensino_id')) {
             $query->where('nivel_ensino_id', $request->nivel_ensino_id);
@@ -99,7 +97,7 @@ class TurmaController extends Controller
         $allowedSorts = ['id', 'nome', 'codigo', 'ocupacao', 'ativo', 'created_at', 'turno', 'nivel_ensino'];
         $sort = $request->input('sort');
         $fallbackOrdenar = $request->input('ordenar');
-        if (!$sort && $fallbackOrdenar) {
+        if (! $sort && $fallbackOrdenar) {
             // Mapear valores antigos para novos
             $mapOrdenar = [
                 'nome' => 'nome',
@@ -111,7 +109,7 @@ class TurmaController extends Controller
             ];
             $sort = $mapOrdenar[$fallbackOrdenar] ?? 'nome';
         }
-        if (!in_array($sort, $allowedSorts, true)) {
+        if (! in_array($sort, $allowedSorts, true)) {
             // Padrão
             $sort = 'nome';
         }
@@ -119,7 +117,7 @@ class TurmaController extends Controller
 
         if ($sort === 'ocupacao') {
             // Evitar divisão por zero
-            $query->orderByRaw('CASE WHEN capacidade IS NULL OR capacidade = 0 THEN 0 ELSE (alunos_count * 1.0) / capacidade END ' . $direction);
+            $query->orderByRaw('CASE WHEN capacidade IS NULL OR capacidade = 0 THEN 0 ELSE (alunos_count * 1.0) / capacidade END '.$direction);
         } elseif ($sort === 'turno') {
             // Ordenar pelo nome do turno (relação belongsTo)
             $query->leftJoin('turnos', 'turnos.id', '=', 'turmas.turno_id')
@@ -137,9 +135,9 @@ class TurmaController extends Controller
         // Paginação e preservação de query string
         $turmas = $query->paginate(12)->withQueryString();
 
-        // Carregar turnos e grupos para os filtros
-        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico') 
-            ? (session('escola_atual') ?: auth()->user()->escola_id) 
+        // Carregar turnos, grupos e coordenadores para os filtros e modals
+        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico')
+            ? (session('escola_atual') ?: auth()->user()->escola_id)
             : auth()->user()->escola_id;
 
         $turnos = Turno::where('ativo', true)
@@ -148,13 +146,23 @@ class TurmaController extends Controller
             ->orderBy('nome')
             ->get();
 
-        $niveisEnsino = NivelEnsino::whereHas('escolaNiveisConfig', function($query) use ($escola_id) {
-                $query->where('escola_id', $escola_id);
-            })
+        $niveisEnsino = NivelEnsino::whereHas('escolaNiveisConfig', function ($query) use ($escola_id) {
+            $query->where('escola_id', $escola_id);
+        })
             ->orderBy('nome')
             ->get();
 
-        return view('admin.turmas.index', compact('turmas', 'turnos', 'niveisEnsino'));
+        // Buscar coordenadores da escola
+        $coordenadores = \App\Models\User::where('escola_id', $escola_id)
+            ->whereHas('cargos', function ($q) {
+                $q->where('nome', 'like', '%Coordenador%')
+                    ->orWhere('tipo_cargo', 'coordenador');
+            })
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('admin.turmas.index', compact('turmas', 'turnos', 'niveisEnsino', 'coordenadores'));
     }
 
     /**
@@ -167,6 +175,7 @@ class TurmaController extends Controller
                 'nome' => 'required|string|max:255',
                 'turno_id' => 'required|exists:turnos,id',
                 'nivel_ensino_id' => 'required|exists:niveis_ensino,id',
+                'coordenador_id' => 'nullable|exists:users,id',
                 'capacidade' => 'nullable|integer|min:1|max:100',
                 'ano_letivo' => 'required|integer|min:2000|max:2100',
                 'descricao' => 'nullable|string|max:500',
@@ -174,47 +183,49 @@ class TurmaController extends Controller
 
             if ($validator->fails()) {
                 AlertService::validacao('Dados inválidos', $validator->errors()->toArray());
+
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             $data = $request->all();
             // Definir ativo como true por padrão se não especificado
-            $data['ativo'] = $request->has('ativo') ? (bool)$request->input('ativo') : true;
-            
+            $data['ativo'] = $request->has('ativo') ? (bool) $request->input('ativo') : true;
+
             // Definir escola_id baseado no usuário
             if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico')) {
                 $data['escola_id'] = session('escola_atual') ?: auth()->user()->escola_id;
             } else {
                 $data['escola_id'] = auth()->user()->escola_id;
             }
-            
+
             // Verificar se escola_id foi definido
-            if (!$data['escola_id']) {
+            if (! $data['escola_id']) {
                 AlertService::erro('Erro de configuração', 'Não foi possível determinar a escola. Selecione uma escola primeiro.');
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Não foi possível determinar a escola. Selecione uma escola primeiro.'
+                    'message' => 'Não foi possível determinar a escola. Selecione uma escola primeiro.',
                 ], 422);
             }
-            
+
             // Manter nivel_ensino_id para associar a turma ao nível de ensino
-            
+
             // Gerar código automaticamente
             $prefix = substr(strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', $data['nome'])), 0, 3);
             $escolaPrefix = substr(strtoupper(str_replace(' ', '', auth()->user()->escola->nome ?? 'ESC')), 0, 3);
             $anoSuffix = substr($data['ano_letivo'], -2);
             $randomPart = strtoupper(substr(md5(uniqid()), 0, 4));
-            
+
             $data['codigo'] = "{$escolaPrefix}{$prefix}{$anoSuffix}{$randomPart}";
-            
+
             // Garantir que o código seja único
             $count = 1;
             $originalCodigo = $data['codigo'];
             while (Turma::where('codigo', $data['codigo'])->exists()) {
-                $data['codigo'] = $originalCodigo . $count;
+                $data['codigo'] = $originalCodigo.$count;
                 $count++;
             }
 
@@ -237,17 +248,17 @@ class TurmaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Turma criada com sucesso!'
+                'message' => 'Turma criada com sucesso!',
             ]);
 
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             AlertService::error('Ocorreu um erro ao criar a turma. Tente novamente.');
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor. Tente novamente.'
+                'message' => 'Erro interno do servidor. Tente novamente.',
             ], 500);
         }
     }
@@ -268,11 +279,12 @@ class TurmaController extends Controller
                     abort(404);
                 }
             }
-            
+
             $validator = Validator::make($request->all(), [
                 'nome' => 'required|string|max:255',
                 'turno_id' => 'required|exists:turnos,id',
                 'nivel_ensino_id' => 'required|exists:niveis_ensino,id',
+                'coordenador_id' => 'nullable|exists:users,id',
                 'capacidade' => 'nullable|integer|min:1|max:100',
                 'ano_letivo' => 'required|integer|min:2000|max:2100',
                 'descricao' => 'nullable|string|max:500',
@@ -280,9 +292,10 @@ class TurmaController extends Controller
 
             if ($validator->fails()) {
                 AlertService::validacao('Dados inválidos', $validator->errors()->toArray());
+
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -291,8 +304,8 @@ class TurmaController extends Controller
 
             $data = $request->all();
             // Definir ativo baseado no checkbox ou manter valor atual se não especificado
-            $data['ativo'] = $request->has('ativo') ? (bool)$request->input('ativo') : $turma->ativo;
-            
+            $data['ativo'] = $request->has('ativo') ? (bool) $request->input('ativo') : $turma->ativo;
+
             // Manter nivel_ensino_id para associar a turma ao nível de ensino
 
             DB::beginTransaction();
@@ -314,17 +327,17 @@ class TurmaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Turma atualizada com sucesso!'
+                'message' => 'Turma atualizada com sucesso!',
             ]);
 
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             AlertService::error('Ocorreu um erro ao atualizar a turma. Tente novamente.');
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor. Tente novamente.'
+                'message' => 'Erro interno do servidor. Tente novamente.',
             ], 500);
         }
     }
@@ -344,35 +357,45 @@ class TurmaController extends Controller
                 abort(404);
             }
         }
-        
-        $turma->load(['turno', 'nivelEnsino', 'escola', 'salas']);
+
+        $turma->load(['turno', 'nivelEnsino', 'escola', 'salas', 'coordenador']);
         // Contar alunos e anexar dados úteis para o wizard
         $turma->loadCount('alunos');
         // Adicionar a primeira sala associada como atributo simples
         $turma->setAttribute('sala', optional($turma->salas->first())->nome);
-        
+
         // Carregar dados necessários para o formulário de edição
-        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico') 
-            ? (session('escola_atual') ?: auth()->user()->escola_id) 
+        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico')
+            ? (session('escola_atual') ?: auth()->user()->escola_id)
             : auth()->user()->escola_id;
-            
+
         $turnos = \App\Models\Turno::where('ativo', true)
             ->where('escola_id', $escola_id)
             ->orderBy('ordem')
             ->orderBy('nome')
             ->get();
-            
-        $niveisEnsino = \App\Models\NivelEnsino::whereHas('escolaNiveisConfig', function($query) use ($escola_id) {
-                $query->where('escola_id', $escola_id);
-            })
+
+        $niveisEnsino = \App\Models\NivelEnsino::whereHas('escolaNiveisConfig', function ($query) use ($escola_id) {
+            $query->where('escola_id', $escola_id);
+        })
             ->orderBy('nome')
             ->get();
-        
+
+        $coordenadores = \App\Models\User::where('escola_id', $escola_id)
+            ->whereHas('cargos', function ($q) {
+                $q->where('nome', 'like', '%Coordenador%')
+                    ->orWhere('tipo_cargo', 'coordenador');
+            })
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return response()->json([
             'success' => true,
             'turma' => $turma,
             'turnos' => $turnos,
-            'niveisEnsino' => $niveisEnsino
+            'niveisEnsino' => $niveisEnsino,
+            'coordenadores' => $coordenadores,
         ]);
     }
 
@@ -391,29 +414,39 @@ class TurmaController extends Controller
                 abort(404);
             }
         }
-        
+
         // Carregar dados necessários para o formulário
-        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico') 
-            ? (session('escola_atual') ?: auth()->user()->escola_id) 
+        $escola_id = auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte Técnico')
+            ? (session('escola_atual') ?: auth()->user()->escola_id)
             : auth()->user()->escola_id;
-            
+
         $turnos = \App\Models\Turno::where('ativo', true)
             ->where('escola_id', $escola_id)
             ->orderBy('ordem')
             ->orderBy('nome')
             ->get();
-            
-        $niveisEnsino = \App\Models\NivelEnsino::whereHas('escolaNiveisConfig', function($query) use ($escola_id) {
-                $query->where('escola_id', $escola_id);
-            })
+
+        $niveisEnsino = \App\Models\NivelEnsino::whereHas('escolaNiveisConfig', function ($query) use ($escola_id) {
+            $query->where('escola_id', $escola_id);
+        })
             ->orderBy('nome')
             ->get();
-        
+
+        $coordenadores = \App\Models\User::where('escola_id', $escola_id)
+            ->whereHas('cargos', function ($q) {
+                $q->where('nome', 'like', '%Coordenador%')
+                    ->orWhere('tipo_cargo', 'coordenador');
+            })
+            ->where('ativo', true)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return response()->json([
             'success' => true,
             'turma' => $turma,
             'turnos' => $turnos,
-            'niveisEnsino' => $niveisEnsino
+            'niveisEnsino' => $niveisEnsino,
+            'coordenadores' => $coordenadores,
         ]);
     }
 
@@ -433,22 +466,24 @@ class TurmaController extends Controller
                     abort(404);
                 }
             }
-            
+
             // Verificar se a turma tem alunos associados
             if ($turma->alunos()->count() > 0) {
                 AlertService::warning('Não é possível excluir esta turma pois existem alunos associados a ela.');
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Não é possível excluir esta turma pois existem alunos associados a ela.'
+                    'message' => 'Não é possível excluir esta turma pois existem alunos associados a ela.',
                 ], 422);
             }
 
             // Verificar se a turma tem planejamentos associados
             if ($turma->planejamentos()->count() > 0) {
                 AlertService::warning('Não é possível excluir esta turma pois existem planejamentos associados a ela.');
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Não é possível excluir esta turma pois existem planejamentos associados a ela.'
+                    'message' => 'Não é possível excluir esta turma pois existem planejamentos associados a ela.',
                 ], 422);
             }
 
@@ -474,17 +509,17 @@ class TurmaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Turma excluída com sucesso!'
+                'message' => 'Turma excluída com sucesso!',
             ]);
 
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             AlertService::error('Ocorreu um erro ao excluir a turma. Tente novamente.');
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor. Tente novamente.'
+                'message' => 'Erro interno do servidor. Tente novamente.',
             ], 500);
         }
     }
@@ -526,7 +561,7 @@ class TurmaController extends Controller
                 'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null,
                 'data_matricula' => $aluno->created_at->format('d/m/Y'),
                 'ativo' => $aluno->ativo,
-                'transferencia_pendente' => in_array($aluno->id, $pendentesIds)
+                'transferencia_pendente' => in_array($aluno->id, $pendentesIds),
             ];
         });
 
@@ -539,8 +574,8 @@ class TurmaController extends Controller
                 'nome' => $turma->nome,
                 'codigo' => $turma->codigo,
                 'capacidade' => $turma->capacidade,
-                'vagas_disponiveis' => $turma->vagas_disponiveis
-            ]
+                'vagas_disponiveis' => $turma->vagas_disponiveis,
+            ],
         ]);
     }
 
@@ -575,8 +610,8 @@ class TurmaController extends Controller
         if ($busca) {
             $queryDisponiveis->where(function ($q) use ($busca) {
                 $q->where('nome', 'like', "%{$busca}%")
-                  ->orWhere('email', 'like', "%{$busca}%")
-                  ->orWhere('cpf', 'like', "%{$busca}%");
+                    ->orWhere('email', 'like', "%{$busca}%")
+                    ->orWhere('cpf', 'like', "%{$busca}%");
             });
         }
 
@@ -584,7 +619,7 @@ class TurmaController extends Controller
         $totalDisponiveis = (clone $queryDisponiveis)->count();
         $alunosDisponiveis = [];
         $hasMoreDisponiveis = false;
-        if (!$mode || $mode === 'disponiveis') {
+        if (! $mode || $mode === 'disponiveis') {
             $alunosDisponiveis = (clone $queryDisponiveis)
                 ->select('id', 'nome', 'sobrenome', 'email', 'data_nascimento')
                 ->orderBy('nome')
@@ -597,7 +632,7 @@ class TurmaController extends Controller
                         'nome' => $aluno->nome,
                         'sobrenome' => $aluno->sobrenome,
                         'email' => $aluno->email,
-                        'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null
+                        'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null,
                     ];
                 });
             $hasMoreDisponiveis = ($pageDisponiveis * $perPage) < $totalDisponiveis;
@@ -613,8 +648,8 @@ class TurmaController extends Controller
         if ($busca) {
             $queryOutrasTurmas->where(function ($q) use ($busca) {
                 $q->where('nome', 'like', "%{$busca}%")
-                  ->orWhere('email', 'like', "%{$busca}%")
-                  ->orWhere('cpf', 'like', "%{$busca}%");
+                    ->orWhere('email', 'like', "%{$busca}%")
+                    ->orWhere('cpf', 'like', "%{$busca}%");
             });
         }
 
@@ -622,7 +657,7 @@ class TurmaController extends Controller
         $totalOutras = (clone $queryOutrasTurmas)->count();
         $alunosOutrasTurmas = [];
         $hasMoreOutras = false;
-        if (!$mode || $mode === 'outras') {
+        if (! $mode || $mode === 'outras') {
             $alunosOutrasTurmas = (clone $queryOutrasTurmas)
                 ->select('id', 'nome', 'sobrenome', 'email', 'data_nascimento', 'turma_id')
                 ->orderBy('nome')
@@ -637,7 +672,7 @@ class TurmaController extends Controller
                         'email' => $aluno->email,
                         'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null,
                         'turma_atual' => $aluno->turma ? $aluno->turma->nome : 'Turma não encontrada',
-                        'turma_atual_id' => $aluno->turma_id
+                        'turma_atual_id' => $aluno->turma_id,
                     ];
                 });
             $hasMoreOutras = ($pageOutras * $perPage) < $totalOutras;
@@ -647,14 +682,15 @@ class TurmaController extends Controller
         $response = [
             'success' => true,
         ];
-        if (!$mode || $mode === 'disponiveis') {
+        if (! $mode || $mode === 'disponiveis') {
             $response['disponiveis'] = $alunosDisponiveis;
             $response['has_more_disponiveis'] = $hasMoreDisponiveis;
         }
-        if (!$mode || $mode === 'outras') {
+        if (! $mode || $mode === 'outras') {
             $response['outras_turmas'] = $alunosOutrasTurmas;
             $response['has_more_outras'] = $hasMoreOutras;
         }
+
         return response()->json($response);
     }
 
@@ -675,7 +711,7 @@ class TurmaController extends Controller
         }
 
         $request->validate([
-            'aluno_id' => 'required|exists:alunos,id'
+            'aluno_id' => 'required|exists:alunos,id',
         ]);
 
         $aluno = \App\Models\Aluno::findOrFail($request->aluno_id);
@@ -684,7 +720,7 @@ class TurmaController extends Controller
         if ($aluno->escola_id !== $turma->escola_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'O aluno não pertence à mesma escola da turma.'
+                'message' => 'O aluno não pertence à mesma escola da turma.',
             ], 422);
         }
 
@@ -692,7 +728,7 @@ class TurmaController extends Controller
         if ($aluno->turma_id === $turma->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'O aluno já está matriculado nesta turma.'
+                'message' => 'O aluno já está matriculado nesta turma.',
             ], 422);
         }
 
@@ -700,7 +736,7 @@ class TurmaController extends Controller
         if ($turma->alunos()->count() >= $turma->capacidade) {
             return response()->json([
                 'success' => false,
-                'message' => 'A turma já atingiu sua capacidade máxima.'
+                'message' => 'A turma já atingiu sua capacidade máxima.',
             ], 422);
         }
 
@@ -715,8 +751,8 @@ class TurmaController extends Controller
                 'nome' => $aluno->nome,
                 'email' => $aluno->email,
                 'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null,
-                'data_matricula' => now()->format('d/m/Y')
-            ]
+                'data_matricula' => now()->format('d/m/Y'),
+            ],
         ]);
     }
 
@@ -740,7 +776,7 @@ class TurmaController extends Controller
         if ($aluno->turma_id !== $turma->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'O aluno não está matriculado nesta turma.'
+                'message' => 'O aluno não está matriculado nesta turma.',
             ], 422);
         }
 
@@ -749,7 +785,7 @@ class TurmaController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Aluno removido da turma com sucesso!'
+            'message' => 'Aluno removido da turma com sucesso!',
         ]);
     }
 
@@ -771,7 +807,7 @@ class TurmaController extends Controller
 
         $request->validate([
             'alunos' => 'required|array|min:1',
-            'alunos.*' => 'required|exists:alunos,id'
+            'alunos.*' => 'required|exists:alunos,id',
         ]);
 
         $alunosIds = $request->alunos;
@@ -781,27 +817,30 @@ class TurmaController extends Controller
         foreach ($alunosIds as $alunoId) {
             $aluno = \App\Models\Aluno::find($alunoId);
 
-            if (!$aluno) {
+            if (! $aluno) {
                 $erros[] = "Aluno com ID {$alunoId} não encontrado.";
+
                 continue;
             }
 
             // Verificar se o aluno pertence à mesma escola
             if ($aluno->escola_id !== $turma->escola_id) {
                 $erros[] = "O aluno {$aluno->nome} não pertence à mesma escola da turma.";
+
                 continue;
             }
 
             // Verificar se o aluno já está na turma
             if ($aluno->turma_id === $turma->id) {
                 $erros[] = "O aluno {$aluno->nome} já está matriculado nesta turma.";
+
                 continue;
             }
 
             // Verificar se há vagas disponíveis
             $alunosNaTurma = $turma->alunos()->count() + count($alunosAdicionados);
             if ($alunosNaTurma >= $turma->capacidade) {
-                $erros[] = "A turma já atingiu sua capacidade máxima. Não é possível adicionar mais alunos.";
+                $erros[] = 'A turma já atingiu sua capacidade máxima. Não é possível adicionar mais alunos.';
                 break;
             }
 
@@ -812,30 +851,30 @@ class TurmaController extends Controller
                 'nome' => $aluno->nome,
                 'email' => $aluno->email,
                 'idade' => $aluno->data_nascimento ? \Carbon\Carbon::parse($aluno->data_nascimento)->age : null,
-                'data_matricula' => now()->format('d/m/Y')
+                'data_matricula' => now()->format('d/m/Y'),
             ];
         }
 
         if (count($alunosAdicionados) > 0 && count($erros) === 0) {
             return response()->json([
                 'success' => true,
-                'message' => count($alunosAdicionados) === 1 
-                    ? 'Aluno adicionado com sucesso!' 
-                    : count($alunosAdicionados) . ' alunos adicionados com sucesso!',
-                'alunos' => $alunosAdicionados
+                'message' => count($alunosAdicionados) === 1
+                    ? 'Aluno adicionado com sucesso!'
+                    : count($alunosAdicionados).' alunos adicionados com sucesso!',
+                'alunos' => $alunosAdicionados,
             ]);
         } elseif (count($alunosAdicionados) > 0 && count($erros) > 0) {
             return response()->json([
                 'success' => true,
-                'message' => count($alunosAdicionados) . ' alunos adicionados com sucesso, mas alguns erros ocorreram.',
+                'message' => count($alunosAdicionados).' alunos adicionados com sucesso, mas alguns erros ocorreram.',
                 'alunos' => $alunosAdicionados,
-                'erros' => $erros
+                'erros' => $erros,
             ]);
         } else {
             return response()->json([
                 'success' => false,
                 'message' => 'Nenhum aluno pôde ser adicionado.',
-                'erros' => $erros
+                'erros' => $erros,
             ], 422);
         }
     }
@@ -852,10 +891,10 @@ class TurmaController extends Controller
             $escola_id = auth()->user()->escola_id;
         }
 
-        if (!$escola_id) {
+        if (! $escola_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Não foi possível determinar a escola.'
+                'message' => 'Não foi possível determinar a escola.',
             ], 422);
         }
 
@@ -869,7 +908,7 @@ class TurmaController extends Controller
             $busca = $request->busca;
             $query->where(function ($q) use ($busca) {
                 $q->where('nome', 'like', "%{$busca}%")
-                  ->orWhere('codigo', 'like', "%{$busca}%");
+                    ->orWhere('codigo', 'like', "%{$busca}%");
             });
         }
 
@@ -891,13 +930,13 @@ class TurmaController extends Controller
                     'capacidade' => $turma->capacidade,
                     'alunos_count' => $turma->alunos_count,
                     'vagas_disponiveis' => $turma->capacidade - $turma->alunos_count,
-                    'tem_vagas' => ($turma->capacidade - $turma->alunos_count) > 0
+                    'tem_vagas' => ($turma->capacidade - $turma->alunos_count) > 0,
                 ];
             });
 
         return response()->json([
             'success' => true,
-            'turmas' => $turmas
+            'turmas' => $turmas,
         ]);
     }
 
@@ -908,7 +947,7 @@ class TurmaController extends Controller
     {
         $request->validate([
             'aluno_id' => 'required|exists:alunos,id',
-            'turma_destino_id' => 'required|exists:turmas,id'
+            'turma_destino_id' => 'required|exists:turmas,id',
         ]);
 
         $aluno = \App\Models\Aluno::findOrFail($request->aluno_id);
@@ -925,7 +964,7 @@ class TurmaController extends Controller
         if ($aluno->escola_id !== $escola_id || $turmaDestino->escola_id !== $escola_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Você não tem permissão para transferir este aluno ou para esta turma.'
+                'message' => 'Você não tem permissão para transferir este aluno ou para esta turma.',
             ], 403);
         }
 
@@ -933,7 +972,7 @@ class TurmaController extends Controller
         if ($aluno->turma_id === $turmaDestino->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'O aluno já está matriculado nesta turma.'
+                'message' => 'O aluno já está matriculado nesta turma.',
             ], 422);
         }
 
@@ -942,7 +981,7 @@ class TurmaController extends Controller
         if ($alunosNaTurmaDestino >= $turmaDestino->capacidade) {
             return response()->json([
                 'success' => false,
-                'message' => 'A turma de destino não possui vagas disponíveis.'
+                'message' => 'A turma de destino não possui vagas disponíveis.',
             ], 422);
         }
 
@@ -954,7 +993,7 @@ class TurmaController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Aluno {$aluno->nome} transferido com sucesso de '{$turmaAtual}' para '{$turmaDestino->nome}'."
+            'message' => "Aluno {$aluno->nome} transferido com sucesso de '{$turmaAtual}' para '{$turmaDestino->nome}'.",
         ]);
     }
 
@@ -981,7 +1020,7 @@ class TurmaController extends Controller
             DB::beginTransaction();
 
             // Alternar o status
-            $novoStatus = !$turma->ativo;
+            $novoStatus = ! $turma->ativo;
             $turma->update(['ativo' => $novoStatus]);
 
             // Registrar no histórico
@@ -1002,17 +1041,17 @@ class TurmaController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => "Turma {$statusTexto} com sucesso!",
-                'novo_status' => $novoStatus
+                'novo_status' => $novoStatus,
             ]);
 
         } catch (Exception $e) {
             DB::rollBack();
-            
+
             AlertService::sistema('Erro interno', 'Ocorreu um erro ao alterar o status da turma. Tente novamente.');
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Erro interno do servidor. Tente novamente.'
+                'message' => 'Erro interno do servidor. Tente novamente.',
             ], 500);
         }
     }

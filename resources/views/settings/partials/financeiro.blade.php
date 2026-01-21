@@ -20,7 +20,10 @@
                 <button onclick="showFinanceTab('tab-fin-gateways')" id="fin-gateways-tab"
                     class="fintab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Gateways</button>
                 <button onclick="showFinanceTab('tab-fin-dunning')" id="fin-dunning-tab"
-                    class="fintab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Envio de Cobranças</button>
+                    class="fintab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Envio de
+                    Cobranças</button>
+                <button onclick="showFinanceTab('tab-fin-automation')" id="fin-automation-tab"
+                    class="fintab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm text-indigo-600">Automação</button>
             </nav>
         </div>
     </div>
@@ -35,19 +38,20 @@
                     <p class="mt-1 text-sm text-gray-600">Selecione e edite taxas por método</p>
                 </div>
                 <div class="flex flex-col mt-2 items-center gap-2 md:flex-row">
-                    <x-button color="primary" type="button" onclick="openModal('create-charge-modal')" class="w-full sm:mt-2">
+                    <x-button color="primary" type="button" onclick="openModal('create-charge-modal')"
+                        class="w-full sm:mt-2">
                         <i class="fas fa-plus mr-1"></i> Nova Forma
                     </x-button>
                     <div class="flex">
-                    <x-select name="filter_alias" x-model="filterAlias" class="text-sm">
-                        <option value="">Todos os gateways</option>
-                        <template x-for="g in (gwNames||[])" :key="g.alias">
-                            <option :value="g.alias" x-text="(g.name||g.alias)"></option>
-                        </template>
-                    </x-select>
-                    <x-input name="search_text" placeholder="Buscar método (pix, boleto, cartão)"
-                        x-model="searchText" />
-                </div>
+                        <x-select name="filter_alias" x-model="filterAlias" class="text-sm">
+                            <option value="">Todos os gateways</option>
+                            <template x-for="g in (gwNames||[])" :key="g.alias">
+                                <option :value="g.alias" x-text="(g.name||g.alias)"></option>
+                            </template>
+                        </x-select>
+                        <x-input name="search_text" placeholder="Buscar método (pix, boleto, cartão)"
+                            x-model="searchText" />
+                    </div>
                 </div>
             </div>
 
@@ -121,7 +125,8 @@
                             <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
                                 <h3 class="text-lg font-medium text-gray-900">Editar Forma — <span
                                         x-text="gwNameFor(editing && editing.gateway_alias)"></span></h3>
-                                <button type="button" class="text-gray-400 hover:text-gray-600" @click="closeEdit()">
+                                <button type="button" class="text-gray-400 hover:text-gray-600"
+                                    @click="closeEdit()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -181,6 +186,59 @@
         </div>
     </div>
 
+    <!-- Tab: Automação -->
+    <div id="tab-fin-automation" class="fintab-content hidden">
+        <form method="POST" action="{{ route('finance.settings.save') }}">
+            @csrf
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg border border-gray-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Automação de Faturamento</h3>
+                            <p class="text-sm text-gray-600">Gere faturas automaticamente antes do vencimento</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="automation_active" value="1"
+                                @checked(isset($automation) && $automation->active) class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                            </div>
+                            <span class="ml-3 text-sm font-medium text-gray-700">Ativo</span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="automation_days_advance" class="block text-sm font-medium text-gray-700">Gerar
+                                fatura com antecedência (dias)</label>
+                            <input type="number" min="1" max="60" id="automation_days_advance"
+                                name="automation_days_advance"
+                                value="{{ old('automation_days_advance', $automation->days_advance ?? 5) }}"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <p class="mt-1 text-xs text-gray-500">Número de dias antes do vencimento para gerar a
+                                cobrança
+                                automaticamente.</p>
+                        </div>
+                        <div class="flex items-center">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="automation_consolidate" value="1"
+                                    @checked(isset($automation) && $automation->consolidate_default)
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-gray-700 font-medium">Consolidar faturas por pagador
+                                    (Padrão)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <x-button type="submit" color="primary">
+                        <i class="fas fa-save mr-1"></i> Salvar Automação
+                    </x-button>
+                </div>
+            </div>
+        </form>
+    </div>
 
     <div id="tab-fin-gateways" class="fintab-content hidden">
         <div class="">
@@ -196,7 +254,8 @@
                             Ambiente: {{ strtoupper($financeEnv) }}
                         </span>
                     @endisset
-                    <x-button color="primary" type="button" onclick="openModal('create-gateway-modal')" class="w-full mt-2">
+                    <x-button color="primary" type="button" onclick="openModal('create-gateway-modal')"
+                        class="w-full mt-2">
                         <i class="fas fa-plus mr-1"></i> Novo Gateway
                     </x-button>
                 </div>
@@ -284,21 +343,26 @@
                                 <div class="font-semibold text-gray-900">{{ $gw->alias }}</div>
                                 <div class="text-sm text-gray-500">{{ $gw->name }}</div>
                             </div>
-                            <x-button color="primary" type="button" onclick="openModal('edit-gateway-{{ $gw->id }}')" class="w-full mt-2">
+                            <x-button color="primary" type="button"
+                                onclick="openModal('edit-gateway-{{ $gw->id }}')" class="w-full mt-2">
                                 <i class="fas fa-edit mr-1"></i> Editar
                             </x-button>
                         </div>
                         <div class="flex flex-wrap gap-2 mt-3">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $gw->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $gw->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                 {{ $gw->active ? 'Ativo' : 'Inativo' }}
                             </span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $gw->webhook_secret ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700' }}">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $gw->webhook_secret ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700' }}">
                                 {{ $gw->webhook_secret ? 'Webhook configurado' : 'Webhook não definido' }}
                             </span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ !empty($gw->credentials) ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700' }}">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ !empty($gw->credentials) ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700' }}">
                                 {{ !empty($gw->credentials) ? 'Credenciais setadas' : 'Credenciais ausentes' }}
                             </span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($gw->environment ?? 'production') === 'production' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($gw->environment ?? 'production') === 'production' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
                                 {{ ucfirst($gw->environment ?? 'production') }}
                             </span>
                         </div>
@@ -310,9 +374,8 @@
 
             <!-- Modal: Criar Gateway (x-modal) -->
             <x-modal name="create-gateway-modal" title="Novo Gateway">
-                <form id="create-gateway-form" method="POST"
-                    action="{{ route('finance.gateways.create') }}" class="space-y-4"
-                    x-data="createGatewayForm()" @submit.prevent="submit($event)">
+                <form id="create-gateway-form" method="POST" action="{{ route('finance.gateways.create') }}"
+                    class="space-y-4" x-data="createGatewayForm()" @submit.prevent="submit($event)">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -334,117 +397,116 @@
                                 selected="1" />
                         </div>
                         <div>
-                            <x-input name="webhook_secret" id="webhook_secret" label="Webhook Secret"
-                                type="text" placeholder="Segredo do webhook (opcional)" />
+                            <x-input name="webhook_secret" id="webhook_secret" label="Webhook Secret" type="text"
+                                placeholder="Segredo do webhook (opcional)" />
                         </div>
                     </div>
 
-                            <!-- Provedor e Credenciais (UX guiada) -->
-                            <div x-data="gatewayCredentials()" class="space-y-3">
+                    <!-- Provedor e Credenciais (UX guiada) -->
+                    <div x-data="gatewayCredentials()" class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <x-select name="provider_ui" label="Provedor" x-model="provider" :options="['asaas' => 'Asaas', 'nupay' => 'NuPay']"
+                                    selected="asaas" />
+                            </div>
+                        </div>
+
+                        <template x-if="provider === 'asaas'">
+                            <div class="space-y-2">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <x-input name="asaas_api_key_ui" label="API Key" type="password"
+                                            x-model="asaas.api_key" x-ref="asaas_api_key_input" placeholder="***"
+                                            autocomplete="off" required class="pr-10">
+                                            <button type="button"
+                                                class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                                @click="$refs.asaas_api_key_input.type = $refs.asaas_api_key_input.type === 'password' ? 'text' : 'password'">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </x-input>
+                                    </div>
                                     <div>
-                                        <x-select name="provider_ui" label="Provedor" x-model="provider"
-                                            :options="['asaas' => 'Asaas', 'nupay' => 'NuPay']" selected="asaas" />
+                                        <x-select name="asaas_environment_ui" label="Ambiente"
+                                            x-model="asaas.environment" :options="['production' => 'Produção', 'sandbox' => 'Sandbox']" selected="production" />
                                     </div>
                                 </div>
-
-                                <template x-if="provider === 'asaas'">
-                                    <div class="space-y-2">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div class="md:col-span-2">
-                                                <x-input name="asaas_api_key_ui" label="API Key" type="password"
-                                                    x-model="asaas.api_key" x-ref="asaas_api_key_input"
-                                                    placeholder="***" autocomplete="off" required class="pr-10">
-                                                    <button type="button"
-                                                        class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                                                        @click="$refs.asaas_api_key_input.type = $refs.asaas_api_key_input.type === 'password' ? 'text' : 'password'">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </x-input>
-                                            </div>
-                                            <div>
-                                                <x-select name="asaas_environment_ui" label="Ambiente"
-                                                    x-model="asaas.environment" :options="['production' => 'Produção', 'sandbox' => 'Sandbox']"
-                                                    selected="production" />
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div class="md:col-span-2">
-                                                <x-input name="asaas_webhook_token_ui"
-                                                    label="Webhook Token (opcional)" type="text"
-                                                    x-model="asaas.webhook_token"
-                                                    placeholder="Token do webhook para validação" />
-                                            </div>
-                                        </div>
-                                        <p class="mt-1 text-xs text-gray-500">Instruções Webhook (Asaas): cadastre a
-                                            URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
-                                                    class='text-gray-700 font-semibold'>asaas</span></code> com método
-                                            POST; autentique via token acima se desejar.</p>
-
-                                        <div class="flex items-center gap-2">
-                                            <x-button type="button" color="secondary" x-data="{}"
-                                                @click="testCredentials()" x-bind:disabled="test.loading">
-                                                <i class="fas fa-vial mr-1"></i>
-                                                <span x-show="!test.loading">Testar credenciais</span>
-                                                <span x-show="test.loading">Testando...</span>
-                                            </x-button>
-                                            <template x-if="test.ok === true">
-                                                <span class="text-green-700 text-sm" x-text="test.message"></span>
-                                            </template>
-                                            <template x-if="test.ok === false">
-                                                <span class="text-red-700 text-sm" x-text="test.message"></span>
-                                            </template>
-                                        </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <x-input name="asaas_webhook_token_ui" label="Webhook Token (opcional)"
+                                            type="text" x-model="asaas.webhook_token"
+                                            placeholder="Token do webhook para validação" />
                                     </div>
-                                </template>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">Instruções Webhook (Asaas): cadastre a
+                                    URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
+                                            class='text-gray-700 font-semibold'>asaas</span></code> com método
+                                    POST; autentique via token acima se desejar.</p>
 
-                                <template x-if="provider === 'nupay'">
-                                    <div class="space-y-2">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div class="md:col-span-2">
-                                                <x-input name="nupay_api_key_ui" label="API Key" type="password"
-                                                    x-model="nupay.api_key" x-ref="nupay_api_key_input"
-                                                    placeholder="***" autocomplete="off" required class="pr-10">
-                                                    <button type="button"
-                                                        class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                                                        @click="$refs.nupay_api_key_input.type = $refs.nupay_api_key_input.type === 'password' ? 'text' : 'password'">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                </x-input>
-                                            </div>
-                                            <div>
-                                                <x-select name="nupay_environment_ui" label="Ambiente"
-                                                    x-model="nupay.environment" :options="['production' => 'Produção', 'sandbox' => 'Sandbox']"
-                                                    selected="production" />
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div class="md:col-span-2">
-                                                <x-input name="nupay_merchant_id_ui" label="Merchant ID (opcional)" type="text"
-                                                    x-model="nupay.merchant_id" placeholder="Identificador do vendedor/merchant" />
-                                            </div>
-                                        </div>
-                                        <p class="mt-1 text-xs text-gray-500">Instruções Webhook (NuPay): cadastre a
-                                            URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
-                                                    class='text-gray-700 font-semibold'>nupay</span></code> com método
-                                            POST. Assinatura será validada conforme configuração.</p>
-                                    </div>
-                                </template>
-
-                                <!-- Credenciais como JSON (hidden) para envio -->
-                                <input type="hidden" name="credentials_json" x-bind:value="computeJson()" />
+                                <div class="flex items-center gap-2">
+                                    <x-button type="button" color="secondary" x-data="{}"
+                                        @click="testCredentials()" x-bind:disabled="test.loading">
+                                        <i class="fas fa-vial mr-1"></i>
+                                        <span x-show="!test.loading">Testar credenciais</span>
+                                        <span x-show="test.loading">Testando...</span>
+                                    </x-button>
+                                    <template x-if="test.ok === true">
+                                        <span class="text-green-700 text-sm" x-text="test.message"></span>
+                                    </template>
+                                    <template x-if="test.ok === false">
+                                        <span class="text-red-700 text-sm" x-text="test.message"></span>
+                                    </template>
+                                </div>
                             </div>
-                            <template x-if="error">
-                                <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2"
-                                    x-text="error"></div>
-                            </template>
-                            <template x-if="msg">
-                                <div class="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2"
-                                    x-text="msg"></div>
-                            </template>
+                        </template>
+
+                        <template x-if="provider === 'nupay'">
+                            <div class="space-y-2">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <x-input name="nupay_api_key_ui" label="API Key" type="password"
+                                            x-model="nupay.api_key" x-ref="nupay_api_key_input" placeholder="***"
+                                            autocomplete="off" required class="pr-10">
+                                            <button type="button"
+                                                class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                                @click="$refs.nupay_api_key_input.type = $refs.nupay_api_key_input.type === 'password' ? 'text' : 'password'">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </x-input>
+                                    </div>
+                                    <div>
+                                        <x-select name="nupay_environment_ui" label="Ambiente"
+                                            x-model="nupay.environment" :options="['production' => 'Produção', 'sandbox' => 'Sandbox']" selected="production" />
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="md:col-span-2">
+                                        <x-input name="nupay_merchant_id_ui" label="Merchant ID (opcional)"
+                                            type="text" x-model="nupay.merchant_id"
+                                            placeholder="Identificador do vendedor/merchant" />
+                                    </div>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">Instruções Webhook (NuPay): cadastre a
+                                    URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
+                                            class='text-gray-700 font-semibold'>nupay</span></code> com método
+                                    POST. Assinatura será validada conforme configuração.</p>
+                            </div>
+                        </template>
+
+                        <!-- Credenciais como JSON (hidden) para envio -->
+                        <input type="hidden" name="credentials_json" x-bind:value="computeJson()" />
+                    </div>
+                    <template x-if="error">
+                        <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2"
+                            x-text="error"></div>
+                    </template>
+                    <template x-if="msg">
+                        <div class="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2"
+                            x-text="msg"></div>
+                    </template>
                 </form>
                 <x-slot name="footer">
-                    <x-button type="button" color="secondary" onclick="closeModal('create-gateway-modal')">Cancelar</x-button>
+                    <x-button type="button" color="secondary"
+                        onclick="closeModal('create-gateway-modal')">Cancelar</x-button>
                     <x-button type="submit" color="primary" x-bind:disabled="saving" form="create-gateway-form">
                         <i class="fas fa-plus mr-1"></i> Criar Gateway
                     </x-button>
@@ -461,160 +523,161 @@
                         @method('PUT')
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <x-input name="name" id="name_{{ $gw->id }}" label="Nome"
-                                            type="text" :value="old('name', $gw->name)" />
-                                    </div>
-                                    <div>
-                                        <x-select name="environment" id="environment_{{ $gw->id }}"
-                                            label="Ambiente" :options="['homolog' => 'Homologação', 'production' => 'Produção']" selected="{{ $gw->environment }}"
-                                            help="Eventos de ambiente diferente são ignorados."></x-select>
-                                    </div>
-                                    <div>
-                                        <x-select name="active" label="Ativo" :options="['1' => 'Sim', '0' => 'Não']"
-                                            selected="{{ $gw->active ? '1' : '0' }}"></x-select>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <x-input name="webhook_secret" id="webhook_secret_{{ $gw->id }}"
-                                            label="Webhook Secret" type="text"
-                                            placeholder="Atualizar segredo (opcional)"
-                                            help="Não exibimos o segredo atual por segurança." />
-                                    </div>
-                                </div>
+                                <x-input name="name" id="name_{{ $gw->id }}" label="Nome" type="text"
+                                    :value="old('name', $gw->name)" />
+                            </div>
+                            <div>
+                                <x-select name="environment" id="environment_{{ $gw->id }}" label="Ambiente"
+                                    :options="['homolog' => 'Homologação', 'production' => 'Produção']" selected="{{ $gw->environment }}"
+                                    help="Eventos de ambiente diferente são ignorados."></x-select>
+                            </div>
+                            <div>
+                                <x-select name="active" label="Ativo" :options="['1' => 'Sim', '0' => 'Não']"
+                                    selected="{{ $gw->active ? '1' : '0' }}"></x-select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <x-input name="webhook_secret" id="webhook_secret_{{ $gw->id }}"
+                                    label="Webhook Secret" type="text" placeholder="Atualizar segredo (opcional)"
+                                    help="Não exibimos o segredo atual por segurança." />
+                            </div>
+                        </div>
 
-                                <!-- Provedor e Credenciais (UX guiada) -->
-                                <div x-data="editGatewayCredentials('{{ $gw->id }}', '{{ $gw->credentials['api_key'] ?? '' }}', '{{ $gw->environment }}', '{{ $gw->alias }}', @json($gw->credentials))" class="space-y-3">
+                        <!-- Provedor e Credenciais (UX guiada) -->
+                        <div x-data="editGatewayCredentials('{{ $gw->id }}', '{{ $gw->credentials['api_key'] ?? '' }}', '{{ $gw->environment }}', '{{ $gw->alias }}', @json($gw->credentials))" class="space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <x-select name="provider_ui" label="Provedor" x-model="provider"
+                                        :options="['asaas' => 'Asaas', 'nupay' => 'NuPay']" selected="asaas"></x-select>
+                                </div>
+                            </div>
+
+                            <template x-if="provider === 'asaas'">
+                                <div class="space-y-2">
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2">
+                                            <x-input name="asaas_api_key_ui_{{ $gw->id }}" label="API Key"
+                                                type="password" x-model="asaas.api_key"
+                                                x-ref="asaas_api_key_input_{{ $gw->id }}" placeholder="***"
+                                                autocomplete="off" required class="pr-10">
+                                                <button type="button"
+                                                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                                    @click="$refs.asaas_api_key_input_{{ $gw->id }}.type = $refs.asaas_api_key_input_{{ $gw->id }}.type === 'password' ? 'text' : 'password'">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </x-input>
+                                        </div>
                                         <div>
-                                            <x-select name="provider_ui" label="Provedor" x-model="provider"
-                                                :options="['asaas' => 'Asaas', 'nupay' => 'NuPay']" selected="asaas"></x-select>
+                                            <x-select name="asaas_environment_ui_{{ $gw->id }}"
+                                                label="Ambiente" x-model="asaas.environment" :options="[
+                                                    'production' => 'Produção',
+                                                    'sandbox' => 'Sandbox',
+                                                ]"
+                                                selected="{{ $gw->environment === 'homolog' ? 'sandbox' : 'production' }}" />
                                         </div>
                                     </div>
-
-                                    <template x-if="provider === 'asaas'">
-                                        <div class="space-y-2">
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div class="md:col-span-2">
-                                                    <x-input name="asaas_api_key_ui_{{ $gw->id }}"
-                                                        label="API Key" type="password" x-model="asaas.api_key"
-                                                        x-ref="asaas_api_key_input_{{ $gw->id }}"
-                                                        placeholder="***" autocomplete="off" required class="pr-10">
-                                                        <button type="button"
-                                                            class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                                                            @click="$refs.asaas_api_key_input_{{ $gw->id }}.type = $refs.asaas_api_key_input_{{ $gw->id }}.type === 'password' ? 'text' : 'password'">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </x-input>
-                                                </div>
-                                                <div>
-                                                    <x-select name="asaas_environment_ui_{{ $gw->id }}"
-                                                        label="Ambiente" x-model="asaas.environment" :options="[
-                                                            'production' => 'Produção',
-                                                            'sandbox' => 'Sandbox',
-                                                        ]"
-                                                        selected="{{ $gw->environment === 'homolog' ? 'sandbox' : 'production' }}" />
-                                                </div>
-                                            </div>
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div class="md:col-span-2">
-                                                    <x-input name="asaas_webhook_token_ui_{{ $gw->id }}"
-                                                        label="Webhook Token (opcional)" type="text"
-                                                        x-model="asaas.webhook_token"
-                                                        placeholder="Token do webhook para validação" />
-                                                </div>
-                                            </div>
-                                            <p class="mt-1 text-xs text-gray-500">Instruções Webhook (Asaas):
-                                                cadastre a URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
-                                                        class='text-gray-700 font-semibold'>{{ $gw->alias }}</span></code>
-                                                com método POST; autentique via token acima se desejar.</p>
-
-                                            <div class="flex items-center gap-2">
-                                                <x-button type="button" color="secondary" x-data="{}"
-                                                    @click="testCredentials()" x-bind:disabled="test.loading">
-                                                    <i class="fas fa-vial mr-1"></i>
-                                                    <span x-show="!test.loading">Testar credenciais</span>
-                                                    <span x-show="test.loading">Testando...</span>
-                                                </x-button>
-                                                <template x-if="test.ok === true">
-                                                    <span class="text-green-700 text-sm" x-text="test.message"></span>
-                                                </template>
-                                                <template x-if="test.ok === false">
-                                                    <span class="text-red-700 text-sm" x-text="test.message"></span>
-                                                </template>
-                                            </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2">
+                                            <x-input name="asaas_webhook_token_ui_{{ $gw->id }}"
+                                                label="Webhook Token (opcional)" type="text"
+                                                x-model="asaas.webhook_token"
+                                                placeholder="Token do webhook para validação" />
                                         </div>
-                                    </template>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Instruções Webhook (Asaas):
+                                        cadastre a URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
+                                                class='text-gray-700 font-semibold'>{{ $gw->alias }}</span></code>
+                                        com método POST; autentique via token acima se desejar.</p>
 
-                                    <template x-if="provider === 'nupay'">
-                                        <div class="space-y-2">
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div class="md:col-span-2">
-                                                    <x-input name="nupay_api_key_ui_{{ $gw->id }}"
-                                                        label="API Key" type="password" x-model="nupay.api_key"
-                                                        x-ref="nupay_api_key_input_{{ $gw->id }}"
-                                                        placeholder="***" autocomplete="off" required class="pr-10">
-                                                        <button type="button"
-                                                            class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                                                            @click="$refs.nupay_api_key_input_{{ $gw->id }}.type = $refs.nupay_api_key_input_{{ $gw->id }}.type === 'password' ? 'text' : 'password'">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </x-input>
-                                                </div>
-                                                <div>
-                                                    <x-select name="nupay_environment_ui_{{ $gw->id }}"
-                                                        label="Ambiente" x-model="nupay.environment" :options="[
-                                                            'production' => 'Produção',
-                                                            'sandbox' => 'Sandbox',
-                                                        ]"
-                                                        selected="{{ $gw->environment === 'homolog' ? 'sandbox' : 'production' }}" />
-                                                </div>
-                                            </div>
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div class="md:col-span-2">
-                                                    <x-input name="nupay_merchant_id_ui_{{ $gw->id }}"
-                                                        label="Merchant ID (opcional)" type="text"
-                                                        x-model="nupay.merchant_id"
-                                                        placeholder="Identificador do vendedor/merchant" />
-                                                </div>
-                                            </div>
-                                            <p class="mt-1 text-xs text-gray-500">Instruções Webhook (NuPay):
-                                                cadastre a URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
-                                                        class='text-gray-700 font-semibold'>{{ $gw->alias }}</span></code>
-                                                com método POST.</p>
-
-                                            <div class="flex items-center gap-2">
-                                                <x-button type="button" color="secondary" x-data="{}"
-                                                    @click="testCredentials()" x-bind:disabled="test.loading">
-                                                    <i class="fas fa-vial mr-1"></i>
-                                                    <span x-show="!test.loading">Testar credenciais</span>
-                                                    <span x-show="test.loading">Testando...</span>
-                                                </x-button>
-                                                <template x-if="test.ok === true">
-                                                    <span class="text-green-700 text-sm" x-text="test.message"></span>
-                                                </template>
-                                                <template x-if="test.ok === false">
-                                                    <span class="text-red-700 text-sm" x-text="test.message"></span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-
-                                    <!-- Credenciais como JSON (hidden) para envio -->
-                                    <input type="hidden" name="credentials_json" x-bind:value="computeJson()" />
+                                    <div class="flex items-center gap-2">
+                                        <x-button type="button" color="secondary" x-data="{}"
+                                            @click="testCredentials()" x-bind:disabled="test.loading">
+                                            <i class="fas fa-vial mr-1"></i>
+                                            <span x-show="!test.loading">Testar credenciais</span>
+                                            <span x-show="test.loading">Testando...</span>
+                                        </x-button>
+                                        <template x-if="test.ok === true">
+                                            <span class="text-green-700 text-sm" x-text="test.message"></span>
+                                        </template>
+                                        <template x-if="test.ok === false">
+                                            <span class="text-red-700 text-sm" x-text="test.message"></span>
+                                        </template>
+                                    </div>
                                 </div>
-                                <template x-if="error">
-                                    <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2"
-                                        x-text="error"></div>
-                                </template>
-                                <template x-if="msg">
-                                    <div class="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2"
-                                        x-text="msg"></div>
-                                </template>
+                            </template>
+
+                            <template x-if="provider === 'nupay'">
+                                <div class="space-y-2">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2">
+                                            <x-input name="nupay_api_key_ui_{{ $gw->id }}" label="API Key"
+                                                type="password" x-model="nupay.api_key"
+                                                x-ref="nupay_api_key_input_{{ $gw->id }}" placeholder="***"
+                                                autocomplete="off" required class="pr-10">
+                                                <button type="button"
+                                                    class="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                                    @click="$refs.nupay_api_key_input_{{ $gw->id }}.type = $refs.nupay_api_key_input_{{ $gw->id }}.type === 'password' ? 'text' : 'password'">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </x-input>
+                                        </div>
+                                        <div>
+                                            <x-select name="nupay_environment_ui_{{ $gw->id }}"
+                                                label="Ambiente" x-model="nupay.environment" :options="[
+                                                    'production' => 'Produção',
+                                                    'sandbox' => 'Sandbox',
+                                                ]"
+                                                selected="{{ $gw->environment === 'homolog' ? 'sandbox' : 'production' }}" />
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div class="md:col-span-2">
+                                            <x-input name="nupay_merchant_id_ui_{{ $gw->id }}"
+                                                label="Merchant ID (opcional)" type="text"
+                                                x-model="nupay.merchant_id"
+                                                placeholder="Identificador do vendedor/merchant" />
+                                        </div>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Instruções Webhook (NuPay):
+                                        cadastre a URL <code>{{ url('/api/v1/webhooks/gateway') }}/<span
+                                                class='text-gray-700 font-semibold'>{{ $gw->alias }}</span></code>
+                                        com método POST.</p>
+
+                                    <div class="flex items-center gap-2">
+                                        <x-button type="button" color="secondary" x-data="{}"
+                                            @click="testCredentials()" x-bind:disabled="test.loading">
+                                            <i class="fas fa-vial mr-1"></i>
+                                            <span x-show="!test.loading">Testar credenciais</span>
+                                            <span x-show="test.loading">Testando...</span>
+                                        </x-button>
+                                        <template x-if="test.ok === true">
+                                            <span class="text-green-700 text-sm" x-text="test.message"></span>
+                                        </template>
+                                        <template x-if="test.ok === false">
+                                            <span class="text-red-700 text-sm" x-text="test.message"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Credenciais como JSON (hidden) para envio -->
+                            <input type="hidden" name="credentials_json" x-bind:value="computeJson()" />
+                        </div>
+                        <template x-if="error">
+                            <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2"
+                                x-text="error"></div>
+                        </template>
+                        <template x-if="msg">
+                            <div class="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2"
+                                x-text="msg"></div>
+                        </template>
                     </form>
                     <x-slot name="footer">
-                        <x-button type="button" color="secondary" onclick="closeModal('edit-gateway-{{ $gw->id }}')">Cancelar</x-button>
-                        <x-button type="submit" color="primary" x-bind:disabled="saving" form="edit-gateway-form-{{ $gw->id }}">
+                        <x-button type="button" color="secondary"
+                            onclick="closeModal('edit-gateway-{{ $gw->id }}')">Cancelar</x-button>
+                        <x-button type="submit" color="primary" x-bind:disabled="saving"
+                            form="edit-gateway-form-{{ $gw->id }}">
                             <i class="fas fa-save mr-1"></i> Salvar alterações
                         </x-button>
                     </x-slot>
@@ -901,34 +964,44 @@
     </div>
 
     <!-- Modal: Configurações de E-mail de Cobrança -->
-    <div id="mail-settings-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div id="mail-settings-modal"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="mt-3" x-data="mailSettingsForm()" x-init="load()">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Configurar envio de Cobranças por E-mail</h3>
-                    <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal('mail-settings-modal')">
+                    <button type="button" class="text-gray-400 hover:text-gray-600"
+                        onclick="closeModal('mail-settings-modal')">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <template x-if="error">
-                    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" x-text="error"></div>
+                    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded" x-text="error">
+                    </div>
                 </template>
                 <template x-if="msg">
-                    <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded" x-text="msg"></div>
+                    <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded"
+                        x-text="msg"></div>
                 </template>
 
                 <div class="flex flex-wrap gap-2 mb-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'" x-text="verified ? 'DNS verificado' : 'DNS pendente'"></span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="active ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'" x-text="active ? 'Ativo' : 'Inativo'"></span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        :class="verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                        x-text="verified ? 'DNS verificado' : 'DNS pendente'"></span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        :class="active ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-700'"
+                        x-text="active ? 'Ativo' : 'Inativo'"></span>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <x-select name="provider_ui" label="Provedor" x-model="provider" :options="['mailgun' => 'Mailgun', 'ses' => 'Amazon SES', 'smtp' => 'SMTP Genérico']" selected="mailgun" />
+                        <x-select name="provider_ui" label="Provedor" x-model="provider" :options="['mailgun' => 'Mailgun', 'ses' => 'Amazon SES', 'smtp' => 'SMTP Genérico']"
+                            selected="mailgun" />
                     </div>
                     <div>
-                        <x-input label="Domínio remetente" x-model="sending_domain" placeholder="ex: escola.exemplo.com" />
+                        <x-input label="Domínio remetente" x-model="sending_domain"
+                            placeholder="ex: escola.exemplo.com" />
                     </div>
                 </div>
 
@@ -936,18 +1009,30 @@
                 <div class="mt-4">
                     <div x-show="provider === 'mailgun'" class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <x-select name="mailgun_region_ui" label="Região" x-model="mailgun.region" :options="['us' => 'US', 'eu' => 'EU']" selected="us" />
-                            <x-input label="API Key" x-model="mailgun.api_key" type="password" placeholder="Mailgun API Key" />
+                            <x-select name="mailgun_region_ui" label="Região" x-model="mailgun.region"
+                                :options="['us' => 'US', 'eu' => 'EU']" selected="us" />
+                            <x-input label="API Key" x-model="mailgun.api_key" type="password"
+                                placeholder="Mailgun API Key" />
                         </div>
-                        <p class="text-xs text-gray-500">Após salvar, use "Verificar DNS" para validar SPF/DKIM/DMARC/CNAME.</p>
+                        <p class="text-xs text-gray-500">Após salvar, use "Verificar DNS" para validar
+                            SPF/DKIM/DMARC/CNAME.</p>
                     </div>
                     <div x-show="provider === 'ses'" class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <x-select name="ses_region_ui" label="Região" x-model="ses.region" :options="['us-east-1' => 'us-east-1', 'us-west-2' => 'us-west-2', 'sa-east-1' => 'sa-east-1', 'eu-west-1' => 'eu-west-1']" selected="sa-east-1" />
-                            <x-input label="Access Key" x-model="ses.access_key" type="text" placeholder="AWS Access Key" />
-                            <x-input label="Secret Key" x-model="ses.secret_key" type="password" placeholder="AWS Secret Key" />
+                            <x-select name="ses_region_ui" label="Região" x-model="ses.region" :options="[
+                                'us-east-1' => 'us-east-1',
+                                'us-west-2' => 'us-west-2',
+                                'sa-east-1' => 'sa-east-1',
+                                'eu-west-1' => 'eu-west-1',
+                            ]"
+                                selected="sa-east-1" />
+                            <x-input label="Access Key" x-model="ses.access_key" type="text"
+                                placeholder="AWS Access Key" />
+                            <x-input label="Secret Key" x-model="ses.secret_key" type="password"
+                                placeholder="AWS Secret Key" />
                         </div>
-                        <p class="text-xs text-gray-500">A verificação de domínio e DKIM é feita no console da AWS SES.</p>
+                        <p class="text-xs text-gray-500">A verificação de domínio e DKIM é feita no console da AWS SES.
+                        </p>
                     </div>
                     <div x-show="provider === 'smtp'" class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -955,7 +1040,8 @@
                             <x-input label="Porta" x-model="smtp.port" type="number" placeholder="587" />
                             <x-input label="Usuário" x-model="smtp.username" placeholder="usuario" />
                             <x-input label="Senha" x-model="smtp.password" type="password" placeholder="senha" />
-                            <x-select name="smtp_encryption_ui" label="Criptografia" x-model="smtp.encryption" :options="['tls' => 'TLS', 'ssl' => 'SSL', 'none' => 'Sem criptografia']" selected="tls" />
+                            <x-select name="smtp_encryption_ui" label="Criptografia" x-model="smtp.encryption"
+                                :options="['tls' => 'TLS', 'ssl' => 'SSL', 'none' => 'Sem criptografia']" selected="tls" />
                         </div>
                         <p class="text-xs text-gray-500">Para SMTP genérico, a verificação de DNS não é automática.</p>
                     </div>
@@ -963,7 +1049,8 @@
 
                 <!-- Ações -->
                 <div class="mt-6 flex justify-end gap-2">
-                    <x-button type="button" color="secondary" onclick="closeModal('mail-settings-modal')">Cancelar</x-button>
+                    <x-button type="button" color="secondary"
+                        onclick="closeModal('mail-settings-modal')">Cancelar</x-button>
                     <x-button type="button" color="indigo" x-bind:disabled="saving" @click="verifyDNS()">
                         <i class="fas fa-shield-alt mr-1"></i> Verificar DNS
                     </x-button>
@@ -984,30 +1071,41 @@
                                 <div class="space-y-3">
                                     <div>
                                         <div class="text-xs font-semibold text-gray-700">SPF</div>
-                                        <div class="text-xs text-gray-600">Nome: <span x-text="dnsResult.requirements.spf.name"></span></div>
-                                        <div class="text-xs text-gray-600">Valor: <span x-text="dnsResult.requirements.spf.value"></span></div>
+                                        <div class="text-xs text-gray-600">Nome: <span
+                                                x-text="dnsResult.requirements.spf.name"></span></div>
+                                        <div class="text-xs text-gray-600">Valor: <span
+                                                x-text="dnsResult.requirements.spf.value"></span></div>
                                     </div>
                                     <div>
                                         <div class="text-xs font-semibold text-gray-700">DKIM</div>
-                                        <template x-for="rec in (dnsResult.requirements.dkim || [])" :key="rec.selector">
+                                        <template x-for="rec in (dnsResult.requirements.dkim || [])"
+                                            :key="rec.selector">
                                             <div class="ml-2">
-                                                <div class="text-xs text-gray-600">Selector: <span x-text="rec.selector"></span></div>
-                                                <div class="text-xs text-gray-600">Nome: <span x-text="rec.name"></span></div>
-                                                <div class="text-xs text-gray-600">Valor: <span x-text="rec.value"></span></div>
+                                                <div class="text-xs text-gray-600">Selector: <span
+                                                        x-text="rec.selector"></span></div>
+                                                <div class="text-xs text-gray-600">Nome: <span
+                                                        x-text="rec.name"></span></div>
+                                                <div class="text-xs text-gray-600">Valor: <span
+                                                        x-text="rec.value"></span></div>
                                             </div>
                                         </template>
                                     </div>
                                     <div>
                                         <div class="text-xs font-semibold text-gray-700">DMARC</div>
-                                        <div class="text-xs text-gray-600">Nome: <span x-text="dnsResult.requirements.dmarc.name"></span></div>
-                                        <div class="text-xs text-gray-600">Valor: <span x-text="dnsResult.requirements.dmarc.value"></span></div>
+                                        <div class="text-xs text-gray-600">Nome: <span
+                                                x-text="dnsResult.requirements.dmarc.name"></span></div>
+                                        <div class="text-xs text-gray-600">Valor: <span
+                                                x-text="dnsResult.requirements.dmarc.value"></span></div>
                                     </div>
                                     <div>
                                         <div class="text-xs font-semibold text-gray-700">CNAME</div>
-                                        <template x-for="c in (dnsResult.requirements.cname || [])" :key="c.alias">
+                                        <template x-for="c in (dnsResult.requirements.cname || [])"
+                                            :key="c.alias">
                                             <div class="ml-2">
-                                                <div class="text-xs text-gray-600">Alias: <span x-text="c.alias"></span></div>
-                                                <div class="text-xs text-gray-600">Aponta para: <span x-text="c.target"></span></div>
+                                                <div class="text-xs text-gray-600">Alias: <span
+                                                        x-text="c.alias"></span></div>
+                                                <div class="text-xs text-gray-600">Aponta para: <span
+                                                        x-text="c.target"></span></div>
                                             </div>
                                         </template>
                                     </div>
@@ -1032,34 +1130,66 @@
                 verified: false,
                 existingCredentials: {},
                 dnsResult: null,
-                mailgun: { api_key: '', region: 'us' },
-                ses: { region: 'sa-east-1', access_key: '', secret_key: '' },
-                smtp: { host: '', port: 587, username: '', password: '', encryption: 'tls' },
+                mailgun: {
+                    api_key: '',
+                    region: 'us'
+                },
+                ses: {
+                    region: 'sa-east-1',
+                    access_key: '',
+                    secret_key: ''
+                },
+                smtp: {
+                    host: '',
+                    port: 587,
+                    username: '',
+                    password: '',
+                    encryption: 'tls'
+                },
                 async load() {
-                    this.error = null; this.msg = null; this.dnsResult = null;
+                    this.error = null;
+                    this.msg = null;
+                    this.dnsResult = null;
                     try {
                         const url = window.location.origin + '/finance/mail-settings';
-                        const resp = await fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        const resp = await fetch(url, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
                         const data = await resp.json();
                         if (!resp.ok) {
-                            this.error = (data && (data.message || data.errors)) ? (typeof data.errors === 'string' ? data.errors : JSON.stringify(data.errors)) || data.message : `Erro ${resp.status}`;
+                            this.error = (data && (data.message || data.errors)) ? (typeof data
+                                .errors === 'string' ? data.errors : JSON.stringify(data.errors)
+                            ) || data.message : `Erro ${resp.status}`;
                             return;
                         }
                         const s = data && data.settings ? data.settings : data;
                         if (s) {
                             this.provider = (s.provider || this.provider);
                             this.sending_domain = (s.sending_domain || '');
-                            this.active = !!(s.active === true || s.active === 1 || s.active === '1');
-                            this.verified = !!(s.verified === true || s.verified === 1 || s.verified === '1');
+                            this.active = !!(s.active === true || s.active === 1 || s.active ===
+                                '1');
+                            this.verified = !!(s.verified === true || s.verified === 1 || s
+                                .verified === '1');
                             this.existingCredentials = s.credentials || {};
                             // Pre-fill masked fields lightly
                             if (this.provider === 'mailgun') {
-                                this.mailgun.api_key = (this.existingCredentials.api_key && String(this.existingCredentials.api_key).includes('***')) ? '' : (this.existingCredentials.api_key || '');
-                                this.mailgun.region = this.existingCredentials.region || this.mailgun.region;
+                                this.mailgun.api_key = (this.existingCredentials.api_key && String(
+                                    this.existingCredentials.api_key).includes('***')) ? '' : (
+                                    this.existingCredentials.api_key || '');
+                                this.mailgun.region = this.existingCredentials.region || this
+                                    .mailgun.region;
                             } else if (this.provider === 'ses') {
-                                this.ses.region = this.existingCredentials.region || this.ses.region;
-                                this.ses.access_key = (this.existingCredentials.access_key && String(this.existingCredentials.access_key).includes('***')) ? '' : (this.existingCredentials.access_key || '');
-                                this.ses.secret_key = (this.existingCredentials.secret_key && String(this.existingCredentials.secret_key).includes('***')) ? '' : (this.existingCredentials.secret_key || '');
+                                this.ses.region = this.existingCredentials.region || this.ses
+                                    .region;
+                                this.ses.access_key = (this.existingCredentials.access_key &&
+                                    String(this.existingCredentials.access_key).includes('***')
+                                ) ? '' : (this.existingCredentials.access_key || '');
+                                this.ses.secret_key = (this.existingCredentials.secret_key &&
+                                    String(this.existingCredentials.secret_key).includes('***')
+                                ) ? '' : (this.existingCredentials.secret_key || '');
                             } else if (this.provider === 'smtp') {
                                 this.smtp.host = this.existingCredentials.host || '';
                                 this.smtp.port = this.existingCredentials.port || 587;
@@ -1069,7 +1199,8 @@
                             }
                         }
                     } catch (e) {
-                        this.error = e && e.message ? e.message : 'Erro ao carregar configurações de e-mail';
+                        this.error = e && e.message ? e.message :
+                            'Erro ao carregar configurações de e-mail';
                     }
                 },
                 computeCredentials() {
@@ -1096,7 +1227,9 @@
                     }
                 },
                 async save() {
-                    this.saving = true; this.error = null; this.msg = null;
+                    this.saving = true;
+                    this.error = null;
+                    this.msg = null;
                     try {
                         const url = window.location.origin + '/finance/mail-settings';
                         const payload = {
@@ -1114,12 +1247,18 @@
                         });
                         const data = await resp.json();
                         if (resp.ok) {
-                            this.msg = (data && data.message) ? data.message : 'Configurações salvas';
-                            this.active = !!(data && (data.active === true || data.active === 1 || data.active === '1'));
-                            this.verified = !!(data && (data.verified === true || data.verified === 1 || data.verified === '1'));
-                            this.existingCredentials = (data && data.credentials) ? data.credentials : this.existingCredentials;
+                            this.msg = (data && data.message) ? data.message :
+                                'Configurações salvas';
+                            this.active = !!(data && (data.active === true || data.active === 1 ||
+                                data.active === '1'));
+                            this.verified = !!(data && (data.verified === true || data.verified ===
+                                1 || data.verified === '1'));
+                            this.existingCredentials = (data && data.credentials) ? data
+                                .credentials : this.existingCredentials;
                         } else {
-                            this.error = (data && (data.message || data.errors)) ? (typeof data.errors === 'string' ? data.errors : JSON.stringify(data.errors)) || data.message : `Erro ${resp.status}`;
+                            this.error = (data && (data.message || data.errors)) ? (typeof data
+                                .errors === 'string' ? data.errors : JSON.stringify(data.errors)
+                            ) || data.message : `Erro ${resp.status}`;
                         }
                     } catch (e) {
                         this.error = e && e.message ? e.message : 'Erro ao salvar configurações';
@@ -1128,7 +1267,10 @@
                     }
                 },
                 async verifyDNS() {
-                    this.saving = true; this.error = null; this.msg = null; this.dnsResult = null;
+                    this.saving = true;
+                    this.error = null;
+                    this.msg = null;
+                    this.dnsResult = null;
                     try {
                         const url = window.location.origin + '/finance/mail-settings/verify-dns';
                         const resp = await fetch(url, {
@@ -1137,17 +1279,24 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                             },
-                            body: JSON.stringify({ provider: this.provider, sending_domain: this.sending_domain, region: this.mailgun.region })
+                            body: JSON.stringify({
+                                provider: this.provider,
+                                sending_domain: this.sending_domain,
+                                region: this.mailgun.region
+                            })
                         });
                         const data = await resp.json();
                         if (resp.ok) {
                             this.dnsResult = data;
                             // Se backend marcar verificado
-                            if (data && (data.verified === true || data.verified === 1 || data.verified === '1')) {
+                            if (data && (data.verified === true || data.verified === 1 || data
+                                    .verified === '1')) {
                                 this.verified = true;
                             }
                         } else {
-                            this.error = (data && (data.message || data.errors)) ? (typeof data.errors === 'string' ? data.errors : JSON.stringify(data.errors)) || data.message : `Erro ${resp.status}`;
+                            this.error = (data && (data.message || data.errors)) ? (typeof data
+                                .errors === 'string' ? data.errors : JSON.stringify(data.errors)
+                            ) || data.message : `Erro ${resp.status}`;
                         }
                     } catch (e) {
                         this.error = e && e.message ? e.message : 'Erro ao verificar DNS';
@@ -1165,7 +1314,8 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700">Ativar agendamento</label>
                 <label class="inline-flex items-center mt-2">
-                    <input type="checkbox" name="dunning_schedule[enabled]" value="1" class="form-checkbox" {{ data_get($settings->dunning_schedule, 'enabled') ? 'checked' : '' }}>
+                    <input type="checkbox" name="dunning_schedule[enabled]" value="1" class="form-checkbox"
+                        {{ data_get($settings->dunning_schedule, 'enabled') ? 'checked' : '' }}>
                     <span class="ml-2 text-gray-700">Ativo</span>
                 </label>
             </div>
@@ -1183,9 +1333,11 @@
                 <label class="block text-sm font-medium text-gray-700">Dias da semana</label>
                 @php($days = data_get($settings->dunning_schedule, 'days_of_week', []))
                 <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    @foreach(['seg','ter','qua','qui','sex','sab','dom'] as $d)
+                    @foreach (['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'] as $d)
                         <label class="inline-flex items-center">
-                            <input type="checkbox" name="dunning_schedule[days_of_week][]" value="{{ $d }}" class="form-checkbox" {{ in_array($d, $days) ? 'checked' : '' }}>
+                            <input type="checkbox" name="dunning_schedule[days_of_week][]"
+                                value="{{ $d }}" class="form-checkbox"
+                                {{ in_array($d, $days) ? 'checked' : '' }}>
                             <span class="ml-2 capitalize">{{ $d }}</span>
                         </label>
                     @endforeach
@@ -1195,43 +1347,92 @@
                 <label class="block text-sm font-medium text-gray-700">Janelas de horário</label>
                 @php($windows = data_get($settings->dunning_schedule, 'time_windows', [['start' => '08:00', 'end' => '18:00']]))
                 <div id="dunning-windows" class="space-y-2 mt-2">
-                    @foreach($windows as $i => $w)
+                    @foreach ($windows as $i => $w)
                         <div class="flex items-center gap-2">
-                            <input type="time" name="dunning_schedule[time_windows][{{ $i }}][start]" value="{{ $w['start'] ?? '' }}" class="rounded-md border-gray-300 shadow-sm">
+                            <input type="time" name="dunning_schedule[time_windows][{{ $i }}][start]"
+                                value="{{ $w['start'] ?? '' }}" class="rounded-md border-gray-300 shadow-sm">
                             <span class="text-gray-500">até</span>
-                            <input type="time" name="dunning_schedule[time_windows][{{ $i }}][end]" value="{{ $w['end'] ?? '' }}" class="rounded-md border-gray-300 shadow-sm">
+                            <input type="time" name="dunning_schedule[time_windows][{{ $i }}][end]"
+                                value="{{ $w['end'] ?? '' }}" class="rounded-md border-gray-300 shadow-sm">
                         </div>
                     @endforeach
                 </div>
-                <x-button type="button" color="secondary" class="mt-2" onclick="addDunningWindow()"><i class="fas fa-plus mr-1"></i> Adicionar janela</x-button>
+                <x-button type="button" color="secondary" class="mt-2" onclick="addDunningWindow()"><i
+                        class="fas fa-plus mr-1"></i> Adicionar janela</x-button>
             </div>
-            <div>
-                @php($pre = data_get($settings->dunning_schedule, 'pre_due_offsets'))
-                <x-input name="dunning_schedule[pre_due_offsets]" label="Offsets antes do vencimento (dias, separados por vírgula)" type="text" :value="is_array($pre) ? implode(',', $pre) : ($pre ?? '')" placeholder="Ex: 7,3,1" />
-                <p class="text-xs text-gray-500 mt-1">Define em quais dias antes do vencimento serão enviados lembretes.</p>
+            <div x-data="{
+                selected: {{ json_encode(is_array($pre) ? array_map('intval', $pre) : []) }},
+                toggle(day) {
+                    if (this.selected.includes(day)) {
+                        this.selected = this.selected.filter(d => d !== day);
+                    } else {
+                        this.selected.push(day);
+                        this.selected.sort((a, b) => a - b);
+                    }
+                }
+            }">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Lembretes antes do vencimento
+                    (dias)</label>
+                <div class="grid grid-cols-7 sm:grid-cols-10 gap-2 mb-2">
+                    <template x-for="day in 30">
+                        <button type="button" @click="toggle(day)"
+                            :class="selected.includes(day) ? 'bg-indigo-600 text-white border-indigo-600 shadow-indigo-100' :
+                                'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
+                            class="h-9 w-full text-sm font-medium border rounded-md flex items-center justify-center transition-all duration-200 shadow-sm"
+                            x-text="day">
+                        </button>
+                    </template>
+                </div>
+                <input type="hidden" name="dunning_schedule[pre_due_offsets]" :value="selected.join(',')">
+                <p class="text-xs text-gray-500 mt-1">Selecione em quais dias antes do vencimento os lembretes serão
+                    enviados.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Enviar no dia do vencimento</label>
                 <label class="inline-flex items-center mt-2">
-                    <input type="checkbox" name="dunning_schedule[due_day]" value="1" class="form-checkbox" {{ data_get($settings->dunning_schedule, 'due_day') ? 'checked' : '' }}>
+                    <input type="checkbox" name="dunning_schedule[due_day]" value="1" class="form-checkbox"
+                        {{ data_get($settings->dunning_schedule, 'due_day') ? 'checked' : '' }}>
                     <span class="ml-2 text-gray-700">Sim</span>
                 </label>
             </div>
-            <div>
-                @php($post = data_get($settings->dunning_schedule, 'overdue_offsets'))
-                <x-input name="dunning_schedule[overdue_offsets]" label="Offsets após o vencimento (dias, separados por vírgula)" type="text" :value="is_array($post) ? implode(',', $post) : ($post ?? '')" placeholder="Ex: 1,3,7,15" />
-                <p class="text-xs text-gray-500 mt-1">Define em quais dias após o vencimento serão enviados lembretes.</p>
+            <div x-data="{
+                selected: {{ json_encode(is_array($post) ? array_map('intval', $post) : []) }},
+                toggle(day) {
+                    if (this.selected.includes(day)) {
+                        this.selected = this.selected.filter(d => d !== day);
+                    } else {
+                        this.selected.push(day);
+                        this.selected.sort((a, b) => a - b);
+                    }
+                }
+            }">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Lembretes após o vencimento (dias)</label>
+                <div class="grid grid-cols-7 sm:grid-cols-10 gap-2 mb-2">
+                    <template x-for="day in 30">
+                        <button type="button" @click="toggle(day)"
+                            :class="selected.includes(day) ? 'bg-orange-600 text-white border-orange-600 shadow-orange-100' :
+                                'bg-white text-gray-700 border-gray-300 hover:border-orange-400'"
+                            class="h-9 w-full text-sm font-medium border rounded-md flex items-center justify-center transition-all duration-200 shadow-sm"
+                            x-text="day">
+                        </button>
+                    </template>
+                </div>
+                <input type="hidden" name="dunning_schedule[overdue_offsets]" :value="selected.join(',')">
+                <p class="text-xs text-gray-500 mt-1">Selecione em quais dias após o vencimento os lembretes serão
+                    enviados.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Canais</label>
                 @php($channels = data_get($settings->dunning_schedule, 'channels', ['email']))
                 <div class="mt-2 flex flex-wrap gap-3">
                     <label class="inline-flex items-center">
-                        <input type="checkbox" name="dunning_schedule[channels][]" value="email" class="form-checkbox" {{ in_array('email', $channels) ? 'checked' : '' }}>
+                        <input type="checkbox" name="dunning_schedule[channels][]" value="email"
+                            class="form-checkbox" {{ in_array('email', $channels) ? 'checked' : '' }}>
                         <span class="ml-2">Email</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="checkbox" name="dunning_schedule[channels][]" value="whatsapp" class="form-checkbox" {{ in_array('whatsapp', $channels) ? 'checked' : '' }}>
+                        <input type="checkbox" name="dunning_schedule[channels][]" value="whatsapp"
+                            class="form-checkbox" {{ in_array('whatsapp', $channels) ? 'checked' : '' }}>
                         <span class="ml-2">WhatsApp</span>
                     </label>
                 </div>
@@ -1240,7 +1441,8 @@
         </div>
         <div class="mt-6 flex flex-col md:flex-row md:items-center md:justify-end gap-3">
             <div class="md:w-64">
-                <x-input name="test_email" label="E-mail para teste" type="email" placeholder="email@exemplo.com" />
+                <x-input name="test_email" label="E-mail para teste" type="email"
+                    placeholder="email@exemplo.com" />
             </div>
             <x-button type="button" color="secondary" onclick="testDunningEmail()">
                 <i class="fas fa-paper-plane mr-1"></i> Testar Envio
@@ -1262,43 +1464,51 @@
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 const url = '{{ route('finance.settings.test_dunning_email') }}';
                 const btn = event?.currentTarget;
-                if (btn) { btn.disabled = true; btn.classList.add('opacity-50'); }
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50');
+                }
                 fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token
-                    },
-                    body: JSON.stringify({ test_email: email })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        if (window.alertSystem) {
-                            window.alertSystem.success(data.message || 'E-mail de teste disparado com sucesso.');
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token
+                        },
+                        body: JSON.stringify({
+                            test_email: email
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (window.alertSystem) {
+                                window.alertSystem.success(data.message || 'E-mail de teste disparado com sucesso.');
+                            } else {
+                                alert(data.message || 'E-mail de teste disparado com sucesso.');
+                            }
                         } else {
-                            alert(data.message || 'E-mail de teste disparado com sucesso.');
+                            const message = data.message || 'Falha ao disparar e-mail de teste.';
+                            if (window.alertSystem) {
+                                window.alertSystem.error(message);
+                            } else {
+                                alert(message);
+                            }
                         }
-                    } else {
-                        const message = data.message || 'Falha ao disparar e-mail de teste.';
+                    })
+                    .catch(err => {
+                        console.error('Erro no teste de envio:', err);
                         if (window.alertSystem) {
-                            window.alertSystem.error(message);
+                            window.alertSystem.error('Erro inesperado ao testar envio.');
                         } else {
-                            alert(message);
+                            alert('Erro inesperado ao testar envio.');
                         }
-                    }
-                })
-                .catch(err => {
-                    console.error('Erro no teste de envio:', err);
-                    if (window.alertSystem) {
-                        window.alertSystem.error('Erro inesperado ao testar envio.');
-                    } else {
-                        alert('Erro inesperado ao testar envio.');
-                    }
-                })
-                .finally(() => {
-                    if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); }
-                });
+                    })
+                    .finally(() => {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.classList.remove('opacity-50');
+                        }
+                    });
             }
         </script>
     </form>
@@ -1322,7 +1532,9 @@
     function openModal(id) {
         // Preferir evento para x-modal
         try {
-            window.dispatchEvent(new CustomEvent('open-modal', { detail: id }));
+            window.dispatchEvent(new CustomEvent('open-modal', {
+                detail: id
+            }));
         } catch (_) {}
         // Compatibilidade com modais antigos baseados em "hidden"
         const el = document.getElementById(id);
@@ -1332,7 +1544,9 @@
     function closeModal(id) {
         // Preferir evento para x-modal
         try {
-            window.dispatchEvent(new CustomEvent('close-modal', { detail: id }));
+            window.dispatchEvent(new CustomEvent('close-modal', {
+                detail: id
+            }));
         } catch (_) {}
         // Compatibilidade com modais antigos baseados em "hidden"
         const el = document.getElementById(id);
@@ -1348,14 +1562,16 @@
         // Reset estados dos botões
         document.querySelectorAll('.fintab-btn').forEach(el => {
             el.classList.remove('border-indigo-500', 'text-indigo-600');
-            el.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            el.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700',
+                'hover:border-gray-300');
         });
 
         // Ativar botão da aba selecionada
         const map = {
             'tab-fin-settings': 'fin-settings-tab',
             'tab-fin-gateways': 'fin-gateways-tab',
-            'tab-fin-dunning': 'fin-dunning-tab'
+            'tab-fin-dunning': 'fin-dunning-tab',
+            'tab-fin-automation': 'fin-automation-tab'
         };
         const btnId = map[tabId];
         const btn = btnId ? document.getElementById(btnId) : null;
@@ -1375,8 +1591,11 @@
             current.addEventListener('transitionend', function handleExit() {
                 current.removeEventListener('transitionend', handleExit);
                 current.classList.add('hidden');
-                current.classList.remove('transition', 'duration-200', 'ease-in', 'opacity-0', 'translate-y-1');
-            }, { once: true });
+                current.classList.remove('transition', 'duration-200', 'ease-in', 'opacity-0',
+                    'translate-y-1');
+            }, {
+                once: true
+            });
         }
 
         // Preparar próxima aba e animar entrada
@@ -1389,7 +1608,9 @@
         next.addEventListener('transitionend', function handleEnter() {
             next.removeEventListener('transitionend', handleEnter);
             next.classList.remove('transition', 'duration-200', 'ease-out');
-        }, { once: true });
+        }, {
+            once: true
+        });
     }
     async function reloadFinanceGatewaysTab() {
         try {
@@ -1526,7 +1747,7 @@
                 }
             } catch (_) {
                 /* swallow */
-                /*
+    /*
             }
         };
         // Capture global errors
@@ -1636,13 +1857,17 @@
                         ) || data.message : 'Erro ao carregar formas de cobrança';
                         return;
                     }
-                    const raw = (data && data.data) ? data.data : (Array.isArray(data) ? data : []);
+                    const raw = (data && data.data) ? data.data : (Array.isArray(data) ? data :
+                        []);
                     this.methods = raw.map(m => {
                         const pp = m && m.penalty_policy ? m.penalty_policy : {};
                         return Object.assign({}, m, {
-                            active: !!(m && (m.active === true || m.active === 1 || m.active === '1')),
+                            active: !!(m && (m.active === true || m.active ===
+                                1 || m.active === '1')),
                             penalty_policy: Object.assign({}, pp, {
-                                is_default: !!(pp && (pp.is_default === true || pp.is_default === 1 || pp.is_default === '1'))
+                                is_default: !!(pp && (pp.is_default ===
+                                    true || pp.is_default ===
+                                    1 || pp.is_default === '1'))
                             })
                         });
                     });
@@ -1715,7 +1940,10 @@
                             grace_days: '',
                             max_interest_percent: '',
                             is_default: false
-                        }, pp, { is_default: !!(pp.is_default === true || pp.is_default === 1 || pp.is_default === '1') });
+                        }, pp, {
+                            is_default: !!(pp.is_default === true || pp
+                                .is_default === 1 || pp.is_default === '1')
+                        });
                     })()
                 };
                 this.isEditOpen = true;
@@ -1752,10 +1980,20 @@
                         if (m && m.gateway_alias) fd.append('gateway_alias', m.gateway_alias);
                         if (m && m.method) fd.append('method', m.method);
                         const pp = m.penalty_policy || {};
-                        if (pp.fine_percent !== undefined && pp.fine_percent !== null && pp.fine_percent !== '') fd.append('penalty_policy[fine_percent]', this.normalizeDecimal(pp.fine_percent));
-                        if (pp.daily_interest_percent !== undefined && pp.daily_interest_percent !== null && pp.daily_interest_percent !== '') fd.append('penalty_policy[daily_interest_percent]', this.normalizeDecimal(pp.daily_interest_percent));
-                        if (pp.grace_days !== undefined && pp.grace_days !== null && pp.grace_days !== '') fd.append('penalty_policy[grace_days]', pp.grace_days);
-                        if (pp.max_interest_percent !== undefined && pp.max_interest_percent !== null && pp.max_interest_percent !== '') fd.append('penalty_policy[max_interest_percent]', this.normalizeDecimal(pp.max_interest_percent));
+                        if (pp.fine_percent !== undefined && pp.fine_percent !== null && pp
+                            .fine_percent !== '') fd.append('penalty_policy[fine_percent]', this
+                            .normalizeDecimal(pp.fine_percent));
+                        if (pp.daily_interest_percent !== undefined && pp
+                            .daily_interest_percent !== null && pp.daily_interest_percent !== ''
+                        ) fd.append('penalty_policy[daily_interest_percent]', this
+                            .normalizeDecimal(pp.daily_interest_percent));
+                        if (pp.grace_days !== undefined && pp.grace_days !== null && pp
+                            .grace_days !== '') fd.append('penalty_policy[grace_days]', pp
+                            .grace_days);
+                        if (pp.max_interest_percent !== undefined && pp.max_interest_percent !==
+                            null && pp.max_interest_percent !== '') fd.append(
+                            'penalty_policy[max_interest_percent]', this.normalizeDecimal(pp
+                                .max_interest_percent));
                         fd.append('penalty_policy[is_default]', '0');
                         fd.append('_method', 'PUT');
                         const url = '{{ url('/api/v1/finance/charge-methods') }}' + '/' +
@@ -1979,8 +2217,10 @@
                 this.test.ok = null;
                 try {
                     const url = window.location.origin + '/finance/gateways/test';
-                    const env = this.provider === 'asaas' ? this.asaas.environment : this.nupay.environment;
-                    const apiKey = this.provider === 'asaas' ? this.asaas.api_key : this.nupay.api_key;
+                    const env = this.provider === 'asaas' ? this.asaas.environment : this.nupay
+                        .environment;
+                    const apiKey = this.provider === 'asaas' ? this.asaas.api_key : this.nupay
+                        .api_key;
                     const resp = await fetch(url, {
                         method: 'POST',
                         headers: {
@@ -2080,8 +2320,10 @@
             },
             nupay: {
                 api_key: (creds && creds.api_key) ? creds.api_key : '',
-                environment: (creds && creds.environment) ? creds.environment : (environment === 'homolog' ? 'sandbox' : 'production'),
-                merchant_id: (creds && (creds.merchant_id || creds.seller_id)) ? (creds.merchant_id || creds.seller_id) : ''
+                environment: (creds && creds.environment) ? creds.environment : (environment ===
+                    'homolog' ? 'sandbox' : 'production'),
+                merchant_id: (creds && (creds.merchant_id || creds.seller_id)) ? (creds
+                    .merchant_id || creds.seller_id) : ''
             },
             test: {
                 loading: false,
@@ -2116,8 +2358,10 @@
                 this.test.ok = null;
                 try {
                     const url = window.location.origin + '/finance/gateways/test';
-                    const env = this.provider === 'asaas' ? this.asaas.environment : this.nupay.environment;
-                    const apiKey = this.provider === 'asaas' ? this.asaas.api_key : this.nupay.api_key;
+                    const env = this.provider === 'asaas' ? this.asaas.environment : this.nupay
+                        .environment;
+                    const apiKey = this.provider === 'asaas' ? this.asaas.api_key : this.nupay
+                        .api_key;
                     const resp = await fetch(url, {
                         method: 'POST',
                         headers: {

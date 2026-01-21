@@ -14,6 +14,7 @@ class Turma extends Model
 
     protected $fillable = [
         'escola_id',
+        'coordenador_id',
         'nome',
         'codigo',
         'descricao',
@@ -53,6 +54,14 @@ class Turma extends Model
     public function turno(): BelongsTo
     {
         return $this->belongsTo(Turno::class);
+    }
+
+    /**
+     * Relacionamento com coordenador
+     */
+    public function coordenador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'coordenador_id');
     }
 
     /**

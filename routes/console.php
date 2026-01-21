@@ -8,3 +8,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 \Illuminate\Support\Facades\Schedule::job(new \App\Jobs\ProcessDunningNotifications())->everyFiveMinutes()->name('finance_dunning');
+\Illuminate\Support\Facades\Schedule::command('finance:gerar-despesas-recorrentes')->dailyAt('03:00')->name('finance_recurring_expenses');
+

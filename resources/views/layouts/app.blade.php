@@ -52,6 +52,21 @@
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
+    @auth
+        <script>
+            console.log('Debug Mini-Chat (Top of Body):');
+            console.log('Module Access:', @json(function_exists('canAccessModule') && canAccessModule('comunicacao_module')));
+            console.log('Permission:', @json(Auth::user()->temPermissao('conversas.ver')));
+            console.log('Is Route Conversas:', @json(request()->routeIs('conversas.*')));
+        </script>
+        @if (function_exists('canAccessModule') &&
+                canAccessModule('comunicacao_module') &&
+                Auth::user()->temPermissao('conversas.ver') &&
+                !request()->routeIs('conversas.*'))
+            @include('partials.mini-chat')
+        @endif
+    @endauth
+
     <!-- Sistema de Alertas -->
     <x-alert-system />
     <!-- Barra de inadimplência fixa -->
@@ -174,15 +189,21 @@
     <!-- Modal de Atualizações -->
     <div id="updatesModal" class="fixed inset-0 z-[100] hidden">
         <div id="updatesModalOverlay" class="absolute inset-0 bg-black/40"></div>
-        <div id="updatesModalPanel" class="relative mx-auto mt-8 w-[70vw] h-[90vh] max-w-none bg-white rounded-lg shadow-xl">
+        <div id="updatesModalPanel"
+            class="relative mx-auto mt-8 w-[70vw] h-[90vh] max-w-none bg-white rounded-lg shadow-xl">
             <div class="relative px-4 py-3 border-b border-gray-200">
-                <h1 id="updatesModalTitle" class="text-base font-semibold text-gray-800 w-[80%] mx-auto text-center text-xl">Atualizações do Sistema</h1>
-                <button id="updatesModalCloseBtn" type="button" class="p-2 rounded hover:bg-gray-100 absolute right-4 top-1/2 -translate-y-1/2">
+                <h1 id="updatesModalTitle"
+                    class="text-base font-semibold text-gray-800 w-[80%] mx-auto text-center text-xl">Atualizações do
+                    Sistema</h1>
+                <button id="updatesModalCloseBtn" type="button"
+                    class="p-2 rounded hover:bg-gray-100 absolute right-4 top-1/2 -translate-y-1/2">
                     <i class="fas fa-times text-gray-500"></i>
                 </button>
             </div>
-            <div id="updatesModalContent" class="px-4 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden text-sm text-gray-700">
-                <img id="updatesModalImage" src="" alt="Imagem da atualização" class="w-[80%] mx-auto mt-4 rounded hidden" />
+            <div id="updatesModalContent"
+                class="px-4 py-4 max-h-[85vh] overflow-y-auto overflow-x-hidden text-sm text-gray-700">
+                <img id="updatesModalImage" src="" alt="Imagem da atualização"
+                    class="w-[80%] mx-auto mt-4 rounded hidden" />
                 <div id="updatesModalBody" class="space-y-3 w-[90%] mx-auto">
                     <p class="text-gray-600">Sem novidades por enquanto.</p>
                 </div>
@@ -732,6 +753,7 @@
 
     <!-- Input Masks Script -->
     <script src="{{ asset('js/input-masks.js') }}"></script>
+
 
     @stack('scripts')
 </body>

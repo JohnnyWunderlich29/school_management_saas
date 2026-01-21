@@ -27,7 +27,7 @@
             });
         </script>
 
-        @if(isset($planejamento) && $planejamento)
+        @if (isset($planejamento) && $planejamento)
             <script>
                 window.wizardData = window.wizardData || {};
                 window.wizardData.planejamento_id = @json($planejamento->id);
@@ -41,50 +41,52 @@
                 window.wizardData.nivel_ensino_id = @json($planejamento->nivel_ensino_id ?? null);
                 window.wizardData.tipo_periodo = @json($planejamento->tipo_periodo ?? null);
                 window.wizardData.numero_dias = @json($planejamento->numero_dias ?? null);
-                window.wizardData.data_inicio = @json($planejamento->data_inicio ? (\Carbon\Carbon::parse($planejamento->data_inicio)->format('Y-m-d')) : null);
-                window.wizardData.data_fim = @json($planejamento->data_fim ? (\Carbon\Carbon::parse($planejamento->data_fim)->format('Y-m-d')) : null);
+                window.wizardData.data_inicio = @json($planejamento->data_inicio ? \Carbon\Carbon::parse($planejamento->data_inicio)->format('Y-m-d') : null);
+                window.wizardData.data_fim = @json($planejamento->data_fim ? \Carbon\Carbon::parse($planejamento->data_fim)->format('Y-m-d') : null);
                 window.wizardData.carga_horaria_aula = @json($planejamento->carga_horaria_aula ?? null);
                 window.wizardData.status = @json($planejamento->status_efetivo ?? 'rascunho');
                 window.wizardData.status_formatado = @json($planejamento->status_efetivo_formatado ?? 'Rascunho');
             </script>
             <input type="hidden" name="planejamento_id" value="{{ $planejamento->id }}">
-            @if($planejamento->titulo)
+            @if ($planejamento->titulo)
                 <input type="hidden" name="titulo" value="{{ $planejamento->titulo }}">
             @endif
-            @if($planejamento->escola_id)
+            @if ($planejamento->escola_id)
                 <input type="hidden" name="escola_id" value="{{ $planejamento->escola_id }}">
             @endif
-            @if($planejamento->turno_id)
+            @if ($planejamento->turno_id)
                 <input type="hidden" name="turno_id" value="{{ $planejamento->turno_id }}">
             @endif
-            @if($planejamento->turma_id)
+            @if ($planejamento->turma_id)
                 <input type="hidden" name="turma_id" value="{{ $planejamento->turma_id }}">
             @endif
-            @if($planejamento->disciplina_id)
+            @if ($planejamento->disciplina_id)
                 <input type="hidden" name="disciplina_id" value="{{ $planejamento->disciplina_id }}">
             @endif
-            @if($planejamento->professor_id)
+            @if ($planejamento->professor_id)
                 <input type="hidden" name="professor_id" value="{{ $planejamento->professor_id }}">
             @endif
-            @if($planejamento->modalidade_id)
+            @if ($planejamento->modalidade_id)
                 <input type="hidden" name="modalidade_ensino_id" value="{{ $planejamento->modalidade_id }}">
             @endif
-            @if($planejamento->nivel_ensino_id)
+            @if ($planejamento->nivel_ensino_id)
                 <input type="hidden" name="nivel_ensino_id" value="{{ $planejamento->nivel_ensino_id }}">
             @endif
-            @if($planejamento->tipo_periodo)
+            @if ($planejamento->tipo_periodo)
                 <input type="hidden" name="tipo_periodo" value="{{ $planejamento->tipo_periodo }}">
             @endif
-            @if($planejamento->numero_dias)
+            @if ($planejamento->numero_dias)
                 <input type="hidden" name="numero_dias" value="{{ $planejamento->numero_dias }}">
             @endif
-            @if($planejamento->data_inicio)
-                <input type="hidden" name="data_inicio" value="{{ \Carbon\Carbon::parse($planejamento->data_inicio)->format('Y-m-d') }}">
+            @if ($planejamento->data_inicio)
+                <input type="hidden" name="data_inicio"
+                    value="{{ \Carbon\Carbon::parse($planejamento->data_inicio)->format('Y-m-d') }}">
             @endif
-            @if($planejamento->data_fim)
-                <input type="hidden" name="data_fim" value="{{ \Carbon\Carbon::parse($planejamento->data_fim)->format('Y-m-d') }}">
+            @if ($planejamento->data_fim)
+                <input type="hidden" name="data_fim"
+                    value="{{ \Carbon\Carbon::parse($planejamento->data_fim)->format('Y-m-d') }}">
             @endif
-            @if(!is_null($planejamento->carga_horaria_aula))
+            @if (!is_null($planejamento->carga_horaria_aula))
                 <input type="hidden" name="carga_horaria_aula" value="{{ $planejamento->carga_horaria_aula }}">
             @endif
         @endif
@@ -281,24 +283,24 @@
                 </label>
 
                 <!-- Finalizar e Aprovar -->
-                @if(auth()->check() && isset($planejamento) && auth()->id() !== ($planejamento->user_id ?? null))
-                @permission('planejamentos.aprovar')
-                <label
-                    class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-green-500">
-                    <input type="radio" name="acao_finalizacao" value="aprovar" class="sr-only">
-                    <span class="flex flex-1">
-                        <span class="flex flex-col">
-                            <span class="block text-sm font-medium text-gray-900 flex items-center">
-                                <i class="fas fa-check text-green-600 mr-2"></i>
-                                Finalizar e Aprovar
+                @if (auth()->check() && isset($planejamento) && auth()->id() !== ($planejamento->user_id ?? null))
+                    @permission('planejamentos.aprovar')
+                        <label
+                            class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-green-500">
+                            <input type="radio" name="acao_finalizacao" value="aprovar" class="sr-only">
+                            <span class="flex flex-1">
+                                <span class="flex flex-col">
+                                    <span class="block text-sm font-medium text-gray-900 flex items-center">
+                                        <i class="fas fa-check text-green-600 mr-2"></i>
+                                        Finalizar e Aprovar
+                                    </span>
+                                    <span class="mt-1 flex items-center text-sm text-gray-500">
+                                        Planejamento ficará ativo
+                                    </span>
+                                </span>
                             </span>
-                            <span class="mt-1 flex items-center text-sm text-gray-500">
-                                Planejamento ficará ativo
-                            </span>
-                        </span>
-                    </span>
-                </label>
-                @endpermission
+                        </label>
+                    @endpermission
                 @endif
             </div>
         </div>
@@ -332,7 +334,8 @@
                 </div>
             </label>
             <!-- Removido campo oculto duplicado 'aceitar_termos_hidden' para evitar conflito -->
-            <p id="erro_termos" class="text-red-500 text-xs mt-1" style="display: none;">É necessário aceitar os termos e condições.</p>
+            <p id="erro_termos" class="text-red-500 text-xs mt-1" style="display: none;">É necessário aceitar os
+                termos e condições.</p>
             @error('aceitar_termos')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
             @enderror
@@ -370,19 +373,21 @@
         </div>
     </div>
 
-    @if(auth()->check() && isset($planejamento) && auth()->id() !== ($planejamento->user_id ?? null))
-    @permission('planejamentos.aprovar')
-    <div class="mt-4 flex flex-col sm:flex-row gap-3">
-        <button type="button" id="btn-solicitar-correcao" class="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 flex items-center justify-center">
-            <i class="fas fa-undo mr-2"></i>
-            Solicitar correção
-        </button>
-        <button type="button" id="btn-aprovar" class="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center">
-            <i class="fas fa-check mr-2"></i>
-            Finalizar e aprovar
-        </button>
-    </div>
-    @endpermission
+    @if (auth()->check() && isset($planejamento) && auth()->id() !== ($planejamento->user_id ?? null))
+        @permission('planejamentos.aprovar')
+            <div class="mt-4 flex flex-col sm:flex-row gap-3">
+                <button type="button" id="btn-solicitar-correcao"
+                    class="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 flex items-center justify-center">
+                    <i class="fas fa-undo mr-2"></i>
+                    Solicitar correção
+                </button>
+                <button type="button" id="btn-aprovar"
+                    class="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center">
+                    <i class="fas fa-check mr-2"></i>
+                    Finalizar e aprovar
+                </button>
+            </div>
+        @endpermission
     @endif
 
 </form>
@@ -394,13 +399,27 @@
 
         // Fallback para AlertService para evitar erros quando indisponível
         window.AlertService = window.AlertService || {
-            success: function(msg){ try { console.log('[Alert] success:', msg); } catch(e) {} },
-            error: function(msg){ try { console.error('[Alert] error:', msg); } catch(e) {} },
-            info: function(msg){ try { console.log('[Alert] info:', msg); } catch(e) {} }
+            success: function(msg) {
+                try {
+                    console.log('[Alert] success:', msg);
+                } catch (e) {}
+            },
+            error: function(msg) {
+                try {
+                    console.error('[Alert] error:', msg);
+                } catch (e) {}
+            },
+            info: function(msg) {
+                try {
+                    console.log('[Alert] info:', msg);
+                } catch (e) {}
+            }
         };
 
         // Definições globais de base path e headers para fetch
-        const BASE_PREFIX = (document.querySelector('meta[name="app-base-path"]')?.getAttribute('content') || window.__APP_BASE_PATH__ || '').trim();
+        const BASE_PREFIX = (document.querySelector('meta[name="app-base-path"]')?.getAttribute('content') || window
+            .__APP_BASE_PATH__ || '').trim();
+
         function joinUrl(path) {
             const b = BASE_PREFIX.replace(/\/+$/, '');
             const p = String(path || '').replace(/^\/+/, '');
@@ -450,6 +469,9 @@
 
             // Configurar indicador de status
             configurarIndicadorStatus();
+
+            // Configurar seleção visual de ação de finalização
+            configurarSelecaoAcaoFinalizacao();
 
             // Validação inicial
             validarPlanejamento();
@@ -516,7 +538,8 @@
             });
 
             // Em ediÃ§Ã£o, garantir campo oculto de planejamento_id
-            const pid = getWizardDataFromAllSteps('planejamento_id') || (window.wizardData && window.wizardData.planejamento_id) || null;
+            const pid = getWizardDataFromAllSteps('planejamento_id') || (window.wizardData && window.wizardData
+                .planejamento_id) || null;
             if (pid) {
                 criarCampoOculto('planejamento_id', pid);
             }
@@ -550,7 +573,8 @@
             }
 
             // Verificar no formData do planejamentoWizard
-            if (window.planejamentoWizard && window.planejamentoWizard.formData && window.planejamentoWizard.formData[campo]) {
+            if (window.planejamentoWizard && window.planejamentoWizard.formData && window.planejamentoWizard
+                .formData[campo]) {
                 return window.planejamentoWizard.formData[campo];
             }
 
@@ -654,6 +678,59 @@
             }
         }
 
+        function configurarSelecaoAcaoFinalizacao() {
+            console.log('[Step 6] Configurando seleção visual de ação de finalização');
+
+            const radioButtons = document.querySelectorAll('input[name="acao_finalizacao"]');
+            const labels = {
+                'rascunho': document.getElementById('opcao-rascunho'),
+                'revisao': document.getElementById('opcao-revisao'),
+                'aprovar': document.querySelector('input[name="acao_finalizacao"][value="aprovar"]')?.closest(
+                    'label')
+            };
+
+            function atualizarSelecaoVisual() {
+                const selecionado = document.querySelector('input[name="acao_finalizacao"]:checked');
+                if (!selecionado) return;
+
+                const valor = selecionado.value;
+                console.log('[Step 6] Ação de finalização selecionada:', valor);
+
+                // Remove selected state from all labels
+                Object.values(labels).forEach(label => {
+                    if (!label) return;
+                    label.classList.remove(
+                        'border-blue-500', 'border-green-500', 'border-gray-500',
+                        'bg-blue-50', 'bg-green-50', 'bg-gray-50',
+                        'ring-2', 'ring-blue-500', 'ring-green-500', 'ring-gray-500'
+                    );
+                    label.classList.add('border-gray-300', 'bg-white');
+                });
+
+                // Add selected state to active label
+                const labelAtivo = labels[valor];
+                if (labelAtivo) {
+                    labelAtivo.classList.remove('border-gray-300', 'bg-white');
+
+                    if (valor === 'rascunho') {
+                        labelAtivo.classList.add('border-gray-500', 'bg-gray-50', 'ring-2', 'ring-gray-500');
+                    } else if (valor === 'revisao') {
+                        labelAtivo.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-500');
+                    } else if (valor === 'aprovar') {
+                        labelAtivo.classList.add('border-green-500', 'bg-green-50', 'ring-2', 'ring-green-500');
+                    }
+                }
+            }
+
+            // Add change listeners to all radio buttons
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', atualizarSelecaoVisual);
+            });
+
+            // Set initial visual state
+            atualizarSelecaoVisual();
+        }
+
 
         function validarPlanejamento() {
             console.log('[Step 6] Validando planejamento');
@@ -661,7 +738,8 @@
 
             // Validar nivel_ensino_id como nÃºmero inteiro
             if (!validarNivelEnsinoId()) {
-                window.step6Config.validationErrors.push('NÃ­vel de ensino Ã© obrigatÃ³rio e deve ser um nÃºmero vÃ¡lido');
+                window.step6Config.validationErrors.push(
+                    'NÃ­vel de ensino Ã© obrigatÃ³rio e deve ser um nÃºmero vÃ¡lido');
             }
 
             // Validar campos_experiencia como array JSON
@@ -731,7 +809,7 @@
 
         function validarPlanejamentoCompleto() {
             const camposObrigatorios = window.step6Config.requiredFields.filter(field => field !== 'aceita_termos');
-            
+
             for (const campo of camposObrigatorios) {
                 const valor = getWizardDataFromAllSteps(campo);
                 if (!valor || (typeof valor === 'string' && valor.trim() === '')) {
@@ -743,33 +821,40 @@
         }
         // === Validação de diários (Etapa 5) para bloqueio no envio final ===
         function validarDiariosCompletosFrontend() {
-    try {
-        const esperado = calcularDiasEsperadosDoPeriodo();
-        const diariosInfo = coletarDiariosPlanejados();
+            try {
+                const esperado = calcularDiasEsperadosDoPeriodo();
+                const diariosInfo = coletarDiariosPlanejados();
 
-        // Se não houver como determinar esperado, não bloquear aqui (backend validará)
-        const planejados = diariosInfo.planejadosCount;
-        let ok = true;
-        let msgResumo = '';
-        let msgCampos = '';
+                // Se não houver como determinar esperado, não bloquear aqui (backend validará)
+                const planejados = diariosInfo.planejadosCount;
+                let ok = true;
+                let msgResumo = '';
+                let msgCampos = '';
 
-        if (esperado > 0 && planejados < esperado) {
-            const faltam = Math.max(0, esperado - planejados);
-            ok = false;
-            msgResumo = `Planejamento diário incompleto: faltam ${faltam} de ${esperado} dia(s) planejados.`;
+                if (esperado > 0 && planejados < esperado) {
+                    const faltam = Math.max(0, esperado - planejados);
+                    ok = false;
+                    msgResumo =
+                        `Planejamento diário incompleto: faltam ${faltam} de ${esperado} dia(s) planejados.`;
+                }
+
+                if (diariosInfo.incompletos && diariosInfo.incompletos.length > 0) {
+                    ok = false;
+                    msgCampos = `Dias com campos obrigatórios em falta: ${diariosInfo.incompletos.join('; ')}`;
+                }
+
+                return {
+                    ok,
+                    msgResumo,
+                    msgCampos
+                };
+            } catch (e) {
+                // Em caso de erro, não bloquear no frontend; backend tratará
+                return {
+                    ok: true
+                };
+            }
         }
-
-        if (diariosInfo.incompletos && diariosInfo.incompletos.length > 0) {
-            ok = false;
-            msgCampos = `Dias com campos obrigatórios em falta: ${diariosInfo.incompletos.join('; ')}`;
-        }
-
-        return { ok, msgResumo, msgCampos };
-    } catch (e) {
-        // Em caso de erro, não bloquear no frontend; backend tratará
-        return { ok: true };
-    }
-}
 
         function calcularDiasEsperadosDoPeriodo() {
             const tipo = getWizardDataFromAllSteps('tipo_periodo');
@@ -797,59 +882,63 @@
         }
 
         function coletarDiariosPlanejados() {
-    // Tenta extrair dos formatos conhecidos da Etapa 5
-    const step5 = (window.wizardData && window.wizardData.step5) || (window.planejamentoWizard && window.planejamentoWizard.formData && window.planejamentoWizard.formData[5]) || {};
+            // Tenta extrair dos formatos conhecidos da Etapa 5
+            const step5 = (window.wizardData && window.wizardData.step5) || (window.planejamentoWizard && window
+                .planejamentoWizard.formData && window.planejamentoWizard.formData[5]) || {};
 
-    // Formato 1: array de objetos
-    const arr = Array.isArray(step5.planejamentos_diarios) ? step5.planejamentos_diarios : [];
+            // Formato 1: array de objetos
+            const arr = Array.isArray(step5.planejamentos_diarios) ? step5.planejamentos_diarios : [];
 
-    // Formato 2: mapas separados (quando disponível)
-    const dailyMap = step5.dailyMap || {};
-    const dailyStatus = step5.dailyStatus || {};
+            // Formato 2: mapas separados (quando disponível)
+            const dailyMap = step5.dailyMap || {};
+            const dailyStatus = step5.dailyStatus || {};
 
-    const incompletos = [];
-    let planejadosCount = 0;
+            const incompletos = [];
+            let planejadosCount = 0;
 
-    if (arr.length > 0) {
-        for (const d of arr) {
-            const planejado = (!('planejado' in d)) ? true : !!d.planejado;
-            if (!planejado) continue;
-            planejadosCount++;
+            if (arr.length > 0) {
+                for (const d of arr) {
+                    const planejado = (!('planejado' in d)) ? true : !!d.planejado;
+                    if (!planejado) continue;
+                    planejadosCount++;
 
-            const camposExp = Array.isArray(d.campos_experiencia) ? d.campos_experiencia : [];
-            const saberes = (d.saberes_conhecimentos || '').trim();
-            const objsApr = Array.isArray(d.objetivos_aprendizagem) ? d.objetivos_aprendizagem : [];
+                    const camposExp = Array.isArray(d.campos_experiencia) ? d.campos_experiencia : [];
+                    const saberes = (d.saberes_conhecimentos || '').trim();
+                    const objsApr = Array.isArray(d.objetivos_aprendizagem) ? d.objetivos_aprendizagem : [];
 
-            const faltando = [];
-            if (camposExp.length === 0) faltando.push('campos de experiência');
-            if (saberes === '') faltando.push('saberes e conhecimentos');
-            if (objsApr.length === 0) faltando.push('objetivos de aprendizagem');
-            if (faltando.length > 0) {
-                incompletos.push(`${(d.data || 'dia sem data')} (${faltando.join(', ')})`);
+                    const faltando = [];
+                    if (camposExp.length === 0) faltando.push('campos de experiência');
+                    if (saberes === '') faltando.push('saberes e conhecimentos');
+                    if (objsApr.length === 0) faltando.push('objetivos de aprendizagem');
+                    if (faltando.length > 0) {
+                        incompletos.push(`${(d.data || 'dia sem data')} (${faltando.join(', ')})`);
+                    }
+                }
+            } else if (Object.keys(dailyMap).length > 0) {
+                for (const [dateKey, v] of Object.entries(dailyMap)) {
+                    const planejado = !!dailyStatus[dateKey];
+                    if (!planejado) continue;
+                    planejadosCount++;
+
+                    const camposExp = Array.isArray(v.campos_experiencia) ? v.campos_experiencia : [];
+                    const saberes = (v.saberes_conhecimentos || '').trim();
+                    const objsApr = Array.isArray(v.objetivos_aprendizagem) ? v.objetivos_aprendizagem : [];
+
+                    const faltando = [];
+                    if (camposExp.length === 0) faltando.push('campos de experiência');
+                    if (saberes === '') faltando.push('saberes e conhecimentos');
+                    if (objsApr.length === 0) faltando.push('objetivos de aprendizagem');
+                    if (faltando.length > 0) {
+                        incompletos.push(`${dateKey} (${faltando.join(', ')})`);
+                    }
+                }
             }
+
+            return {
+                planejadosCount,
+                incompletos
+            };
         }
-    } else if (Object.keys(dailyMap).length > 0) {
-        for (const [dateKey, v] of Object.entries(dailyMap)) {
-            const planejado = !!dailyStatus[dateKey];
-            if (!planejado) continue;
-            planejadosCount++;
-
-            const camposExp = Array.isArray(v.campos_experiencia) ? v.campos_experiencia : [];
-            const saberes = (v.saberes_conhecimentos || '').trim();
-            const objsApr = Array.isArray(v.objetivos_aprendizagem) ? v.objetivos_aprendizagem : [];
-
-            const faltando = [];
-            if (camposExp.length === 0) faltando.push('campos de experiência');
-            if (saberes === '') faltando.push('saberes e conhecimentos');
-            if (objsApr.length === 0) faltando.push('objetivos de aprendizagem');
-            if (faltando.length > 0) {
-                incompletos.push(`${dateKey} (${faltando.join(', ')})`);
-            }
-        }
-    }
-
-    return { planejadosCount, incompletos };
-}
 
         function exibirErrosValidacao() {
             const containerErros = document.getElementById('validation-errors');
@@ -872,7 +961,7 @@
 
         function atualizarEstadoBotoes() {
             const isValid = window.step6Config.validationErrors.length === 0;
-            
+
             const btnFinalizar = document.getElementById('btn-finalizar');
             if (btnFinalizar) {
                 btnFinalizar.disabled = !isValid;
@@ -882,7 +971,9 @@
         }
 
         function finalizarWizard(finalizar = false) {
-            console.log('[Step 6] Finalizando wizard...', { finalizar });
+            console.log('[Step 6] Finalizando wizard...', {
+                finalizar
+            });
 
             // Validar antes de finalizar
             if (!validarPlanejamento()) {
@@ -951,7 +1042,7 @@
 
         function mostrarPreview() {
             console.log('[Step 6] Mostrando preview');
-            
+
             const modal = document.getElementById('modal-preview');
             if (modal) {
                 const htmlPreview = gerarHtmlPreview();
@@ -965,7 +1056,7 @@
 
         function fecharPreview() {
             console.log('[Step 6] Fechando preview');
-            
+
             const modal = document.getElementById('modal-preview');
             if (modal) {
                 modal.classList.add('hidden');
@@ -982,6 +1073,8 @@
                     Object.assign(dados, window.wizardData[`step${i}`]);
                 }
             }
+
+            console.log(dados);
 
             return `
                 <div class="preview-planejamento">
@@ -1057,7 +1150,7 @@
         const camposExperienciaElement = document.getElementById('resumo-campos-experiencia');
         if (camposExperienciaElement) {
             if (dados.campos_experiencia && Array.isArray(dados.campos_experiencia)) {
-                camposExperienciaElement.innerHTML = dados.campos_experiencia.map(campo => 
+                camposExperienciaElement.innerHTML = dados.campos_experiencia.map(campo =>
                     `<span class="badge badge-primary mr-1">${campo.nome || campo}</span>`
                 ).join('');
             } else {
@@ -1069,10 +1162,11 @@
         const saberesElement = document.getElementById('resumo-saberes');
         if (saberesElement) {
             if (dados.saberes_conhecimentos && Array.isArray(dados.saberes_conhecimentos)) {
-                saberesElement.innerHTML = dados.saberes_conhecimentos.map(saber => 
+                saberesElement.innerHTML = dados.saberes_conhecimentos.map(saber =>
                     `<span class="badge badge-info mr-1">${saber.nome || saber}</span>`
                 ).join('');
-            } else if (typeof dados.saberes_conhecimentos === 'string' && dados.saberes_conhecimentos.trim() !== '') {
+            } else if (typeof dados.saberes_conhecimentos === 'string' && dados.saberes_conhecimentos.trim() !==
+                '') {
                 saberesElement.textContent = dados.saberes_conhecimentos.trim();
             } else {
                 saberesElement.textContent = 'Não informado';
@@ -1083,7 +1177,7 @@
         const objetivosElement = document.getElementById('resumo-objetivos-aprendizagem');
         if (objetivosElement) {
             if (dados.objetivos_aprendizagem && Array.isArray(dados.objetivos_aprendizagem)) {
-                objetivosElement.innerHTML = dados.objetivos_aprendizagem.map(objetivo => 
+                objetivosElement.innerHTML = dados.objetivos_aprendizagem.map(objetivo =>
                     `<span class="badge badge-success mr-1">${objetivo.nome || objetivo}</span>`
                 ).join('');
             } else {
@@ -1169,22 +1263,25 @@
                 btnExportar.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('Exportando PDF...');
-                    
+
                     // Obter o ID do planejamento
                     const planejamentoId = window.planejamentoId || @json($planejamento->id ?? null);
-                    
+
                     if (planejamentoId) {
                         // Construir a URL de exportação
-                        const exportUrl = `{{ route('planejamentos.export', ['planejamento' => ':id', 'format' => 'pdf']) }}`.replace(':id', planejamentoId);
-                        
+                        const exportUrl =
+                            `{{ route('planejamentos.export', ['planejamento' => ':id', 'format' => 'pdf']) }}`
+                            .replace(':id', planejamentoId);
+
                         // Abrir em nova aba para download
                         window.open(exportUrl, '_blank');
-                        
+
                         window.AlertService.success('Download do PDF iniciado!');
                     } else {
-                        window.AlertService.error('Erro: ID do planejamento não encontrado. Salve o planejamento primeiro.');
+                        window.AlertService.error(
+                            'Erro: ID do planejamento não encontrado. Salve o planejamento primeiro.');
                     }
-                    
+
                     return false;
                 });
             } else {
@@ -1212,27 +1309,36 @@
             btnSolicitarCorrecao.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const id = window.wizardData?.planejamento_id;
-                if (!id) { window.AlertService.error('Planejamento não encontrado.'); return; }
+                if (!id) {
+                    window.AlertService.error('Planejamento não encontrado.');
+                    return;
+                }
                 this.disabled = true;
-                this.classList.add('opacity-50','cursor-not-allowed');
+                this.classList.add('opacity-50', 'cursor-not-allowed');
                 try {
                     const obs = (document.getElementById('observacoes_finais')?.value || '').trim();
                     if (!obs) {
-                        window.AlertService.error('Informe observações para rejeitar (campo “Observações Finais”).');
+                        window.AlertService.error(
+                            'Informe observações para rejeitar (campo “Observações Finais”).');
                         throw new Error('Observações obrigatórias para rejeitar.');
                     }
                     const resp = await fetch(joinUrl(`/planejamentos/${id}/rejeitar`), {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') || '',
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ observacoes_aprovacao: obs })
+                        body: JSON.stringify({
+                            observacoes_aprovacao: obs
+                        })
                     });
                     let data = {};
-                    try { data = await resp.json(); } catch(e) {}
+                    try {
+                        data = await resp.json();
+                    } catch (e) {}
                     if (!resp.ok) {
                         const msg = data?.error || data?.message || `Erro ${resp.status} ao rejeitar.`;
                         window.AlertService.error(msg);
@@ -1245,7 +1351,7 @@
                     window.AlertService.error(err.message || 'Erro ao solicitar correção.');
                 } finally {
                     this.disabled = false;
-                    this.classList.remove('opacity-50','cursor-not-allowed');
+                    this.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
             });
         }
@@ -1255,23 +1361,31 @@
             btnAprovar.addEventListener('click', async function(e) {
                 e.preventDefault();
                 const id = window.wizardData?.planejamento_id;
-                if (!id) { window.AlertService.error('Planejamento não encontrado.'); return; }
+                if (!id) {
+                    window.AlertService.error('Planejamento não encontrado.');
+                    return;
+                }
                 this.disabled = true;
-                this.classList.add('opacity-50','cursor-not-allowed');
+                this.classList.add('opacity-50', 'cursor-not-allowed');
                 try {
                     const obs = (document.getElementById('observacoes_finais')?.value || '').trim();
                     const resp = await fetch(joinUrl(`/planejamentos/${id}/aprovar`), {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') || '',
                             'Accept': 'application/json',
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(obs ? { observacoes_aprovacao: obs } : {})
+                        body: JSON.stringify(obs ? {
+                            observacoes_aprovacao: obs
+                        } : {})
                     });
                     let data = {};
-                    try { data = await resp.json(); } catch(e) {}
+                    try {
+                        data = await resp.json();
+                    } catch (e) {}
                     if (!resp.ok) {
                         const msg = data?.error || data?.message || `Erro ${resp.status} ao aprovar.`;
                         window.AlertService.error(msg);
@@ -1284,7 +1398,7 @@
                     window.AlertService.error(err.message || 'Erro ao aprovar planejamento.');
                 } finally {
                     this.disabled = false;
-                    this.classList.remove('opacity-50','cursor-not-allowed');
+                    this.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
             });
         }
@@ -1295,7 +1409,9 @@
             console.log("[Step6] Carregando resumo do planejamento");
 
             // Base path e headers comuns para chamadas fetch
-            const basePrefix = (document.querySelector('meta[name="app-base-path"]')?.getAttribute('content') || window.__APP_BASE_PATH__ || '').trim();
+            const basePrefix = (document.querySelector('meta[name="app-base-path"]')?.getAttribute('content') ||
+                window.__APP_BASE_PATH__ || '').trim();
+
             function joinUrl(path) {
                 const b = basePrefix.replace(/\/+$/, '');
                 const p = String(path || '').replace(/^\/+/, '');
@@ -1312,7 +1428,8 @@
                 // 1) window.wizardData.stepN
                 for (let i = 1; i <= 6; i++) {
                     const stepAlias = window.wizardData && window.wizardData[`step${i}`];
-                    if (stepAlias && stepAlias[key] !== undefined && stepAlias[key] !== null && stepAlias[key] !== '') {
+                    if (stepAlias && stepAlias[key] !== undefined && stepAlias[key] !== null && stepAlias[
+                            key] !== '') {
                         return stepAlias[key];
                     }
                 }
@@ -1338,7 +1455,8 @@
                     }
                 }
                 // 5) fallback direto no wizardData
-                if (window.wizardData && window.wizardData[key] !== undefined && window.wizardData[key] !== null && window.wizardData[key] !== '') {
+                if (window.wizardData && window.wizardData[key] !== undefined && window.wizardData[key] !==
+                    null && window.wizardData[key] !== '') {
                     return window.wizardData[key];
                 }
                 return null;
@@ -1359,22 +1477,29 @@
             if (resumoTituloEl) resumoTituloEl.textContent = tituloDom || tituloHidden || tituloWizard || '-';
 
             // Modalidade
-            const modalidadeTexto = document.querySelector('select[name="modalidade_ensino"] option:checked')?.textContent;
+            const modalidadeTexto = document.querySelector('select[name="modalidade_ensino"] option:checked')
+                ?.textContent;
             const modalidadeNomeWizard = getWizardDataFromAllSteps('modalidade_ensino_nome');
-            const modalidadeIdWizard = getWizardDataFromAllSteps('modalidade_ensino_id') || getWizardDataFromAllSteps('modalidade_ensino');
+            const modalidadeIdWizard = getWizardDataFromAllSteps('modalidade_ensino_id') ||
+                getWizardDataFromAllSteps('modalidade_ensino');
             const resumoModalidadeEl = document.getElementById('resumo-modalidade');
-            if (resumoModalidadeEl) resumoModalidadeEl.textContent = modalidadeTexto || modalidadeNomeWizard || (modalidadeIdWizard ? `ID ${modalidadeIdWizard}` : '-');
+            if (resumoModalidadeEl) resumoModalidadeEl.textContent = modalidadeTexto || modalidadeNomeWizard ||
+                (modalidadeIdWizard ? `ID ${modalidadeIdWizard}` : '-');
 
             // Nível de Ensino (se disponível)
             const nivelNomeWizard = getWizardDataFromAllSteps('nivel_ensino_nome');
-            const nivelIdWizard = getWizardDataFromAllSteps('nivel_ensino_id') || getWizardDataFromAllSteps('nivel_ensino');
+            const nivelIdWizard = getWizardDataFromAllSteps('nivel_ensino_id') || getWizardDataFromAllSteps(
+                'nivel_ensino');
             const resumoNivelEl = document.getElementById('resumo-nivel');
-            if (resumoNivelEl) resumoNivelEl.textContent = nivelNomeWizard || (nivelIdWizard ? `ID ${nivelIdWizard}` : '-');
+            if (resumoNivelEl) resumoNivelEl.textContent = nivelNomeWizard || (nivelIdWizard ?
+                `ID ${nivelIdWizard}` : '-');
 
             // Objetivos de Aprendizagem: contar selecionados
-            const objetivosSelecionadosDom = document.querySelectorAll('input[name="objetivos_aprendizagem[]"]:checked').length;
+            const objetivosSelecionadosDom = document.querySelectorAll(
+                'input[name="objetivos_aprendizagem[]"]:checked').length;
             let objetivosWizard = [];
-            if (window.wizardData && window.wizardData.step5 && window.wizardData.step5.objetivos_aprendizagem) {
+            if (window.wizardData && window.wizardData.step5 && window.wizardData.step5
+                .objetivos_aprendizagem) {
                 if (typeof window.wizardData.step5.objetivos_aprendizagem === 'string') {
                     try {
                         objetivosWizard = JSON.parse(window.wizardData.step5.objetivos_aprendizagem);
@@ -1388,7 +1513,8 @@
 
             const objetivosCount = objetivosSelecionadosDom || objetivosWizard.length;
             const resumoObjEl = document.getElementById('resumo-objetivos-aprendizagem');
-            if (resumoObjEl) resumoObjEl.textContent = objetivosCount > 0 ? `${objetivosCount} objetivos selecionados` : 'Nenhum objetivo selecionado';
+            if (resumoObjEl) resumoObjEl.textContent = objetivosCount > 0 ?
+                `${objetivosCount} objetivos selecionados` : 'Nenhum objetivo selecionado';
 
             // IDs necessários para mapear nomes
             function getFromHidden(name) {
@@ -1397,59 +1523,96 @@
                 // Considera select/inputs no DOM; Step 6 usa campos ocultos
                 return el.value !== undefined && el.value !== null && el.value !== '' ? el.value : null;
             }
-            const escolaId = getWizardDataFromAllSteps('escola_id') || getFromHidden('escola_id') || getFromHidden('escola');
-            const turnoId = getWizardDataFromAllSteps('turno_id') || getFromHidden('turno_id') || getFromHidden('turno');
-            const turmaId = getWizardDataFromAllSteps('turma_id') || getFromHidden('turma_id') || getFromHidden('turma');
-            const disciplinaId = getWizardDataFromAllSteps('disciplina_id') || getFromHidden('disciplina_id') || getFromHidden('disciplina');
-            const professorId = getWizardDataFromAllSteps('professor_id') || getFromHidden('professor_id') || getFromHidden('professor');
-            console.log('[Step6] IDs coletados para resumo:', { escolaId, turnoId, turmaId, disciplinaId, professorId });
+            const escolaId = getWizardDataFromAllSteps('escola_id') || getFromHidden('escola_id') ||
+                getFromHidden('escola');
+            const turnoId = getWizardDataFromAllSteps('turno_id') || getFromHidden('turno_id') || getFromHidden(
+                'turno');
+            const turmaId = getWizardDataFromAllSteps('turma_id') || getFromHidden('turma_id') || getFromHidden(
+                'turma');
+            const disciplinaId = getWizardDataFromAllSteps('disciplina_id') || getFromHidden('disciplina_id') ||
+                getFromHidden('disciplina');
+            const professorId = getWizardDataFromAllSteps('professor_id') || getFromHidden('professor_id') ||
+                getFromHidden('professor');
+            console.log('[Step6] IDs coletados para resumo:', {
+                escolaId,
+                turnoId,
+                turmaId,
+                disciplinaId,
+                professorId
+            });
 
             // Período e duração
             const tipoPeriodo = getWizardDataFromAllSteps('tipo_periodo') || getFromHidden('tipo_periodo');
-            const dataInicio = getWizardDataFromAllSteps('data_inicio') || getFromHidden('data_inicio') || (window.planejamentoPeriodo?.inicio || null);
-            const dataFim = getWizardDataFromAllSteps('data_fim') || getFromHidden('data_fim') || (window.planejamentoPeriodo?.fim || null);
-            const numeroDias = parseInt((getWizardDataFromAllSteps('numero_dias') || getFromHidden('numero_dias') || 0), 10);
-            const cargaAula = parseFloat((getWizardDataFromAllSteps('carga_horaria_aula') || getFromHidden('carga_horaria_aula') || 0.75));
-            console.log('[Step6] Período coletado:', { tipoPeriodo, dataInicio, dataFim, numeroDias, cargaAula });
+            const dataInicio = getWizardDataFromAllSteps('data_inicio') || getFromHidden('data_inicio') || (
+                window.planejamentoPeriodo?.inicio || null);
+            const dataFim = getWizardDataFromAllSteps('data_fim') || getFromHidden('data_fim') || (window
+                .planejamentoPeriodo?.fim || null);
+            const numeroDias = parseInt((getWizardDataFromAllSteps('numero_dias') || getFromHidden(
+                'numero_dias') || 0), 10);
+            const cargaAula = parseFloat((getWizardDataFromAllSteps('carga_horaria_aula') || getFromHidden(
+                'carga_horaria_aula') || 0.75));
+            console.log('[Step6] Período coletado:', {
+                tipoPeriodo,
+                dataInicio,
+                dataFim,
+                numeroDias,
+                cargaAula
+            });
 
             const tipoPeriodoEl = document.getElementById('resumo-tipo-periodo');
-            if (tipoPeriodoEl) tipoPeriodoEl.textContent = tipoPeriodo ? (tipoPeriodo === 'mensal' ? 'Mensal' : tipoPeriodo) : '-';
+            if (tipoPeriodoEl) tipoPeriodoEl.textContent = tipoPeriodo ? (tipoPeriodo === 'mensal' ? 'Mensal' :
+                tipoPeriodo) : '-';
 
             const totalAulasEl = document.getElementById('resumo-total-aulas');
             if (totalAulasEl) totalAulasEl.textContent = numeroDias > 0 ? `${numeroDias}` : '-';
 
             const cargaHorariaEl = document.getElementById('resumo-carga-horaria');
-            if (cargaHorariaEl) cargaHorariaEl.textContent = numeroDias > 0 ? `${(numeroDias * cargaAula).toFixed(1)}h` : '-';
+            if (cargaHorariaEl) cargaHorariaEl.textContent = numeroDias > 0 ?
+                `${(numeroDias * cargaAula).toFixed(1)}h` : '-';
 
             const periodoDetalhadoEl = document.getElementById('resumo-periodo-detalhado');
-            if (periodoDetalhadoEl) periodoDetalhadoEl.textContent = (dataInicio && dataFim) ? `${formatDateBR(dataInicio)} a ${formatDateBR(dataFim)}` : '-';
+            if (periodoDetalhadoEl) periodoDetalhadoEl.textContent = (dataInicio && dataFim) ?
+                `${formatDateBR(dataInicio)} a ${formatDateBR(dataFim)}` : '-';
 
             // Mapear nomes por ID via APIs
             try {
                 if (escolaId) {
-                    const res = await fetch(joinUrl(`/api/escolas/${escolaId}`), { credentials: 'same-origin', headers: commonHeaders });
+                    const res = await fetch(joinUrl(`/api/escolas/${escolaId}`), {
+                        credentials: 'same-origin',
+                        headers: commonHeaders
+                    });
                     if (res.ok) {
                         const escola = await res.json();
                         const el = document.getElementById('resumo-escola');
                         if (el) el.textContent = escola?.nome || `ID ${escolaId}`;
                     }
                 }
-            } catch (e) { console.warn('STEP-6: falha ao obter escola por ID', e); }
+            } catch (e) {
+                console.warn('STEP-6: falha ao obter escola por ID', e);
+            }
 
             try {
                 if (turnoId) {
-                    const res = await fetch(joinUrl(`/api/turnos/${turnoId}`), { credentials: 'same-origin', headers: commonHeaders });
+                    const res = await fetch(joinUrl(`/api/turnos/${turnoId}`), {
+                        credentials: 'same-origin',
+                        headers: commonHeaders
+                    });
                     if (res.ok) {
                         const turno = await res.json();
                         const el = document.getElementById('resumo-turno');
                         if (el) el.textContent = turno?.nome || `ID ${turnoId}`;
                     }
                 }
-            } catch (e) { console.warn('STEP-6: falha ao obter turno por ID', e); }
+            } catch (e) {
+                console.warn('STEP-6: falha ao obter turno por ID', e);
+            }
 
             try {
                 if (turmaId) {
-                    const res = await fetch(joinUrl(`/api/turmas/${turmaId}`), { credentials: 'same-origin', headers: commonHeaders });
+                    const res = await fetch(joinUrl(`/api/turmas/${turmaId}`), {
+                        credentials: 'same-origin',
+                        headers: commonHeaders
+                    });
                     if (res.ok) {
                         const turma = await res.json();
                         const el = document.getElementById('resumo-turma');
@@ -1457,67 +1620,93 @@
                     }
                     // Nº de alunos
                     try {
-                        const resAlunos = await fetch(joinUrl(`/api/turmas/${turmaId}/alunos`), { credentials: 'same-origin', headers: commonHeaders });
+                        const resAlunos = await fetch(joinUrl(`/api/turmas/${turmaId}/alunos`), {
+                            credentials: 'same-origin',
+                            headers: commonHeaders
+                        });
                         if (resAlunos.ok) {
                             const alunos = await resAlunos.json();
                             const elAlunos = document.getElementById('resumo-alunos');
-                            if (elAlunos) elAlunos.textContent = Array.isArray(alunos) ? alunos.length : (alunos?.length || '-');
+                            if (elAlunos) elAlunos.textContent = Array.isArray(alunos) ? alunos.length : (alunos
+                                ?.length || '-');
                         }
-                    } catch (e2) { console.warn('STEP-6: falha ao obter alunos da turma', e2); }
+                    } catch (e2) {
+                        console.warn('STEP-6: falha ao obter alunos da turma', e2);
+                    }
                 }
-            } catch (e) { console.warn('STEP-6: falha ao obter turma por ID', e); }
+            } catch (e) {
+                console.warn('STEP-6: falha ao obter turma por ID', e);
+            }
 
             try {
                 if (disciplinaId && turmaId) {
-                    const res = await fetch(joinUrl(`/planejamentos/get-disciplinas-por-turma?turma_id=${encodeURIComponent(turmaId)}`), { credentials: 'same-origin', headers: commonHeaders });
+                    const res = await fetch(joinUrl(
+                        `/planejamentos/get-disciplinas-por-turma?turma_id=${encodeURIComponent(turmaId)}`
+                    ), {
+                        credentials: 'same-origin',
+                        headers: commonHeaders
+                    });
                     if (res.ok) {
                         const disciplinas = await res.json();
-                        const encontrada = Array.isArray(disciplinas) ? disciplinas.find(d => String(d.id) === String(disciplinaId)) : null;
+                        const encontrada = Array.isArray(disciplinas) ? disciplinas.find(d => String(d.id) ===
+                            String(disciplinaId)) : null;
                         const el = document.getElementById('resumo-disciplina');
-                        if (el) el.textContent = (encontrada && encontrada.nome) ? encontrada.nome : (disciplinaId ? `ID ${disciplinaId}` : '-');
+                        if (el) el.textContent = (encontrada && encontrada.nome) ? encontrada.nome : (
+                            disciplinaId ? `ID ${disciplinaId}` : '-');
                     }
                 }
-            } catch (e) { console.warn('STEP-6: falha ao obter disciplina por turma', e); }
+            } catch (e) {
+                console.warn('STEP-6: falha ao obter disciplina por turma', e);
+            }
 
             try {
                 if (professorId && turmaId && disciplinaId) {
-                    const url = joinUrl(`/planejamentos/get-professores-por-turma-disciplina?turma_id=${encodeURIComponent(turmaId)}&disciplina_id=${encodeURIComponent(disciplinaId)}`);
-                    const res = await fetch(url, { credentials: 'same-origin', headers: commonHeaders });
+                    const url = joinUrl(
+                        `/planejamentos/get-professores-por-turma-disciplina?turma_id=${encodeURIComponent(turmaId)}&disciplina_id=${encodeURIComponent(disciplinaId)}`
+                    );
+                    const res = await fetch(url, {
+                        credentials: 'same-origin',
+                        headers: commonHeaders
+                    });
                     if (res.ok) {
                         const professores = await res.json();
-                        const encontrado = Array.isArray(professores) ? professores.find(p => String(p.id) === String(professorId)) : null;
+                        const encontrado = Array.isArray(professores) ? professores.find(p => String(p.id) ===
+                            String(professorId)) : null;
                         const el = document.getElementById('resumo-professor');
-                        if (el) el.textContent = (encontrado && encontrado.name) ? encontrado.name : (professorId ? `ID ${professorId}` : '-');
+                        if (el) el.textContent = (encontrado && encontrado.name) ? encontrado.name : (
+                            professorId ? `ID ${professorId}` : '-');
                     }
                 }
-            } catch (e) { console.warn('STEP-6: falha ao obter professor por turma/disciplina', e); }
+            } catch (e) {
+                console.warn('STEP-6: falha ao obter professor por turma/disciplina', e);
+            }
         }
 
         // Carregar resumo quando a pÃ¡gina estiver pronta
         // carregarResumo(); // desabilitado para evitar conflito com step-6-new.js
-    
+
         // Configurar indicador de status
         function configurarIndicadorStatus() {
             const statusIndicator = document.getElementById('status-indicator');
             const statusBadge = document.getElementById('status-badge');
             const statusIcon = document.getElementById('status-icon');
             const statusText = document.getElementById('status-text');
-            
+
             if (!statusIndicator || !statusBadge || !statusIcon || !statusText) {
                 return;
             }
-            
+
             // Obter status do planejamento
             let status = 'rascunho'; // padrão
             if (window.wizardData && window.wizardData.status) {
                 status = window.wizardData.status;
             }
-            
+
             // Configurar aparência baseada no status
             let badgeClasses = 'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ';
             let iconClass = '';
             let statusLabel = '';
-            
+
             // Se o backend já forneceu o texto formatado, usar diretamente
             if (window.wizardData && window.wizardData.status_formatado) {
                 statusLabel = window.wizardData.status_formatado;
@@ -1550,16 +1739,16 @@
                     iconClass = 'fas fa-question-circle text-gray-600';
                     statusLabel = statusLabel || 'Status Desconhecido';
             }
-            
+
             // Aplicar estilos e texto
             statusBadge.className = badgeClasses;
             statusIcon.className = iconClass;
             statusText.textContent = statusLabel;
-            
+
             // Controlar visibilidade dos botões baseado no status
             const opcaoRascunho = document.getElementById('opcao-rascunho');
             const opcaoRevisao = document.getElementById('opcao-revisao');
-            
+
             if (status === 'finalizado') {
                 // Ocultar opções de rascunho e revisão quando já está em revisão
                 if (opcaoRascunho) opcaoRascunho.style.display = 'none';
@@ -1569,25 +1758,15 @@
                 if (opcaoRascunho) opcaoRascunho.style.display = 'block';
                 if (opcaoRevisao) opcaoRevisao.style.display = 'block';
             }
-            
+
             // Mostrar o indicador
             statusIndicator.style.display = 'block';
         }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initStep6);
-    } else {
-        initStep6();
-    }
-})();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initStep6);
+        } else {
+            initStep6();
+        }
+    })();
 </script>
-
-
-
-
-
-
-
-
-
-

@@ -246,8 +246,8 @@
                                             @input="onCurrencyInput($event, it, 'amount')"
                                             title="Informe o valor em reais; será convertido para centavos.">
                                         <div class="flex col-span-2 gap-2">
-                                            <div class="text-left text-xs text-gray-500"
-                                                x-text="itemQtyFormula(it)"></div>
+                                            <div class="text-left text-xs text-gray-500" x-text="itemQtyFormula(it)">
+                                            </div>
                                             <button type="button" class="text-red-600 text-sm"
                                                 @click="removeItem(idx)" x-show="form.items.length>1">
                                                 <i class="fas fa-trash-alt"></i>
@@ -467,6 +467,7 @@
                             <thead>
                                 <tr class="text-left text-gray-600">
                                     <th class="py-2 px-2">Descrição</th>
+                                    <th class="py-2 px-2">Mês Ref.</th>
                                     <th class="py-2 px-2">Vencimento</th>
                                     <th class="py-2 px-2">Total</th>
                                 </tr>
@@ -475,6 +476,11 @@
                                 <template x-for="it in summaryList()" :key="it.id">
                                     <tr class="border-t">
                                         <td class="py-2 px-2" x-text="it.description"></td>
+                                        <td class="py-2 px-2">
+                                            <span
+                                                class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700 font-medium"
+                                                x-text="it.month_ref"></span>
+                                        </td>
                                         <td class="py-2 px-2" x-text="formatDateBr(it.due_date) || '-'">
                                         </td>
                                         <td class="py-2 px-2" x-text="centsToCurrency(it.total_cents || 0)"></td>
@@ -536,13 +542,58 @@
                             class="mt-1 block w-full border rounded px-2 py-1"
                             x-model.number="editForm.discount_percent">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Valor total</label>
-                        <div class="mt-1 font-semibold"
-                            x-text="centsToCurrency((editForm.items || []).reduce((s,it)=> s + (amountToCents(it.amount) * (parseInt(it.qty)||1)), 0))">
+                    <div class="bg-gray-50 border rounded p-2">
+                        <div class="text-xs text-gray-500">Resumo da Fatura</div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Base:</span>
+                            <span
+                                x-text="centsToCurrency((editForm.items || []).reduce((s,it)=> s + (amountToCents(it.amount) * (parseInt(it.qty)||1)), 0))"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Líq. (aprox):</span>
+                            <span class="font-bold text-green-700"
+                                x-text="centsToCurrency(Math.round(((editForm.items || []).reduce((s,it)=> s + (amountToCents(it.amount) * (parseInt(it.qty)||1)), 0)) * (1 - ((parseFloat(editForm.discount_percent)||0) / 100))))"></span>
                         </div>
                     </div>
                 </div>
+
+                <!-- Desconto antecipado no Editar -->
+                <div class="border-t pt-3">
+                    <h5 class="font-semibold text-gray-800 mb-2">Desconto no pagamento adiantado</h5>
+                    <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-600">Valor (%)</label>
+                            <input type="text" class="mt-1 w-full border rounded px-2 py-1 text-sm"
+                                x-model="editForm.early_discount_value" placeholder="Ex.: 5"
+                                @input="onPercentInput('early_discount_value', $event, 'editForm')">
+                        </div>
+                        <div class="col-span-3">
+                            <label class="block text-sm font-medium text-gray-600">Dias de antecipação</label>
+                            <input type="number" min="1" max="30"
+                                class="mt-1 w-full border rounded px-2 py-1 text-sm"
+                                x-model="editForm.early_discount_days" placeholder="Ex.: 5"
+                                @input="onDaysInput('early_discount_days', $event, 'editForm')">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-600">Ativo?</label>
+                            <div class="mt-2 flex items-center">
+                                <input id="edit_early_discount_active" type="checkbox" class="mr-2"
+                                    x-model="editForm.early_discount_active">
+                                <label for="edit_early_discount_active"
+                                    class="text-xs text-gray-600">Habilitar</label>
+                            </div>
+                        </div>
+                        <div class="col-span-7">
+                            <p class="text-xs text-gray-500"
+                                x-show="editForm.early_discount_active && editForm.early_discount_days">
+                                Se pago até o dia <span class="font-bold text-blue-700"
+                                    x-text="(earlyLimitDate(currentEditDueDate(), editForm.early_discount_days) || '').split('-')[2]"></span>
+                                do mês de referência.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Datas de ciclo da assinatura -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                     <div>
@@ -558,8 +609,8 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Data do último
                             faturamento</label>
-                        <input type="date" class="mt-1 block w-full border rounded px-2 py-1 bg-gray-100"
-                            x-model="editForm.last_billed_at" readonly disabled>
+                        <input type="date" id="edit_last_billed_at" x-model="editForm.last_billed_at"
+                            class="form-input">
                         <p class="mt-1 text-xs text-gray-500">Gerenciado pelo sistema; atualizado ao gerar
                             fatura.</p>
                     </div>
@@ -1189,6 +1240,18 @@
                 chargeActive: true,
                 description: '',
             },
+            editForm: {
+                description: '',
+                day_of_month: null,
+                discount_percent: 0,
+                items: [],
+                start_at: '',
+                end_at: '',
+                last_billed_at: '',
+                early_discount_active: false,
+                early_discount_value: '',
+                early_discount_days: '',
+            },
             subscriptions: [],
             invoices: [],
             invoicesLimit: 10,
@@ -1303,28 +1366,63 @@
                 if (!d || d < 1 || d > 31) return '';
                 return this.nextDueDateFromDay(d);
             },
-            nextDueDateFromDay(day) {
+            currentEditDueDate() {
+                const d = parseInt(this.editForm.day_of_month);
+                if (!d || d < 1 || d > 31) return '';
+                return this.nextDueDateFromDay(d, this.editForm.last_billed_at);
+            },
+            nextDueDateFromDay(day, baseDate = null) {
                 try {
                     const pad = (n) => String(n).padStart(2, '0');
                     const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
-                    const now = new Date();
-                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    let y = now.getFullYear();
-                    let m = now.getMonth();
-                    let d = Math.min(parseInt(day), daysInMonth(y, m));
-                    let target = new Date(y, m, d);
-                    if (target.getTime() <= today.getTime()) {
-                        m += 1;
-                        if (m > 11) {
-                            m = 0;
-                            y += 1;
+
+                    let y, m;
+                    const d_target = parseInt(day);
+
+                    if (baseDate && typeof baseDate === 'string' && baseDate.length >= 10) {
+                        // Manual parse YYYY-MM-DD
+                        const bParts = baseDate.split(/[-T ]/);
+                        const bY = parseInt(bParts[0]);
+                        const bM = parseInt(bParts[1]) - 1;
+
+                        if (!isNaN(bY) && !isNaN(bM)) {
+                            y = bY;
+                            m = bM + 1; // Pula para o próximo mês
+                            if (m > 11) {
+                                m = 0;
+                                y += 1;
+                            }
+                        } else {
+                            // Fallback se falhar o parse
+                            const now = new Date();
+                            y = now.getFullYear();
+                            m = now.getMonth();
                         }
-                        d = Math.min(parseInt(day), daysInMonth(y, m));
-                        target = new Date(y, m, d);
+                    } else {
+                        // Lógica original baseada em 'hoje'
+                        const now = new Date();
+                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        y = now.getFullYear();
+                        m = now.getMonth();
+
+                        let d_temp = Math.min(d_target, daysInMonth(y, m));
+                        let target = new Date(y, m, d_temp);
+
+                        if (target.getTime() <= today.getTime()) {
+                            m += 1;
+                            if (m > 11) {
+                                m = 0;
+                                y += 1;
+                            }
+                        }
                     }
-                    const ty = target.getFullYear();
-                    const tm = target.getMonth() + 1;
-                    const td = target.getDate();
+
+                    const final_d = Math.min(d_target, daysInMonth(y, m));
+                    const final_target = new Date(y, m, final_d);
+
+                    const ty = final_target.getFullYear();
+                    const tm = final_target.getMonth() + 1;
+                    const td = final_target.getDate();
                     return `${ty}-${pad(tm)}-${pad(td)}`;
                 } catch (_) {
                     return '';
@@ -1635,6 +1733,27 @@
                     return '';
                 }
             },
+            formatMonthName(dateStr) {
+                if (!dateStr || typeof dateStr !== 'string') return '';
+                try {
+                    // Esperamos YYYY-MM-DD
+                    const parts = dateStr.split('-');
+                    if (parts.length !== 3) return '';
+
+                    const y = parseInt(parts[0]);
+                    const m = parseInt(parts[1]) - 1; // 0-indexed
+
+                    if (isNaN(y) || isNaN(m)) return '';
+
+                    const months = [
+                        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+                    ];
+                    return `${months[m]}/${y}`;
+                } catch (_) {
+                    return '';
+                }
+            },
             extractPausedUntil(notes) {
                 try {
                     if (!notes) return null;
@@ -1896,6 +2015,10 @@
                         start_at: (this.form.startAt || null),
                         end_at: (this.form.endAt || null),
                         active: !!this.form.chargeActive,
+                        early_discount_active: !!this.form.earlyDiscountActive,
+                        early_discount_value: Math.round(parseFloat(this.normalizeDecimal(this.form
+                            .earlyDiscountValue)) || 0),
+                        early_discount_days: this.clampDays(this.form.earlyDiscountDays) || 0,
                         description: (this.form.description && this.form.description.trim()) ? this
                             .form.description.trim() : this.defaultDescription(),
                         notes: this.generateNotes('subscription'),
@@ -2057,7 +2180,7 @@
                     .filter(s => this.selectedSubscriptions.map(v => String(v)).includes(String(s.id)))
                     .map(s => {
                         const due = (globalDue && globalDue.length) ? globalDue : (s.day_of_month ? this
-                            .nextDueDateFromDay(s.day_of_month) : '');
+                            .nextDueDateFromDay(s.day_of_month, s.last_billed_at) : '');
                         const base = parseInt(s.amount_cents) || 0;
                         let pct = this.discountAppliesOn(due) ? this.discountPercent() : 0;
                         if (this.earlyDiscountAppliesOn(due)) {
@@ -2069,6 +2192,7 @@
                             id: s.id,
                             description: s.description || s.notes || '-',
                             due_date: due,
+                            month_ref: this.formatMonthName(due),
                             total_cents: Math.max(0, net)
                         };
                     });
@@ -2317,7 +2441,8 @@
             },
             hasBoletoData(inv) {
                 try {
-                    return !!(inv?.boleto_url || inv?.linha_digitavel || inv?.barcode || inv?.pix_qr_code ||
+                    return !!(inv?.boleto_url || inv?.linha_digitavel || inv?.barcode || inv
+                        ?.pix_qr_code ||
                         inv?.pix_code);
                 } catch (_) {
                     return false;
@@ -2378,7 +2503,8 @@
             buildAutoInvoiceDescription(inv) {
                 try {
                     const sdesc = this.subscriptionDescription(inv);
-                    if (sdesc && sdesc !== '-' && String(sdesc).trim().length) return String(sdesc).trim();
+                    if (sdesc && sdesc !== '-' && String(sdesc).trim().length) return String(sdesc)
+                        .trim();
                     return this.defaultDescription();
                 } catch (_) {
                     return this.defaultDescription();
@@ -2393,7 +2519,7 @@
                             .subscription_id));
                         if (sub) {
                             const name = (sub.description && sub.description.trim()) ? sub.description
-                            .trim() : 'Mensalidade';
+                                .trim() : 'Mensalidade';
                             const ac = parseInt(sub.amount_cents) || 0;
                             if (ac > 0) {
                                 return [{
@@ -2423,7 +2549,8 @@
             sortSubscriptionsBy(key) {
                 try {
                     if (this.subscriptionsSortKey === key) {
-                        this.subscriptionsSortDir = (this.subscriptionsSortDir === 'asc' ? 'desc' : 'asc');
+                        this.subscriptionsSortDir = (this.subscriptionsSortDir === 'asc' ? 'desc' :
+                            'asc');
                     } else {
                         this.subscriptionsSortKey = key;
                         this.subscriptionsSortDir = 'asc';
@@ -2478,7 +2605,8 @@
                         if (f === 'others') return (s !== 'pending' && s !== 'paid' && s !==
                             'canceled');
                         if (f === 'paid_manual') return (s === 'paid' && String(inv
-                            ?.gateway_status || '').toLowerCase().includes('manual'));
+                            ?.gateway_status || '').toLowerCase().includes(
+                            'manual'));
                         return s === f;
                     });
                     console.log('[Billing] Filtered Invoices:', res);
@@ -2544,7 +2672,8 @@
             },
             hasMoreInvoices() {
                 try {
-                    const total = Array.isArray(this.orderedInvoices()) ? this.orderedInvoices().length : 0;
+                    const total = Array.isArray(this.orderedInvoices()) ? this.orderedInvoices()
+                        .length : 0;
                     if (this.invoicesPageInfo && this.invoicesPageInfo.next_page_url) return true;
                     return (this.invoicesLimit || 10) < total;
                 } catch (_) {
@@ -2576,12 +2705,13 @@
                         data = null;
                     }
                     if (!resp.ok) return;
-                    const more = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data :
-                    []);
+                    const more = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ?
+                        data : []);
                     this.invoices = [...this.invoices, ...more];
                     this.invoicesPageInfo = {
                         next_page_url: data?.next_page_url || null,
-                        current_page: data?.current_page || ((this.invoicesPageInfo?.current_page ||
+                        current_page: data?.current_page || ((this.invoicesPageInfo
+                            ?.current_page ||
                             1) + 1),
                         last_page: data?.last_page || (this.invoicesPageInfo?.last_page || 1),
                         per_page: data?.per_page || (this.invoicesPageInfo?.per_page || 15),
@@ -2635,26 +2765,31 @@
                     try {
                         data = await res.json();
                     } catch (_) {}
-                    const msg = (data && (data.message || data.error || (typeof data === 'string' ?
+                    const msg = (data && (data.message || data.error || (typeof data ===
+                        'string' ?
                         data : null))) || (res.ok ? 'Status sincronizado com sucesso' :
                         'Falha ao consultar pagamento no gateway');
                     if (res.ok) {
                         this.message = msg;
-                        if (window.alertSystem && typeof window.alertSystem.success === 'function') {
+                        if (window.alertSystem && typeof window.alertSystem.success ===
+                            'function') {
                             window.alertSystem.success(msg);
                         }
                     } else {
-                        if (window.alertSystem && typeof window.alertSystem.error === 'function') {
+                        if (window.alertSystem && typeof window.alertSystem.error ===
+                            'function') {
                             window.alertSystem.error(msg);
                         }
                     }
                     let inv = data?.invoice;
                     if (!inv) inv = (this.invoices || []).find(i => i.id === id) || null;
                     if (inv) {
-                        this.invoices = (this.invoices || []).map(i => i.id === id ? inv : i);
+                        this.invoices = (this.invoices || []).map(i => i.id === id ? inv :
+                            i);
                         this.invoiceHistoryTarget = inv;
                         const log = this.webhookLog[id] || {};
-                        log.alias = String(inv.gateway_alias || log.alias || '').toLowerCase();
+                        log.alias = String(inv.gateway_alias || log.alias || '')
+                            .toLowerCase();
                         if (this.hasBoletoData(inv) && !log.boletoGeneratedAt) {
                             log.boletoGeneratedAt = new Date().toISOString();
                         }
@@ -2668,7 +2803,8 @@
                 try {
                     const hist = [];
                     if (!inv) return hist;
-                    if (this.invoiceHistoryTarget?.id === inv.id && this.invoiceGatewaySyncing) {
+                    if (this.invoiceHistoryTarget?.id === inv.id && this
+                        .invoiceGatewaySyncing) {
                         hist.push({
                             label: 'Consulta ativa no gateway',
                             at: new Date().toISOString()
@@ -2704,14 +2840,16 @@
                         });
                     }
                     if (inv.gateway_error_code || inv.gateway_error) {
-                        const code = inv.gateway_error_code ? String(inv.gateway_error_code) : '-';
+                        const code = inv.gateway_error_code ? String(inv
+                            .gateway_error_code) : '-';
                         const msg = inv.gateway_error ? String(inv.gateway_error) : '';
                         hist.push({
                             label: `Erro do gateway${aliasStr} (código: ${code}): ${msg}`,
                             at: inv.updated_at || inv.created_at || null
                         });
                     }
-                    const statusLabel = inv.status ? `Status: ${this.statusLabel(inv.status)}` :
+                    const statusLabel = inv.status ?
+                        `Status: ${this.statusLabel(inv.status)}` :
                         'Status: —';
                     hist.push({
                         label: statusLabel,
@@ -2764,7 +2902,8 @@
             },
             openInvoiceEdit(inv) {
                 this.invoiceEditTarget = inv;
-                const desc = (inv && inv.description && String(inv.description).trim().length) ?
+                const desc = (inv && inv.description && String(inv.description).trim()
+                        .length) ?
                     String(inv.description).trim() :
                     this.buildAutoInvoiceDescription(inv);
                 this.invoiceEditForm = {
@@ -2790,8 +2929,10 @@
                     const payload = {
                         school_id: this.schoolId,
                         due_date: this.invoiceEditForm.due_date,
-                        total_cents: (typeof this.invoiceEditForm.total_cents === 'number' ? this
-                            .invoiceEditForm.total_cents : this.amountToCents(this
+                        total_cents: (typeof this.invoiceEditForm.total_cents ===
+                            'number' ? this
+                            .invoiceEditForm.total_cents : this.amountToCents(
+                                this
                                 .invoiceEditForm.total_display)),
                         currency: this.invoiceEditForm.currency,
                         description: this.invoiceEditForm.description
@@ -2840,15 +2981,18 @@
             },
             async confirmCancelInvoice() {
                 if (!this.canCancelInvoice(this.invoiceCancelTarget)) {
-                    this.invoiceCancelError = 'Não é possível cancelar esta fatura.';
+                    this.invoiceCancelError =
+                        'Não é possível cancelar esta fatura.';
                     return;
                 }
                 this.invoiceCancelProcessing = true;
                 this.invoiceCancelError = null;
                 try {
-                    const url = `/api/v1/finance/invoices/${this.invoiceCancelTarget.id}/cancel`;
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                        'content') || '';
+                    const url =
+                        `/api/v1/finance/invoices/${this.invoiceCancelTarget.id}/cancel`;
+                    const token = document.querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute(
+                            'content') || '';
                     const res = await fetch(url, {
                         method: 'POST',
                         headers: {
@@ -2872,7 +3016,8 @@
                         return;
                     }
                     if (!res.ok) {
-                        this.invoiceCancelError = data?.message || 'Falha ao cancelar';
+                        this.invoiceCancelError = data?.message ||
+                            'Falha ao cancelar';
                         return;
                     }
                     const updated = data.invoice || this.invoiceCancelTarget;
@@ -2912,15 +3057,20 @@
                     const payload = {
                         school_id: this.schoolId,
                         invoice_id: this.invoiceManualSettleTarget.id,
-                        amount_paid_cents: parseInt(this.normalizeDecimal(this
-                            .invoiceManualSettleForm.amount_paid_cents)) || 0,
+                        amount_paid_cents: parseInt(this.normalizeDecimal(
+                            this
+                            .invoiceManualSettleForm
+                            .amount_paid_cents)) || 0,
                         paid_at: this.invoiceManualSettleForm.paid_at,
                         method: this.invoiceManualSettleForm.method,
                         status: this.invoiceManualSettleForm.status,
-                        settlement_ref: this.invoiceManualSettleForm.settlement_ref,
-                        currency: this.invoiceManualSettleTarget.currency || this.currency
+                        settlement_ref: this.invoiceManualSettleForm
+                            .settlement_ref,
+                        currency: this.invoiceManualSettleTarget.currency ||
+                            this.currency
                     };
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                    const token = document.querySelector(
+                        'meta[name="csrf-token"]')?.getAttribute(
                         'content') || '';
                     const res = await fetch(url, {
                         method: 'POST',
@@ -2949,8 +3099,9 @@
                         };
                         return;
                     }
-                    const idx = this.invoices.findIndex(i => i.id === this.invoiceManualSettleTarget
-                    .id);
+                    const idx = this.invoices.findIndex(i => i.id === this
+                        .invoiceManualSettleTarget
+                        .id);
                     if (idx >= 0) {
                         this.invoices[idx].status = 'paid';
                         this.invoices[idx].gateway_status = 'manual';
@@ -2967,15 +3118,6 @@
             // Ações de assinatura (modais)
             editOpen: false,
             editTarget: null,
-            editForm: {
-                description: '',
-                day_of_month: null,
-                discount_percent: 0,
-                items: [],
-                start_at: '',
-                end_at: '',
-                last_billed_at: ''
-            },
             async openEdit(sub) {
                 this.editTarget = sub;
                 // Determinar nome do item e periodicidade via plano, se existir
@@ -2983,7 +3125,8 @@
                 let perLabel = 'Mensal';
                 try {
                     if (sub.billing_plan_id) {
-                        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                        const token = document.querySelector(
+                            'meta[name="csrf-token"]')?.getAttribute(
                             'content') || '';
                         const resp = await fetch(
                             `/api/v1/finance/plans/${encodeURIComponent(sub.billing_plan_id)}?school_id=${encodeURIComponent(this.schoolId)}`, {
@@ -2999,22 +3142,29 @@
                         if (resp.ok && data) {
                             itemName = (data.name || itemName);
                             const p = data.periodicity || 'monthly';
-                            perLabel = p === 'monthly' ? 'Mensal' : (p === 'bimonthly' ? 'Bimestral' : (
-                                p === 'annual' ? 'Anual' : perLabel));
+                            perLabel = p === 'monthly' ? 'Mensal' : (p ===
+                                'bimonthly' ? 'Bimestral' : (
+                                    p === 'annual' ? 'Anual' : perLabel)
+                            );
                         }
                     }
                 } catch (_) {}
-                const amtStr = ((sub.amount_cents || 0) / 100).toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
+                const amtStr = ((sub.amount_cents || 0) / 100)
+                    .toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
                 const aluno = this.currentStudentName();
-                const autoDesc = `${perLabel} - ${itemName}${aluno ? ` — Aluno: ${aluno}` : ''}`;
+                const autoDesc =
+                    `${perLabel} - ${itemName}${aluno ? ` — Aluno: ${aluno}` : ''}`;
                 const start = this.normalizeYmd(sub.start_at);
                 const end = this.normalizeYmd(sub.end_at);
-                const last = this.latestInvoiceDateFor(sub.id);
+                const last = sub.last_billed_at ? this.normalizeYmd(sub
+                        .last_billed_at) : this
+                    .latestInvoiceDateFor(sub.id);
                 this.editForm = {
-                    description: (sub.description && sub.description.trim()) ? sub.description
+                    description: (sub.description && sub.description
+                            .trim()) ? sub.description
                         .trim() : autoDesc,
                     day_of_month: sub.day_of_month || null,
                     discount_percent: sub.discount_percent || 0,
@@ -3025,7 +3175,10 @@
                     }],
                     start_at: start,
                     end_at: end,
-                    last_billed_at: last
+                    last_billed_at: last,
+                    early_discount_active: !!sub.early_discount_active,
+                    early_discount_value: sub.early_discount_value || 0,
+                    early_discount_days: sub.early_discount_days || 0
                 };
                 this.editOpen = true;
             },
@@ -3039,7 +3192,10 @@
                     items: [],
                     start_at: '',
                     end_at: '',
-                    last_billed_at: ''
+                    last_billed_at: '',
+                    early_discount_active: false,
+                    early_discount_value: '',
+                    early_discount_days: '',
                 };
             },
             async confirmEdit() {
@@ -3051,33 +3207,50 @@
                 this.error = null;
                 this.message = null;
                 try {
-                    const total = (this.editForm.items || []).reduce((s, it) => {
+                    const total = (this.editForm.items || []).reduce((s,
+                        it) => {
                         const qty = parseInt(it.qty) || 1;
-                        return s + (this.amountToCents(it.amount) * qty);
+                        return s + (this.amountToCents(it
+                            .amount) * qty);
                     }, 0);
                     // Validação simples: fim não pode ser antes do início
-                    if (this.editForm.start_at && this.editForm.end_at) {
+                    if (this.editForm.start_at && this.editForm
+                        .end_at) {
                         try {
-                            const s = new Date(this.editForm.start_at + 'T00:00:00');
-                            const e = new Date(this.editForm.end_at + 'T00:00:00');
+                            const s = new Date(this.editForm.start_at +
+                                'T00:00:00');
+                            const e = new Date(this.editForm.end_at +
+                                'T00:00:00');
                             if (e.getTime() < s.getTime()) {
-                                throw new Error('Data de fim não pode ser anterior à data de início');
+                                throw new Error(
+                                    'Data de fim não pode ser anterior à data de início'
+                                );
                             }
                         } catch (_) {}
                     }
 
                     const body = {
-                        description: (this.editForm.description || this.editTarget.description ||
+                        description: (this.editForm.description ||
+                            this.editTarget.description ||
                             ''),
-                        day_of_month: (this.editForm.day_of_month ? parseInt(this.editForm
-                            .day_of_month) : null),
-                        discount_percent: Math.round(parseFloat(this.editForm.discount_percent ||
+                        day_of_month: (this.editForm.day_of_month ?
+                            parseInt(this.editForm
+                                .day_of_month) : null),
+                        discount_percent: Math.round(parseFloat(this
+                            .editForm.discount_percent ||
                             0)),
                         amount_cents: total,
                         start_at: (this.editForm.start_at || null),
-                        end_at: (this.editForm.end_at || null)
+                        end_at: (this.editForm.end_at || null),
+                        last_billed_at: (this.editForm
+                            .last_billed_at || null),
+                        early_discount_active: !!this.editForm.early_discount_active,
+                        early_discount_value: Math.round(parseFloat(this.editForm
+                            .early_discount_value || 0)),
+                        early_discount_days: parseInt(this.editForm.early_discount_days || 0)
                     };
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                    const token = document.querySelector(
+                        'meta[name="csrf-token"]')?.getAttribute(
                         'content') || '';
                     const resp = await fetch(
                         `/api/v1/finance/subscriptions/${encodeURIComponent(this.editTarget.id)}`, {
@@ -3095,13 +3268,17 @@
                             })
                         });
                     const data = await resp.json().catch(() => null);
-                    if (!resp.ok) throw new Error((data && (data.message || JSON.stringify(data
-                        .errors))) || 'Falha ao atualizar assinatura');
+                    if (!resp.ok) throw new Error((data && (data
+                            .message || JSON.stringify(data
+                                .errors))) ||
+                        'Falha ao atualizar assinatura');
                     this.message = 'Assinatura atualizada';
-                    this.updateSubscriptionLocal(this.editTarget.id, body);
+                    this.updateSubscriptionLocal(this.editTarget.id,
+                        body);
                     await this.loadHistory();
                 } catch (err) {
-                    this.error = err.message || 'Erro ao atualizar assinatura';
+                    this.error = err.message ||
+                        'Erro ao atualizar assinatura';
                 } finally {
                     this.loading = false;
                     this.closeEdit();
@@ -3133,8 +3310,10 @@
                         status: 'canceled',
                         end_at: end
                     };
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                        'content') || '';
+                    const token = document.querySelector(
+                            'meta[name="csrf-token"]')
+                        ?.getAttribute(
+                            'content') || '';
                     const resp = await fetch(
                         `/api/v1/finance/subscriptions/${encodeURIComponent(this.inactivateTarget.id)}`, {
                             method: 'PUT',
@@ -3150,17 +3329,23 @@
                                 school_id: this.schoolId
                             })
                         });
-                    const data = await resp.json().catch(() => null);
-                    if (!resp.ok) throw new Error((data && (data.message || JSON.stringify(data
-                        .errors))) || 'Falha ao inativar assinatura');
+                    const data = await resp.json().catch(() =>
+                        null);
+                    if (!resp.ok) throw new Error((data && (data
+                            .message || JSON.stringify(
+                                data
+                                .errors))) ||
+                        'Falha ao inativar assinatura');
                     this.message = 'Assinatura inativada';
-                    this.updateSubscriptionLocal(this.inactivateTarget.id, {
-                        ...body,
-                        active: false
-                    });
+                    this.updateSubscriptionLocal(this
+                        .inactivateTarget.id, {
+                            ...body,
+                            active: false
+                        });
                     await this.loadHistory();
                 } catch (err) {
-                    this.error = err.message || 'Erro ao inativar assinatura';
+                    this.error = err.message ||
+                        'Erro ao inativar assinatura';
                 } finally {
                     this.loading = false;
                     this.closeInactivate();
@@ -3188,15 +3373,21 @@
                 this.error = null;
                 this.message = null;
                 try {
-                    const until = (this.pauseUntil && this.pauseUntil.length) ? this.pauseUntil : null;
-                    const currentNotes = this.pauseTarget.notes || '';
-                    const notes = this.buildPauseNotes(currentNotes, until);
+                    const until = (this.pauseUntil && this
+                            .pauseUntil.length) ? this
+                        .pauseUntil : null;
+                    const currentNotes = this.pauseTarget
+                        .notes || '';
+                    const notes = this.buildPauseNotes(
+                        currentNotes, until);
                     const body = {
                         status: 'paused',
                         notes
                     };
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                        'content') || '';
+                    const token = document.querySelector(
+                            'meta[name="csrf-token"]')
+                        ?.getAttribute(
+                            'content') || '';
                     const resp = await fetch(
                         `/api/v1/finance/subscriptions/${encodeURIComponent(this.pauseTarget.id)}`, {
                             method: 'PUT',
@@ -3209,21 +3400,28 @@
                             credentials: 'same-origin',
                             body: JSON.stringify({
                                 ...body,
-                                school_id: this.schoolId
+                                school_id: this
+                                    .schoolId
                             })
                         });
-                    const data = await resp.json().catch(() => null);
-                    if (!resp.ok) throw new Error((data && (data.message || JSON.stringify(data
-                        .errors))) || 'Falha ao pausar assinatura');
+                    const data = await resp.json().catch(() =>
+                        null);
+                    if (!resp.ok) throw new Error((data && (data
+                            .message || JSON
+                            .stringify(data
+                                .errors))) ||
+                        'Falha ao pausar assinatura');
                     this.message = 'Assinatura pausada';
                     const localChanges = {
                         status: 'paused',
                         notes
                     };
-                    this.updateSubscriptionLocal(this.pauseTarget.id, localChanges);
+                    this.updateSubscriptionLocal(this
+                        .pauseTarget.id, localChanges);
                     await this.loadHistory();
                 } catch (err) {
-                    this.error = err.message || 'Erro ao pausar assinatura';
+                    this.error = err.message ||
+                        'Erro ao pausar assinatura';
                 } finally {
                     this.loading = false;
                     this.closePause();
@@ -3248,13 +3446,17 @@
                 this.error = null;
                 this.message = null;
                 try {
-                    const cleanedNotes = this.cleanPauseNotes(this.activateTarget.notes || '');
+                    const cleanedNotes = this
+                        .cleanPauseNotes(this.activateTarget
+                            .notes || '');
                     const body = {
                         status: 'active',
                         notes: cleanedNotes
                     };
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                        'content') || '';
+                    const token = document.querySelector(
+                            'meta[name="csrf-token"]')
+                        ?.getAttribute(
+                            'content') || '';
                     const resp = await fetch(
                         `/api/v1/finance/subscriptions/${encodeURIComponent(this.activateTarget.id)}`, {
                             method: 'PUT',
@@ -3267,21 +3469,29 @@
                             credentials: 'same-origin',
                             body: JSON.stringify({
                                 ...body,
-                                school_id: this.schoolId
+                                school_id: this
+                                    .schoolId
                             })
                         });
-                    const data = await resp.json().catch(() => null);
-                    if (!resp.ok) throw new Error((data && (data.message || JSON.stringify(data
-                        .errors))) || 'Falha ao ativar assinatura');
+                    const data = await resp.json().catch(
+                        () => null);
+                    if (!resp.ok) throw new Error((data && (
+                            data.message || JSON
+                            .stringify(data
+                                .errors))) ||
+                        'Falha ao ativar assinatura'
+                    );
                     this.message = 'Assinatura ativada';
-                    this.updateSubscriptionLocal(this.activateTarget.id, {
-                        status: 'active',
-                        notes: cleanedNotes,
-                        active: true
-                    });
+                    this.updateSubscriptionLocal(this
+                        .activateTarget.id, {
+                            status: 'active',
+                            notes: cleanedNotes,
+                            active: true
+                        });
                     await this.loadHistory();
                 } catch (err) {
-                    this.error = err.message || 'Erro ao ativar assinatura';
+                    this.error = err.message ||
+                        'Erro ao ativar assinatura';
                 } finally {
                     this.loading = false;
                     this.closeActivate();
@@ -3289,10 +3499,12 @@
             },
             updateSubscriptionLocal(id, changes) {
                 try {
-                    const idx = (this.subscriptions || []).findIndex(s => s.id === id);
+                    const idx = (this.subscriptions || [])
+                        .findIndex(s => s.id === id);
                     if (idx >= 0) {
                         this.subscriptions.splice(idx, 1, {
-                            ...this.subscriptions[idx],
+                            ...this.subscriptions[
+                                idx],
                             ...changes
                         });
                     }

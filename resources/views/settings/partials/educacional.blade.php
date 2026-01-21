@@ -5,7 +5,8 @@
             <div class="flex items-center">
                 <svg class="w-6 h-6 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                    </path>
                 </svg>
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">Configurações Educacionais</h2>
@@ -14,11 +15,12 @@
             </div>
             <div class="flex items-center gap-2 mt-2">
                 <button type="button" onclick="openTemplatesBnccModal()"
-                        class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                        title="Usar templates pré-configurados da BNCC">
+                    class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                    title="Usar templates pré-configurados da BNCC">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
                     </svg>
                     Templates
                 </button>
@@ -29,26 +31,26 @@
         <div class="border-b border-gray-200">
             <nav class="-mb-px flex space-x-4 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
                 <button onclick="showTab('tab-modalidades')" id="modalidades-tab"
-                        class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Modalidades de Ensino
                 </button>
                 <button onclick="showTab('tab-niveis')" id="niveis-tab"
-                        class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Níveis de Ensino
                 </button>
                 <button onclick="showTab('tab-disciplinas')" id="disciplinas-tab"
-                        class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Disciplinas e Cargas Horárias
                 </button>
                 <button onclick="showTab('tab-turnos')" id="turnos-tab"
-                        class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
+                    class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Turnos
                 </button>
             </nav>
         </div>
     </div>
 
-    
+
 
     <!-- Conteúdo das sub-abas -->
     <div id="tab-modalidades" class="edutab-content hidden">
@@ -56,18 +58,21 @@
             <div class="lg:col-span-1">
                 <x-card>
                     <h3 class="text-base font-semibold mb-4">Adicionar/Configurar Modalidade</h3>
-                    <form method="POST" action="{{ route('admin.configuracao-educacional.store-modalidade', ['escola' => $escola->id]) }}" class="space-y-4">
+                    <form method="POST"
+                        action="{{ route('admin.configuracao-educacional.store-modalidade', ['escola' => $escola->id]) }}"
+                        class="space-y-4">
                         @csrf
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Modalidade</label>
-                            <select name="modalidade_ensino_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <select name="modalidade_ensino_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                 <optgroup label="Padrão (BNCC)">
-                                    @foreach($modalidadesPadrao as $m)
+                                    @foreach ($modalidadesPadrao as $m)
                                         <option value="{{ $m->id }}">{{ $m->nome }}</option>
                                     @endforeach
                                 </optgroup>
                                 <optgroup label="Personalizadas da Escola">
-                                    @foreach($modalidadesPersonalizadas as $m)
+                                    @foreach ($modalidadesPersonalizadas as $m)
                                         <option value="{{ $m->id }}">{{ $m->nome }}</option>
                                     @endforeach
                                 </optgroup>
@@ -80,20 +85,26 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Capacidade mínima</label>
-                                <input type="number" name="capacidade_minima_turma" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="capacidade_minima_turma" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Capacidade máxima</label>
-                                <input type="number" name="capacidade_maxima_turma" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="capacidade_maxima_turma" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                         </div>
                         <fieldset class="border rounded p-3">
                             <legend class="text-sm font-medium text-gray-700">Turnos permitidos</legend>
                             <div class="grid grid-cols-2 gap-2 mt-2">
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_matutino"> Matutino</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_vespertino"> Vespertino</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_noturno"> Noturno</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_integral"> Integral</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_matutino">
+                                    Matutino</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_vespertino">
+                                    Vespertino</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_noturno">
+                                    Noturno</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_integral">
+                                    Integral</label>
                             </div>
                         </fieldset>
                         <div>
@@ -101,7 +112,8 @@
                             <textarea name="observacoes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700">Salvar</button>
+                            <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700">Salvar</button>
                         </div>
                     </form>
                 </x-card>
@@ -114,38 +126,49 @@
                         <div class="md:hidden" id="modalidades-mobile-container">
                             <div id="modalidades-mobile-list" class="space-y-2">
                                 @forelse($escola->modalidadeConfigs as $config)
-                                    <div class="p-3 border rounded-md"
-                                         data-config-id="{{ $config->id }}"
-                                         data-modalidade-id="{{ $config->modalidadeEnsino->id }}"
-                                         data-modalidade-nome="{{ $config->modalidadeEnsino->nome }}"
-                                         data-ativo="{{ $config->ativo ? 1 : 0 }}"
-                                         data-cap-min="{{ $config->capacidade_minima_turma ?? '' }}"
-                                         data-cap-max="{{ $config->capacidade_maxima_turma ?? '' }}"
-                                         data-turno-matutino="{{ $config->permite_turno_matutino ? 1 : 0 }}"
-                                         data-turno-vespertino="{{ $config->permite_turno_vespertino ? 1 : 0 }}"
-                                         data-turno-noturno="{{ $config->permite_turno_noturno ? 1 : 0 }}"
-                                         data-turno-integral="{{ $config->permite_turno_integral ? 1 : 0 }}"
-                                         data-observacoes="{{ $config->observacoes ?? '' }}">
+                                    <div class="p-3 border rounded-md" data-config-id="{{ $config->id }}"
+                                        data-modalidade-id="{{ $config->modalidadeEnsino->id }}"
+                                        data-modalidade-nome="{{ $config->modalidadeEnsino->nome }}"
+                                        data-ativo="{{ $config->ativo ? 1 : 0 }}"
+                                        data-cap-min="{{ $config->capacidade_minima_turma ?? '' }}"
+                                        data-cap-max="{{ $config->capacidade_maxima_turma ?? '' }}"
+                                        data-turno-matutino="{{ $config->permite_turno_matutino ? 1 : 0 }}"
+                                        data-turno-vespertino="{{ $config->permite_turno_vespertino ? 1 : 0 }}"
+                                        data-turno-noturno="{{ $config->permite_turno_noturno ? 1 : 0 }}"
+                                        data-turno-integral="{{ $config->permite_turno_integral ? 1 : 0 }}"
+                                        data-observacoes="{{ $config->observacoes ?? '' }}">
                                         <div class="flex items-start justify-between">
                                             <div>
-                                                <div class="text-sm font-semibold text-gray-900">{{ $config->modalidadeEnsino->nome }}</div>
-                                                <div class="text-xs text-gray-600">Cap.: {{ $config->capacidade_minima_turma }}–{{ $config->capacidade_maxima_turma }}</div>
-                                                <div class="text-xs text-gray-600">Turnos: {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</div>
+                                                <div class="text-sm font-semibold text-gray-900">
+                                                    {{ $config->modalidadeEnsino->nome }}</div>
+                                                <div class="text-xs text-gray-600">Cap.:
+                                                    {{ $config->capacidade_minima_turma }}–{{ $config->capacidade_maxima_turma }}
+                                                </div>
+                                                <div class="text-xs text-gray-600">Turnos:
+                                                    {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</div>
                                             </div>
                                             <div>
-                                                @if($config->ativo)
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                                @if ($config->ativo)
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                                 @endif
                                             </div>
                                         </div>
                                         <div class="mt-2 flex flex-wrap gap-2">
-                                            <button type="button" onclick="openModalidadeEditModal({{ $config->modalidadeEnsino->id }})" class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                            <button type="button" class="px-2 py-1 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openModalidadeToggleModal({{ $config->modalidadeEnsino->id }}, '{{ $config->modalidadeEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
+                                            <button type="button"
+                                                onclick="openModalidadeEditModal({{ $config->modalidadeEnsino->id }})"
+                                                class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                            <button type="button"
+                                                class="px-2 py-1 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                                onclick="openModalidadeToggleModal({{ $config->modalidadeEnsino->id }}, '{{ $config->modalidadeEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
                                                 {{ $config->ativo ? 'Inativar' : 'Ativar' }}
                                             </button>
-                                            <button type="button" onclick="openModalidadeDeleteModal({{ $config->id }}, '{{ $config->modalidadeEnsino->nome }}')" class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
+                                            <button type="button"
+                                                onclick="openModalidadeDeleteModal({{ $config->id }}, '{{ $config->modalidadeEnsino->nome }}')"
+                                                class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
                                         </div>
                                     </div>
                                 @empty
@@ -180,24 +203,38 @@
                                         data-observacoes="{{ $config->observacoes ?? '' }}">
                                         <td class="px-4 py-2">{{ $config->modalidadeEnsino->nome }}</td>
                                         <td class="px-4 py-2">
-                                            @if($config->ativo)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                            @if ($config->ativo)
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                             @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-2">{{ $config->capacidade_minima_turma }}–{{ $config->capacidade_maxima_turma }}</td>
-                                        <td class="px-4 py-2">{{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</td>
+                                        <td class="px-4 py-2">
+                                            {{ $config->capacidade_minima_turma }}–{{ $config->capacidade_maxima_turma }}
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</td>
                                         <td class="px-4 py-2 text-right space-x-2">
-                                            <button type="button" onclick="openModalidadeEditModal({{ $config->modalidadeEnsino->id }})" class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                            <button type="button" class="px-3 py-1.5 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openModalidadeToggleModal({{ $config->modalidadeEnsino->id }}, '{{ $config->modalidadeEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
+                                            <button type="button"
+                                                onclick="openModalidadeEditModal({{ $config->modalidadeEnsino->id }})"
+                                                class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                            <button type="button"
+                                                class="px-3 py-1.5 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                                onclick="openModalidadeToggleModal({{ $config->modalidadeEnsino->id }}, '{{ $config->modalidadeEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
                                                 {{ $config->ativo ? 'Inativar' : 'Ativar' }}
                                             </button>
-                                            <button type="button" onclick="openModalidadeDeleteModal({{ $config->id }}, '{{ $config->modalidadeEnsino->nome }}')" class="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
+                                            <button type="button"
+                                                onclick="openModalidadeDeleteModal({{ $config->id }}, '{{ $config->modalidadeEnsino->nome }}')"
+                                                class="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhuma modalidade configurada.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhuma modalidade
+                                            configurada.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -212,12 +249,15 @@
             <div class="lg:col-span-1">
                 <x-card>
                     <h3 class="text-base font-semibold mb-4">Adicionar/Configurar Nível</h3>
-                    <form method="POST" action="{{ route('admin.configuracao-educacional.store-nivel', ['escola' => $escola->id]) }}" class="space-y-4">
+                    <form method="POST"
+                        action="{{ route('admin.configuracao-educacional.store-nivel', ['escola' => $escola->id]) }}"
+                        class="space-y-4">
                         @csrf
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Nível de Ensino</label>
-                            <select name="nivel_ensino_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                @foreach($niveisDisponiveis as $n)
+                            <select name="nivel_ensino_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                @foreach ($niveisDisponiveis as $n)
                                     <option value="{{ $n->id }}">{{ $n->nome }}</option>
                                 @endforeach
                             </select>
@@ -229,44 +269,55 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Capacidade mínima</label>
-                                <input type="number" name="capacidade_minima_turma" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="capacidade_minima_turma" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Capacidade máxima</label>
-                                <input type="number" name="capacidade_maxima_turma" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="capacidade_maxima_turma" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                         </div>
                         <fieldset class="border rounded p-3">
                             <legend class="text-sm font-medium text-gray-700">Turnos permitidos</legend>
                             <div class="grid grid-cols-2 gap-2 mt-2">
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_matutino"> Matutino</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_vespertino"> Vespertino</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_noturno"> Noturno</label>
-                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_integral"> Integral</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_matutino">
+                                    Matutino</label>
+                                <label class="flex items-center gap-2"><input type="checkbox"
+                                        name="turno_vespertino"> Vespertino</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_noturno">
+                                    Noturno</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="turno_integral">
+                                    Integral</label>
                             </div>
                         </fieldset>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">C.H. semanal (min)</label>
-                                <input type="number" name="carga_horaria_semanal" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="carga_horaria_semanal" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Aulas por dia</label>
-                                <input type="number" name="numero_aulas_dia" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="numero_aulas_dia" min="1"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Duração aula (min)</label>
-                                <input type="number" name="duracao_aula_minutos" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="duracao_aula_minutos" min="30"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Idade mínima</label>
-                                <input type="number" name="idade_minima" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="idade_minima" min="0"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Idade máxima</label>
-                                <input type="number" name="idade_maxima" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                <input type="number" name="idade_maxima" min="0"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                             </div>
                         </div>
                         <div>
@@ -274,7 +325,8 @@
                             <textarea name="observacoes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
                         </div>
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700">Salvar</button>
+                            <button type="submit"
+                                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700">Salvar</button>
                         </div>
                     </form>
                 </x-card>
@@ -287,52 +339,63 @@
                         <div class="md:hidden" id="niveis-mobile-container">
                             <div id="niveis-mobile-list" class="space-y-2">
                                 @forelse($escola->nivelConfigs as $config)
-                                    <div class="p-3 border rounded-md"
-                                         data-config-id="{{ $config->id }}"
-                                         data-nivel-id="{{ $config->nivelEnsino->id }}"
-                                         data-nivel-nome="{{ $config->nivelEnsino->nome }}"
-                                         data-ativo="{{ $config->ativo ? 1 : 0 }}"
-                                         data-cap-min="{{ $config->capacidade_minima_turma ?? '' }}"
-                                         data-cap-max="{{ $config->capacidade_maxima_turma ?? '' }}"
-                                         data-turno-matutino="{{ $config->permite_turno_matutino ? 1 : 0 }}"
-                                         data-turno-vespertino="{{ $config->permite_turno_vespertino ? 1 : 0 }}"
-                                         data-turno-noturno="{{ $config->permite_turno_noturno ? 1 : 0 }}"
-                                         data-turno-integral="{{ $config->permite_turno_integral ? 1 : 0 }}"
-                                         data-ch-semanal="{{ $config->carga_horaria_semanal ?? '' }}"
-                                         data-num-aulas-dia="{{ $config->numero_aulas_dia ?? '' }}"
-                                         data-duracao-aula="{{ $config->duracao_aula_minutos ?? '' }}"
-                                         data-idade-minima="{{ $config->idade_minima ?? '' }}"
-                                         data-idade-maxima="{{ $config->idade_maxima ?? '' }}"
-                                         data-observacoes="{{ $config->observacoes ?? '' }}">
+                                    <div class="p-3 border rounded-md" data-config-id="{{ $config->id }}"
+                                        data-nivel-id="{{ $config->nivelEnsino->id }}"
+                                        data-nivel-nome="{{ $config->nivelEnsino->nome }}"
+                                        data-ativo="{{ $config->ativo ? 1 : 0 }}"
+                                        data-cap-min="{{ $config->capacidade_minima_turma ?? '' }}"
+                                        data-cap-max="{{ $config->capacidade_maxima_turma ?? '' }}"
+                                        data-turno-matutino="{{ $config->permite_turno_matutino ? 1 : 0 }}"
+                                        data-turno-vespertino="{{ $config->permite_turno_vespertino ? 1 : 0 }}"
+                                        data-turno-noturno="{{ $config->permite_turno_noturno ? 1 : 0 }}"
+                                        data-turno-integral="{{ $config->permite_turno_integral ? 1 : 0 }}"
+                                        data-ch-semanal="{{ $config->carga_horaria_semanal ?? '' }}"
+                                        data-num-aulas-dia="{{ $config->numero_aulas_dia ?? '' }}"
+                                        data-duracao-aula="{{ $config->duracao_aula_minutos ?? '' }}"
+                                        data-idade-minima="{{ $config->idade_minima ?? '' }}"
+                                        data-idade-maxima="{{ $config->idade_maxima ?? '' }}"
+                                        data-observacoes="{{ $config->observacoes ?? '' }}">
                                         <div class="flex items-start justify-between">
                                             <div>
-                                                <div class="text-sm font-semibold text-gray-900">{{ $config->nivelEnsino->nome }}</div>
+                                                <div class="text-sm font-semibold text-gray-900">
+                                                    {{ $config->nivelEnsino->nome }}</div>
                                                 <div class="text-xs text-gray-600">
-                                                    @if($config->carga_horaria_semanal)
+                                                    @if ($config->carga_horaria_semanal)
                                                         {{ $config->carga_horaria_semanal }} min/sem
                                                     @else
                                                         —
                                                     @endif
                                                 </div>
-                                                <div class="text-xs text-gray-600">Turnos: {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</div>
+                                                <div class="text-xs text-gray-600">Turnos:
+                                                    {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</div>
                                             </div>
                                             <div>
-                                                @if($config->ativo)
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                                @if ($config->ativo)
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                                 @else
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                                    <span
+                                                        class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                                 @endif
                                             </div>
                                         </div>
                                         <div class="mt-2 flex gap-2">
-                                            <button type="button" onclick="openNivelEditModal({{ $config->nivelEnsino->id }})" class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                            <button type="button" class="px-2 py-1 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openNivelToggleModal({{ $config->nivelEnsino->id }}, '{{ $config->nivelEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
+                                            <button type="button"
+                                                onclick="openNivelEditModal({{ $config->nivelEnsino->id }})"
+                                                class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                            <button type="button"
+                                                class="px-2 py-1 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                                onclick="openNivelToggleModal({{ $config->nivelEnsino->id }}, '{{ $config->nivelEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
                                                 {{ $config->ativo ? 'Inativar' : 'Ativar' }}
                                             </button>
-                                            <form method="POST" action="{{ route('admin.configuracao-educacional.destroy-nivel', ['escola' => $escola->id, 'nivelConfig' => $config->id]) }}" onsubmit="return confirm('Remover configuração deste nível?')" class="inline">
+                                            <form method="POST"
+                                                action="{{ route('admin.configuracao-educacional.destroy-nivel', ['escola' => $escola->id, 'nivelConfig' => $config->id]) }}"
+                                                onsubmit="return confirm('Remover configuração deste nível?')"
+                                                class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
+                                                <button
+                                                    class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
                                             </form>
                                         </div>
                                     </div>
@@ -348,7 +411,8 @@
                                 <tr>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Nível</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Carga Horária</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Carga Horária
+                                    </th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Turnos</th>
                                     <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Ações</th>
                                 </tr>
@@ -373,34 +437,48 @@
                                         data-observacoes="{{ $config->observacoes ?? '' }}">
                                         <td class="px-4 py-2">{{ $config->nivelEnsino->nome }}</td>
                                         <td class="px-4 py-2">
-                                            @if($config->ativo)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                            @if ($config->ativo)
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                             @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-2">
-                                            @if($config->carga_horaria_semanal)
+                                            @if ($config->carga_horaria_semanal)
                                                 {{ $config->carga_horaria_semanal }} min/sem
                                             @else
                                                 —
                                             @endif
                                         </td>
-                                        <td class="px-4 py-2">{{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</td>
+                                        <td class="px-4 py-2">
+                                            {{ implode(', ', $config->getTurnosPermitidos()) ?: '—' }}</td>
                                         <td class="px-4 py-2 text-right space-x-2">
-                                            <button type="button" onclick="openNivelEditModal({{ $config->nivelEnsino->id }})" class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                            <button type="button" class="px-3 py-1.5 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openNivelToggleModal({{ $config->nivelEnsino->id }}, '{{ $config->nivelEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
+                                            <button type="button"
+                                                onclick="openNivelEditModal({{ $config->nivelEnsino->id }})"
+                                                class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                            <button type="button"
+                                                class="px-3 py-1.5 text-xs rounded text-white {{ $config->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                                onclick="openNivelToggleModal({{ $config->nivelEnsino->id }}, '{{ $config->nivelEnsino->nome }}', {{ $config->ativo ? 'true' : 'false' }})">
                                                 {{ $config->ativo ? 'Inativar' : 'Ativar' }}
                                             </button>
-                                            <form method="POST" action="{{ route('admin.configuracao-educacional.destroy-nivel', ['escola' => $escola->id, 'nivelConfig' => $config->id]) }}" onsubmit="return confirm('Remover configuração deste nível?')" class="inline">
+                                            <form method="POST"
+                                                action="{{ route('admin.configuracao-educacional.destroy-nivel', ['escola' => $escola->id, 'nivelConfig' => $config->id]) }}"
+                                                onsubmit="return confirm('Remover configuração deste nível?')"
+                                                class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
+                                                <button
+                                                    class="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700">Excluir</button>
                                             </form>
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhum nível configurado.</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhum nível
+                                            configurado.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -422,7 +500,7 @@
                     <label class="block text-sm font-medium text-gray-700">Filtrar por nível</label>
                     <select id="filtro-nivel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         <option value="">Todos os níveis</option>
-                        @foreach($escola->nivelConfigs as $cfg)
+                        @foreach ($escola->nivelConfigs as $cfg)
                             <option value="{{ $cfg->nivelEnsino->id }}">{{ $cfg->nivelEnsino->nome }}</option>
                         @endforeach
                     </select>
@@ -439,7 +517,8 @@
                     </select>
                 </div>
                 <div class="flex items-end">
-                    <button type="button" onclick="loadDisciplinas()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 w-full">Carregar</button>
+                    <button type="button" onclick="loadDisciplinas()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 w-full">Carregar</button>
                 </div>
             </div>
 
@@ -452,7 +531,9 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-base font-semibold">Turnos</h3>
                 <div>
-                    <button type="button" onclick="openTurnoCreateModal()" class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">Novo Turno</button>
+                    <button type="button" onclick="openTurnoCreateModal()"
+                        class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700">Novo
+                        Turno</button>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -460,26 +541,38 @@
                 <div class="md:hidden" id="turnos-mobile-container">
                     <div id="turnos-mobile-list" class="space-y-2">
                         @forelse(($turnos ?? []) as $t)
-                            <div class="p-3 border rounded-md" data-id="{{ $t->id }}" data-nome="{{ $t->nome }}" data-codigo="{{ $t->codigo }}" data-inicio="{{ $t->hora_inicio }}" data-fim="{{ $t->hora_fim }}" data-ativo="{{ $t->ativo ? 1 : 0 }}" data-descricao="{{ $t->descricao ?? '' }}" data-ordem="{{ $t->ordem ?? '' }}">
+                            <div class="p-3 border rounded-md" data-id="{{ $t->id }}"
+                                data-nome="{{ $t->nome }}" data-codigo="{{ $t->codigo }}"
+                                data-inicio="{{ $t->hora_inicio }}" data-fim="{{ $t->hora_fim }}"
+                                data-ativo="{{ $t->ativo ? 1 : 0 }}" data-descricao="{{ $t->descricao ?? '' }}"
+                                data-ordem="{{ $t->ordem ?? '' }}">
                                 <div class="flex items-start justify-between">
                                     <div>
                                         <div class="text-sm font-semibold text-gray-900">{{ $t->nome }}</div>
                                         <div class="text-xs text-gray-600">Código: {{ $t->codigo }}</div>
-                                        <div class="text-xs text-gray-600">{{ $t->hora_inicio }} – {{ $t->hora_fim }}</div>
+                                        <div class="text-xs text-gray-600">{{ $t->hora_inicio }} –
+                                            {{ $t->hora_fim }}</div>
                                     </div>
                                     <div>
-                                        @if($t->ativo)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                        @if ($t->ativo)
+                                            <span
+                                                class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                         @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                            <span
+                                                class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                         @endif
                                     </div>
                                 </div>
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    <button type="button" onclick="openTurnoEditModal({{ $t->id }})" class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                    <button type="button" onclick="openTurnoTempoModal({{ $t->id }})" class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Tempo</button>
-                                    <button type="button" onclick="openTurnoSlotsModal({{ $t->id }})" class="px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Slots</button>
-                                    <button type="button" class="px-2 py-1 text-xs rounded text-white {{ $t->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openTurnoToggleModal({{ $t->id }}, '{{ $t->nome }}', {{ $t->ativo ? 'true' : 'false' }})">
+                                    <button type="button" onclick="openTurnoEditModal({{ $t->id }})"
+                                        class="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                    <button type="button" onclick="openTurnoTempoModal({{ $t->id }})"
+                                        class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Tempo</button>
+                                    <button type="button" onclick="openTurnoSlotsModal({{ $t->id }})"
+                                        class="px-2 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Slots</button>
+                                    <button type="button"
+                                        class="px-2 py-1 text-xs rounded text-white {{ $t->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                        onclick="openTurnoToggleModal({{ $t->id }}, '{{ $t->nome }}', {{ $t->ativo ? 'true' : 'false' }})">
                                         {{ $t->ativo ? 'Inativar' : 'Ativar' }}
                                     </button>
                                 </div>
@@ -503,28 +596,41 @@
                     </thead>
                     <tbody id="turnos-tbody" class="divide-y divide-gray-200">
                         @forelse(($turnos ?? []) as $t)
-                            <tr data-id="{{ $t->id }}" data-nome="{{ $t->nome }}" data-codigo="{{ $t->codigo }}" data-inicio="{{ $t->hora_inicio }}" data-fim="{{ $t->hora_fim }}" data-ativo="{{ $t->ativo ? 1 : 0 }}" data-descricao="{{ $t->descricao ?? '' }}" data-ordem="{{ $t->ordem ?? '' }}">
+                            <tr data-id="{{ $t->id }}" data-nome="{{ $t->nome }}"
+                                data-codigo="{{ $t->codigo }}" data-inicio="{{ $t->hora_inicio }}"
+                                data-fim="{{ $t->hora_fim }}" data-ativo="{{ $t->ativo ? 1 : 0 }}"
+                                data-descricao="{{ $t->descricao ?? '' }}" data-ordem="{{ $t->ordem ?? '' }}">
                                 <td class="px-4 py-2">{{ $t->nome }}</td>
                                 <td class="px-4 py-2">{{ $t->codigo }}</td>
                                 <td class="px-4 py-2">{{ $t->hora_inicio }} – {{ $t->hora_fim }}</td>
                                 <td class="px-4 py-2">
-                                    @if($t->ativo)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
+                                    @if ($t->ativo)
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-800 text-xs font-medium">Ativo</span>
                                     @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800 text-xs font-medium">Inativo</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 text-right space-x-2">
-                                    <button type="button" onclick="openTurnoEditModal({{ $t->id }})" class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
-                                    <button type="button" onclick="openTurnoTempoModal({{ $t->id }})" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Tempo</button>
-                                    <button type="button" onclick="openTurnoSlotsModal({{ $t->id }})" class="px-3 py-1.5 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Slots</button>
-                                    <button type="button" class="px-3 py-1.5 text-xs rounded text-white {{ $t->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}" onclick="openTurnoToggleModal({{ $t->id }}, '{{ $t->nome }}', {{ $t->ativo ? 'true' : 'false' }})">
+                                    <button type="button" onclick="openTurnoEditModal({{ $t->id }})"
+                                        class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Editar</button>
+                                    <button type="button" onclick="openTurnoTempoModal({{ $t->id }})"
+                                        class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Tempo</button>
+                                    <button type="button" onclick="openTurnoSlotsModal({{ $t->id }})"
+                                        class="px-3 py-1.5 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Slots</button>
+                                    <button type="button"
+                                        class="px-3 py-1.5 text-xs rounded text-white {{ $t->ativo ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700' }}"
+                                        onclick="openTurnoToggleModal({{ $t->id }}, '{{ $t->nome }}', {{ $t->ativo ? 'true' : 'false' }})">
                                         {{ $t->ativo ? 'Inativar' : 'Ativar' }}
                                     </button>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhum turno cadastrado.</td></tr>
+                            <tr>
+                                <td colspan="5" class="px-4 py-3 text-sm text-gray-500">Nenhum turno cadastrado.
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -541,19 +647,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Nome</label>
-                <input type="text" id="turno-create-nome" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="text" id="turno-create-nome"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Código</label>
-                <input type="text" id="turno-create-codigo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="text" id="turno-create-codigo"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Hora Início</label>
-                <input type="time" id="turno-create-inicio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="time" id="turno-create-inicio"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Hora Fim</label>
-                <input type="time" id="turno-create-fim" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="time" id="turno-create-fim"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
         </div>
         <div>
@@ -563,7 +673,8 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Ordem</label>
-                <input type="number" id="turno-create-ordem" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="turno-create-ordem" min="0"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" id="turno-create-ativo" checked />
@@ -573,8 +684,10 @@
         <div id="turno-create-errors" class="text-sm text-red-600"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-turno-create')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitTurnoCreate()">Salvar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-turno-create')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitTurnoCreate()">Salvar</button>
     </div>
     <div></div>
 </x-modal>
@@ -595,11 +708,13 @@
             <div></div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Capacidade mínima da turma</label>
-                <input type="number" id="modalidade-edit-cap-min" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="modalidade-edit-cap-min" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Capacidade máxima da turma</label>
-                <input type="number" id="modalidade-edit-cap-max" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="modalidade-edit-cap-max" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -622,13 +737,16 @@
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700">Observações</label>
-            <textarea id="modalidade-edit-observacoes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+            <textarea id="modalidade-edit-observacoes" rows="3"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
         </div>
         <div id="modalidade-edit-errors" class="text-sm text-red-600"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-modalidade-edit')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitModalidadeEdit()">Salvar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-modalidade-edit')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitModalidadeEdit()">Salvar</button>
     </div>
 </x-modal>
 
@@ -636,24 +754,31 @@
     <div class="p-4">
         <input type="hidden" id="modalidade-toggle-id" />
         <input type="hidden" id="modalidade-toggle-next" />
-        <p class="text-sm text-gray-700">Você deseja <span id="modalidade-toggle-action" class="font-semibold"></span> a modalidade <span id="modalidade-toggle-nome" class="font-semibold"></span>?</p>
+        <p class="text-sm text-gray-700">Você deseja <span id="modalidade-toggle-action"
+                class="font-semibold"></span> a modalidade <span id="modalidade-toggle-nome"
+                class="font-semibold"></span>?</p>
         <div id="modalidade-toggle-errors" class="text-sm text-red-600 mt-2"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-modalidade-toggle')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitModalidadeToggle()">Confirmar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-modalidade-toggle')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitModalidadeToggle()">Confirmar</button>
     </div>
 </x-modal>
 
 <x-modal name="modal-modalidade-delete" title="Excluir Modalidade">
     <div class="p-4">
         <input type="hidden" id="modalidade-delete-config-id" />
-        <p class="text-sm text-gray-700">Confirma a exclusão da configuração da modalidade <span id="modalidade-delete-nome" class="font-semibold"></span>?</p>
+        <p class="text-sm text-gray-700">Confirma a exclusão da configuração da modalidade <span
+                id="modalidade-delete-nome" class="font-semibold"></span>?</p>
         <div id="modalidade-delete-errors" class="text-sm text-red-600 mt-2"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-modalidade-delete')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700" onclick="submitModalidadeDelete()">Excluir</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-modalidade-delete')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700"
+            onclick="submitModalidadeDelete()">Excluir</button>
     </div>
 </x-modal>
 
@@ -674,11 +799,13 @@
             <div></div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Capacidade mínima da turma</label>
-                <input type="number" id="nivel-edit-cap-min" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-cap-min" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Capacidade máxima da turma</label>
-                <input type="number" id="nivel-edit-cap-max" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-cap-max" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -702,26 +829,31 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Carga horária semanal (min)</label>
-                <input type="number" id="nivel-edit-ch-semanal" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-ch-semanal" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Número de aulas/dia</label>
-                <input type="number" id="nivel-edit-num-aulas-dia" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-num-aulas-dia" min="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Duração aula (min)</label>
-                <input type="number" id="nivel-edit-duracao-aula" min="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-duracao-aula" min="30"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div></div>
         </div>
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Idade mínima</label>
-                <input type="number" id="nivel-edit-idade-minima" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-idade-minima" min="0"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Idade máxima</label>
-                <input type="number" id="nivel-edit-idade-maxima" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="nivel-edit-idade-maxima" min="0"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
         </div>
         <div>
@@ -731,8 +863,10 @@
         <div id="nivel-edit-errors" class="text-sm text-red-600"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-nivel-edit')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitNivelEdit()">Salvar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-nivel-edit')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitNivelEdit()">Salvar</button>
     </div>
 </x-modal>
 
@@ -740,12 +874,15 @@
     <div class="p-4">
         <input type="hidden" id="nivel-toggle-nivel-id" />
         <input type="hidden" id="nivel-toggle-next" />
-        <p class="text-sm text-gray-700">Você deseja <span id="nivel-toggle-action" class="font-semibold"></span> o nível <span id="nivel-toggle-nome" class="font-semibold"></span>?</p>
+        <p class="text-sm text-gray-700">Você deseja <span id="nivel-toggle-action" class="font-semibold"></span> o
+            nível <span id="nivel-toggle-nome" class="font-semibold"></span>?</p>
         <div id="nivel-toggle-errors" class="text-sm text-red-600 mt-2"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-nivel-toggle')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitNivelToggle()">Confirmar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-nivel-toggle')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitNivelToggle()">Confirmar</button>
     </div>
 </x-modal>
 
@@ -755,19 +892,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Nome</label>
-                <input type="text" id="turno-edit-nome" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="text" id="turno-edit-nome"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Código</label>
-                <input type="text" id="turno-edit-codigo" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="text" id="turno-edit-codigo"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Hora Início</label>
-                <input type="time" id="turno-edit-inicio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="time" id="turno-edit-inicio"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Hora Fim</label>
-                <input type="time" id="turno-edit-fim" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="time" id="turno-edit-fim"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
         </div>
         <div>
@@ -777,7 +918,8 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Ordem</label>
-                <input type="number" id="turno-edit-ordem" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                <input type="number" id="turno-edit-ordem" min="0"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
             </div>
             <div class="flex items-center gap-2">
                 <input type="checkbox" id="turno-edit-ativo" />
@@ -787,8 +929,10 @@
         <div id="turno-edit-errors" class="text-sm text-red-600"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-turno-edit')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitTurnoEdit()">Salvar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-turno-edit')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitTurnoEdit()">Salvar</button>
     </div>
 </x-modal>
 
@@ -799,7 +943,8 @@
         </div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-turno-tempo')">Fechar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-turno-tempo')">Fechar</button>
     </div>
 </x-modal>
 
@@ -808,14 +953,17 @@
         <!-- Toolbar de criação -->
         <div class="flex items-center justify-between">
             <div class="text-sm text-gray-600" id="turno-slots-turno-nome"></div>
-            <button type="button" id="btn-open-create-slot" class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Adicionar Slot</button>
+            <button type="button" id="btn-open-create-slot"
+                class="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Adicionar
+                Slot</button>
         </div>
         <!-- Form de criação -->
         <div id="turno-slot-create-form" class="hidden border rounded p-3 space-y-3">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Nome</label>
-                    <input type="text" id="slot-create-nome" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <input type="text" id="slot-create-nome"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Tipo</label>
@@ -828,21 +976,25 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Hora Início</label>
-                    <input type="time" id="slot-create-inicio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <input type="time" id="slot-create-inicio"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Hora Fim</label>
-                    <input type="time" id="slot-create-fim" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <input type="time" id="slot-create-fim"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Ordem</label>
-                    <input type="number" id="slot-create-ordem" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <input type="number" id="slot-create-ordem" min="1"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Duração (min)</label>
-                    <input type="number" id="slot-create-duracao" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    <input type="number" id="slot-create-duracao" min="1"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
                 </div>
             </div>
             <div>
@@ -855,8 +1007,12 @@
             </div>
             <div id="slot-create-errors" class="text-sm text-red-600"></div>
             <div class="flex justify-end gap-2">
-                <button type="button" class="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50" id="btn-cancel-create-slot">Cancelar</button>
-                <button type="button" class="px-3 py-1.5 text-xs text-white bg-indigo-600 rounded hover:bg-indigo-700" id="btn-submit-create-slot">Salvar</button>
+                <button type="button"
+                    class="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                    id="btn-cancel-create-slot">Cancelar</button>
+                <button type="button"
+                    class="px-3 py-1.5 text-xs text-white bg-indigo-600 rounded hover:bg-indigo-700"
+                    id="btn-submit-create-slot">Salvar</button>
             </div>
         </div>
 
@@ -866,32 +1022,39 @@
         </div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-turno-slots')">Fechar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-turno-slots')">Fechar</button>
     </div>
 </x-modal>
 
 <x-modal name="modal-turno-toggle" title="Alterar Status do Turno">
     <div class="p-4 space-y-2">
-        <div class="text-sm text-gray-700">Tem certeza que deseja <span id="turno-toggle-action" class="font-semibold">inativar</span> o turno <span id="turno-toggle-nome" class="font-semibold"></span>?</div>
+        <div class="text-sm text-gray-700">Tem certeza que deseja <span id="turno-toggle-action"
+                class="font-semibold">inativar</span> o turno <span id="turno-toggle-nome"
+                class="font-semibold"></span>?</div>
         <input type="hidden" id="turno-toggle-id" />
         <input type="hidden" id="turno-toggle-next" />
         <div id="turno-toggle-errors" class="text-sm text-red-600"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-turno-toggle')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-orange-600 rounded hover:bg-orange-700" onclick="submitTurnoToggle()">Confirmar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-turno-toggle')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-orange-600 rounded hover:bg-orange-700"
+            onclick="submitTurnoToggle()">Confirmar</button>
     </div>
 </x-modal>
 
 <!-- Modal Templates BNCC (padronizado ao layout base) -->
-<div id="templatesBnccModal" class="fixed inset-0 mt-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+<div id="templatesBnccModal"
+    class="fixed inset-0 mt-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <!-- Header -->
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
                 <div>
                     <h3 class="text-lg font-medium text-gray-900">Templates BNCC</h3>
-                    <p class="text-sm text-gray-600">Aplicar modelos por categoria/subcategoria e modalidade compatível</p>
+                    <p class="text-sm text-gray-600">Aplicar modelos por categoria/subcategoria e modalidade compatível
+                    </p>
                 </div>
                 <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeTemplatesBnccModal()">
                     <i class="fas fa-times"></i>
@@ -903,10 +1066,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-700">Filtrar por modalidade</label>
-                        <select id="bncc-filtro-modalidade" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" onchange="filtrarTemplatesPorModalidade()">
+                        <select id="bncc-filtro-modalidade"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            onchange="filtrarTemplatesPorModalidade()">
                             <option value="">Todas</option>
-                            @foreach($escola->modalidadeConfigs as $mc)
-                                <option value="{{ $mc->modalidadeEnsino->id }}">{{ $mc->modalidadeEnsino->nome }}</option>
+                            @foreach ($escola->modalidadeConfigs as $mc)
+                                <option value="{{ $mc->modalidadeEnsino->id }}">{{ $mc->modalidadeEnsino->nome }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -916,8 +1082,12 @@
 
             <!-- Ações -->
             <div class="flex justify-end space-x-3 pt-4 mt-4 border-t border-gray-200">
-                <button type="button" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick="closeTemplatesBnccModal()">Fechar</button>
-                <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick="applySelectedTemplatesBncc()">Aplicar Selecionados</button>
+                <button type="button"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onclick="closeTemplatesBnccModal()">Fechar</button>
+                <button type="button"
+                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    onclick="applySelectedTemplatesBncc()">Aplicar Selecionados</button>
             </div>
         </div>
     </div>
@@ -929,20 +1099,24 @@
         <input type="hidden" id="disciplina-id" />
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Nome</label>
-            <input type="text" id="disciplina-nome" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <input type="text" id="disciplina-nome"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Código</label>
-                <input type="text" id="disciplina-codigo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <input type="text" id="disciplina-codigo"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Cor</label>
-                <input type="color" id="disciplina-cor" class="w-16 h-10 rounded-md border border-gray-300 shadow-sm" />
+                <input type="color" id="disciplina-cor"
+                    class="w-16 h-10 rounded-md border border-gray-300 shadow-sm" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Área do Conhecimento</label>
-                <select id="disciplina-area" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <select id="disciplina-area"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">Selecione...</option>
                     <option value="linguagens">Linguagens</option>
                     <option value="matematica">Matemática</option>
@@ -953,7 +1127,8 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Ordem</label>
-                <input type="number" id="disciplina-ordem" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <input type="number" id="disciplina-ordem" min="0"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
         </div>
         <div>
@@ -962,8 +1137,10 @@
         </div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-disciplina-edit')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="saveDisciplina()">Salvar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-disciplina-edit')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="saveDisciplina()">Salvar</button>
     </div>
     <div></div>
 </x-modal>
@@ -973,12 +1150,16 @@
     <div class="p-4">
         <input type="hidden" id="disciplina-toggle-id" />
         <input type="hidden" id="disciplina-toggle-next" />
-        <p class="text-sm text-gray-700">Você deseja <span id="disciplina-toggle-action" class="font-semibold"></span> a disciplina <span id="disciplina-toggle-nome" class="font-semibold"></span>?</p>
+        <p class="text-sm text-gray-700">Você deseja <span id="disciplina-toggle-action"
+                class="font-semibold"></span> a disciplina <span id="disciplina-toggle-nome"
+                class="font-semibold"></span>?</p>
         <div id="disciplina-toggle-errors" class="text-sm text-red-600 mt-2"></div>
     </div>
     <div class="px-4 py-3 border-t flex justify-end gap-2">
-        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50" onclick="closeXModal('modal-disciplina-toggle')">Cancelar</button>
-        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700" onclick="submitDisciplinaToggle()">Confirmar</button>
+        <button type="button" class="px-4 py-2 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
+            onclick="closeXModal('modal-disciplina-toggle')">Cancelar</button>
+        <button type="button" class="px-4 py-2 text-sm text-white bg-indigo-600 rounded hover:bg-indigo-700"
+            onclick="submitDisciplinaToggle()">Confirmar</button>
     </div>
     <div></div>
 </x-modal>
@@ -995,7 +1176,8 @@
         // Reset estados dos botões
         document.querySelectorAll('.edutab-btn').forEach(el => {
             el.classList.remove('border-indigo-500', 'text-indigo-600');
-            el.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            el.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700',
+                'hover:border-gray-300');
         });
 
         // Ativar botão da aba selecionada
@@ -1024,7 +1206,9 @@
                 current.removeEventListener('transitionend', handleExit);
                 current.classList.add('hidden');
                 current.classList.remove('transition', 'duration-200', 'ease-in', 'opacity-0', 'translate-y-1');
-            }, { once: true });
+            }, {
+                once: true
+            });
         }
 
         // Preparar próxima aba e animar entrada
@@ -1037,7 +1221,9 @@
         next.addEventListener('transitionend', function handleEnter() {
             next.removeEventListener('transitionend', handleEnter);
             next.classList.remove('transition', 'duration-200', 'ease-out');
-        }, { once: true });
+        }, {
+            once: true
+        });
     }
 
     // CSRF token para requisições
@@ -1051,6 +1237,7 @@
         const el = document.getElementById(id);
         if (el) el.classList.remove('hidden');
     }
+
     function closeModal(id) {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -1064,6 +1251,7 @@
             openModal(id);
         }
     }
+
     function closeXModal(id) {
         // Fechar modais do componente x-modal via evento global
         try {
@@ -1080,20 +1268,27 @@
         openModal('templatesBnccModal');
         loadTemplatesBncc();
     }
+
     function closeTemplatesBnccModal() {
         closeModal('templatesBnccModal');
     }
     async function loadTemplatesBncc() {
         const url = "{{ route('admin.configuracao-educacional.templates-bncc', ['escola' => $escola->id]) }}";
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const res = await fetch(url, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         const data = await res.json();
         // Guardar globalmente para re-render com filtros
         window.bnccTemplatesData = data || {};
         renderTemplatesBncc();
     }
+
     function filtrarTemplatesPorModalidade() {
         renderTemplatesBncc();
     }
+
     function renderTemplatesBncc() {
         const list = document.getElementById('templates-bncc-list');
         list.innerHTML = '';
@@ -1117,20 +1312,25 @@
                     body.appendChild(subEl);
                     (items || []).forEach(t => {
                         // Detectar modalidades compatíveis em possíveis chaves
-                        const mods = t.modalidades_compat || t.modalidades || t.compatible_modalidades || [];
-                        const match = !selectedMod || (Array.isArray(mods) && mods.map(String).includes(String(selectedMod)));
+                        const mods = t.modalidades_compat || t.modalidades || t
+                            .compatible_modalidades || [];
+                        const match = !selectedMod || (Array.isArray(mods) && mods.map(String)
+                            .includes(String(selectedMod)));
                         if (!match) return;
                         const item = document.createElement('label');
                         item.className = 'flex items-start gap-3 p-3 border rounded';
                         const disabled = t.ja_configurado ? 'disabled' : '';
-                        const chip = t.ja_configurado ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-600 text-xs">Já configurado</span>' : '';
-                        const modsText = Array.isArray(mods) && mods.length
-                            ? `<div class=\"mt-1 text-xs text-gray-500\">Compatível: ${mods.join(', ')}</div>`
-                            : '';
-                        item.innerHTML = `<input type=\"checkbox\" class=\"mt-1\" value=\"${t.id}\" ${disabled}>` +
-                                         `<div><div class=\"font-medium\">${t.nome}</div>` +
-                                         `<div class=\"text-xs text-gray-500\">${t.codigo || ''}</div>` +
-                                         `<div class=\"text-sm text-gray-600\">${t.descricao || ''}${chip}</div>${modsText}</div>`;
+                        const chip = t.ja_configurado ?
+                            '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-600 text-xs">Já configurado</span>' :
+                            '';
+                        const modsText = Array.isArray(mods) && mods.length ?
+                            `<div class=\"mt-1 text-xs text-gray-500\">Compatível: ${mods.join(', ')}</div>` :
+                            '';
+                        item.innerHTML =
+                            `<input type=\"checkbox\" class=\"mt-1\" value=\"${t.id}\" ${disabled}>` +
+                            `<div><div class=\"font-medium\">${t.nome}</div>` +
+                            `<div class=\"text-xs text-gray-500\">${t.codigo || ''}</div>` +
+                            `<div class=\"text-sm text-gray-600\">${t.descricao || ''}${chip}</div>${modsText}</div>`;
                         body.appendChild(item);
                     });
                 });
@@ -1141,12 +1341,14 @@
         }
     }
     async function applySelectedTemplatesBncc() {
-        const selected = Array.from(document.querySelectorAll('#templates-bncc-list input[type="checkbox"]:checked')).map(i => i.value);
+        const selected = Array.from(document.querySelectorAll(
+            '#templates-bncc-list input[type="checkbox"]:checked')).map(i => i.value);
         if (!selected.length) {
             alert('Selecione ao menos um template.');
             return;
         }
-        const url = "{{ route('admin.configuracao-educacional.aplicar-templates-bncc', ['escola' => $escola->id]) }}";
+        const url =
+            "{{ route('admin.configuracao-educacional.aplicar-templates-bncc', ['escola' => $escola->id]) }}";
         const res = await fetch(url, {
             method: 'POST',
             headers: {
@@ -1154,7 +1356,9 @@
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrfToken(),
             },
-            body: JSON.stringify({ templates: selected })
+            body: JSON.stringify({
+                templates: selected
+            })
         });
         const data = await res.json();
         if (data.success) {
@@ -1173,8 +1377,13 @@
         const params = new URLSearchParams();
         if (nivelId) params.set('nivel_id', nivelId);
         if (area) params.set('area', area);
-        const url = "{{ route('admin.configuracao-educacional.disciplinas', ['escola' => $escola->id]) }}" + (params.toString() ? ('?' + params.toString()) : '');
-        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const url = "{{ route('admin.configuracao-educacional.disciplinas', ['escola' => $escola->id]) }}" + (
+            params.toString() ? ('?' + params.toString()) : '');
+        const res = await fetch(url, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         const data = await res.json();
         // Guardar níveis disponíveis para uso no modal
         if (data && Array.isArray(data.niveis)) {
@@ -1182,13 +1391,16 @@
         }
         renderDisciplinas(data);
     }
+
     function renderDisciplinas(data) {
         const container = document.getElementById('disciplinas-list');
         container.innerHTML = '';
         if (!data || !Array.isArray(data.disciplinas) || !data.disciplinas.length) {
-            container.innerHTML = '<div class="text-sm text-gray-600">Nenhuma disciplina encontrada com os filtros atuais.</div>';
+            container.innerHTML =
+                '<div class="text-sm text-gray-600">Nenhuma disciplina encontrada com os filtros atuais.</div>';
             return;
         }
+
         function areaBadgeHtml(area) {
             const map = {
                 linguagens: 'bg-blue-100 text-blue-800',
@@ -1252,12 +1464,16 @@
             for (const r of rels) {
                 const nv = r.nivel_ensino || r.nivelEnsino || {};
                 const nomeNv = nv.nome || `Nível ${nv.id || ''}`;
-                const chs = (typeof r.carga_horaria_semanal !== 'undefined' && r.carga_horaria_semanal !== null) ? `${r.carga_horaria_semanal}h/sem` : null;
+                const chs = (typeof r.carga_horaria_semanal !== 'undefined' && r.carga_horaria_semanal !==
+                    null) ? `${r.carga_horaria_semanal}h/sem` : null;
                 if (chs) resumo.push(`${nomeNv}: ${chs}`);
                 if (resumo.length >= 3) break;
             }
-            const extraCount = (rels || []).filter(r => (r.carga_horaria_semanal ?? '') !== '').length - resumo.length;
-            const resumoHtml = resumo.length ? `<div class=\"text-xs text-gray-600 mt-1\">${resumo.join(' • ')}${extraCount > 0 ? ` • +${extraCount}` : ''}</div>` : '';
+            const extraCount = (rels || []).filter(r => (r.carga_horaria_semanal ?? '') !== '').length - resumo
+                .length;
+            const resumoHtml = resumo.length ?
+                `<div class=\"text-xs text-gray-600 mt-1\">${resumo.join(' • ')}${extraCount > 0 ? ` • +${extraCount}` : ''}</div>` :
+                '';
             card.innerHTML = `
                 <div class="flex items-start justify-between">
                     <div>
@@ -1283,13 +1499,15 @@
         container.appendChild(mobileWrap);
         container.appendChild(desktopWrap);
     }
+
     function editDisciplina(d) {
         document.getElementById('disciplina-id').value = d.id;
         document.getElementById('disciplina-nome').value = d.nome || '';
         document.getElementById('disciplina-codigo').value = d.codigo || '';
         document.getElementById('disciplina-cor').value = d.cor_hex || '#000000';
         document.getElementById('disciplina-area').value = d.area_conhecimento || '';
-        document.getElementById('disciplina-ordem').value = (typeof d.ordem !== 'undefined' && d.ordem !== null) ? d.ordem : '';
+        document.getElementById('disciplina-ordem').value = (typeof d.ordem !== 'undefined' && d.ordem !== null) ? d
+            .ordem : '';
 
         const container = document.getElementById('disciplina-niveis-container');
         container.innerHTML = '';
@@ -1335,6 +1553,7 @@
         });
         openXModal('modal-disciplina-edit');
     }
+
     function closeEditarDisciplina() {
         closeXModal('modal-disciplina-edit');
     }
@@ -1348,7 +1567,8 @@
         const ordem = ordemRaw === '' ? null : parseInt(ordemRaw, 10);
 
         // Atualizar dados básicos da disciplina
-        const urlDisc = "{{ route('admin.configuracao-educacional.update-disciplina', ['escola' => $escola->id]) }}";
+        const urlDisc =
+            "{{ route('admin.configuracao-educacional.update-disciplina', ['escola' => $escola->id]) }}";
         const resDisc = await fetch(urlDisc, {
             method: 'PUT',
             headers: {
@@ -1372,7 +1592,8 @@
         }
 
         // Atualizar configurações por nível (apenas onde houver C.H. semanal informada)
-        const urlNivel = "{{ route('admin.configuracao-educacional.update-disciplina-nivel', ['escola' => $escola->id]) }}";
+        const urlNivel =
+            "{{ route('admin.configuracao-educacional.update-disciplina-nivel', ['escola' => $escola->id]) }}";
         const grupos = Array.from(document.querySelectorAll('#disciplina-niveis-container .nivel-config'));
         for (const grp of grupos) {
             const nivelId = grp.getAttribute('data-nivel-id');
@@ -1436,7 +1657,8 @@
     async function submitDisciplinaToggle() {
         const id = document.getElementById('disciplina-toggle-id').value;
         const next = document.getElementById('disciplina-toggle-next').value;
-        const urlDisc = "{{ route('admin.configuracao-educacional.update-disciplina', ['escola' => $escola->id]) }}";
+        const urlDisc =
+            "{{ route('admin.configuracao-educacional.update-disciplina', ['escola' => $escola->id]) }}";
         const res = await fetch(urlDisc, {
             method: 'PUT',
             headers: {
@@ -1449,7 +1671,9 @@
                 ativo: parseInt(next, 10)
             })
         });
-        const data = await res.json().catch(() => ({ success: false }));
+        const data = await res.json().catch(() => ({
+            success: false
+        }));
         if (!res.ok || !data.success) {
             const errEl = document.getElementById('disciplina-toggle-errors');
             if (errEl) errEl.textContent = (data && data.message) ? data.message : 'Erro ao alterar status';
@@ -1467,6 +1691,7 @@
         }
         return el;
     }
+
     function openNivelEditModal(nivelId) {
         const el = _findNivelElementById(nivelId);
         if (!el) return;
@@ -1477,7 +1702,8 @@
         document.getElementById('nivel-edit-cap-min').value = el.getAttribute('data-cap-min') || '';
         document.getElementById('nivel-edit-cap-max').value = el.getAttribute('data-cap-max') || '';
         document.getElementById('nivel-edit-turno-matutino').checked = (el.getAttribute('data-turno-matutino') === '1');
-        document.getElementById('nivel-edit-turno-vespertino').checked = (el.getAttribute('data-turno-vespertino') === '1');
+        document.getElementById('nivel-edit-turno-vespertino').checked = (el.getAttribute('data-turno-vespertino') ===
+            '1');
         document.getElementById('nivel-edit-turno-noturno').checked = (el.getAttribute('data-turno-noturno') === '1');
         document.getElementById('nivel-edit-turno-integral').checked = (el.getAttribute('data-turno-integral') === '1');
         document.getElementById('nivel-edit-ch-semanal').value = el.getAttribute('data-ch-semanal') || '';
@@ -1494,17 +1720,38 @@
         const payload = {
             nivel_ensino_id: nivelId,
             ativo: document.getElementById('nivel-edit-ativo').checked ? 1 : 0,
-            capacidade_minima_turma: (function(){ const v = document.getElementById('nivel-edit-cap-min').value; return v === '' ? null : parseInt(v, 10); })(),
-            capacidade_maxima_turma: (function(){ const v = document.getElementById('nivel-edit-cap-max').value; return v === '' ? null : parseInt(v, 10); })(),
+            capacidade_minima_turma: (function() {
+                const v = document.getElementById('nivel-edit-cap-min').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            capacidade_maxima_turma: (function() {
+                const v = document.getElementById('nivel-edit-cap-max').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             turno_matutino: document.getElementById('nivel-edit-turno-matutino').checked ? 1 : 0,
             turno_vespertino: document.getElementById('nivel-edit-turno-vespertino').checked ? 1 : 0,
             turno_noturno: document.getElementById('nivel-edit-turno-noturno').checked ? 1 : 0,
             turno_integral: document.getElementById('nivel-edit-turno-integral').checked ? 1 : 0,
-            carga_horaria_semanal: (function(){ const v = document.getElementById('nivel-edit-ch-semanal').value; return v === '' ? null : parseInt(v, 10); })(),
-            numero_aulas_dia: (function(){ const v = document.getElementById('nivel-edit-num-aulas-dia').value; return v === '' ? null : parseInt(v, 10); })(),
-            duracao_aula_minutos: (function(){ const v = document.getElementById('nivel-edit-duracao-aula').value; return v === '' ? null : parseInt(v, 10); })(),
-            idade_minima: (function(){ const v = document.getElementById('nivel-edit-idade-minima').value; return v === '' ? null : parseInt(v, 10); })(),
-            idade_maxima: (function(){ const v = document.getElementById('nivel-edit-idade-maxima').value; return v === '' ? null : parseInt(v, 10); })(),
+            carga_horaria_semanal: (function() {
+                const v = document.getElementById('nivel-edit-ch-semanal').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            numero_aulas_dia: (function() {
+                const v = document.getElementById('nivel-edit-num-aulas-dia').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            duracao_aula_minutos: (function() {
+                const v = document.getElementById('nivel-edit-duracao-aula').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            idade_minima: (function() {
+                const v = document.getElementById('nivel-edit-idade-minima').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            idade_maxima: (function() {
+                const v = document.getElementById('nivel-edit-idade-maxima').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             observacoes: document.getElementById('nivel-edit-observacoes').value || null,
         };
         const url = "{{ route('admin.configuracao-educacional.store-nivel', ['escola' => $escola->id]) }}";
@@ -1552,7 +1799,8 @@
         });
         if (!res.ok) {
             const txt = await res.text();
-            document.getElementById('nivel-toggle-errors').textContent = 'Erro ao alterar status: ' + (txt || res.status);
+            document.getElementById('nivel-toggle-errors').textContent = 'Erro ao alterar status: ' + (txt || res
+                .status);
             return;
         }
         closeXModal('modal-nivel-toggle');
@@ -1567,6 +1815,7 @@
         }
         return el;
     }
+
     function openModalidadeEditModal(modalidadeId) {
         const el = _findModalidadeElementById(modalidadeId);
         if (!el) return;
@@ -1575,10 +1824,14 @@
         document.getElementById('modalidade-edit-ativo').checked = (el.getAttribute('data-ativo') === '1');
         document.getElementById('modalidade-edit-cap-min').value = el.getAttribute('data-cap-min') || '';
         document.getElementById('modalidade-edit-cap-max').value = el.getAttribute('data-cap-max') || '';
-        document.getElementById('modalidade-edit-turno-matutino').checked = (el.getAttribute('data-turno-matutino') === '1');
-        document.getElementById('modalidade-edit-turno-vespertino').checked = (el.getAttribute('data-turno-vespertino') === '1');
-        document.getElementById('modalidade-edit-turno-noturno').checked = (el.getAttribute('data-turno-noturno') === '1');
-        document.getElementById('modalidade-edit-turno-integral').checked = (el.getAttribute('data-turno-integral') === '1');
+        document.getElementById('modalidade-edit-turno-matutino').checked = (el.getAttribute('data-turno-matutino') ===
+            '1');
+        document.getElementById('modalidade-edit-turno-vespertino').checked = (el.getAttribute(
+            'data-turno-vespertino') === '1');
+        document.getElementById('modalidade-edit-turno-noturno').checked = (el.getAttribute('data-turno-noturno') ===
+            '1');
+        document.getElementById('modalidade-edit-turno-integral').checked = (el.getAttribute('data-turno-integral') ===
+            '1');
         document.getElementById('modalidade-edit-observacoes').value = el.getAttribute('data-observacoes') || '';
         document.getElementById('modalidade-edit-errors').textContent = '';
         openXModal('modal-modalidade-edit');
@@ -1588,8 +1841,14 @@
         const payload = {
             modalidade_ensino_id: modalidadeId,
             ativo: document.getElementById('modalidade-edit-ativo').checked ? 1 : 0,
-            capacidade_minima_turma: (function(){ const v = document.getElementById('modalidade-edit-cap-min').value; return v === '' ? null : parseInt(v, 10); })(),
-            capacidade_maxima_turma: (function(){ const v = document.getElementById('modalidade-edit-cap-max').value; return v === '' ? null : parseInt(v, 10); })(),
+            capacidade_minima_turma: (function() {
+                const v = document.getElementById('modalidade-edit-cap-min').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            capacidade_maxima_turma: (function() {
+                const v = document.getElementById('modalidade-edit-cap-max').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             turno_matutino: document.getElementById('modalidade-edit-turno-matutino').checked ? 1 : 0,
             turno_vespertino: document.getElementById('modalidade-edit-turno-vespertino').checked ? 1 : 0,
             turno_noturno: document.getElementById('modalidade-edit-turno-noturno').checked ? 1 : 0,
@@ -1607,12 +1866,14 @@
         });
         if (!res.ok) {
             const txt = await res.text();
-            document.getElementById('modalidade-edit-errors').textContent = 'Erro ao salvar: ' + (txt || res.status);
+            document.getElementById('modalidade-edit-errors').textContent = 'Erro ao salvar: ' + (txt || res
+            .status);
             return;
         }
         closeXModal('modal-modalidade-edit');
         window.location.reload();
     }
+
     function openModalidadeToggleModal(id, nome, ativo) {
         const next = ativo ? 0 : 1;
         document.getElementById('modalidade-toggle-id').value = id;
@@ -1639,12 +1900,14 @@
         });
         if (!res.ok) {
             const txt = await res.text();
-            document.getElementById('modalidade-toggle-errors').textContent = 'Erro ao alterar status: ' + (txt || res.status);
+            document.getElementById('modalidade-toggle-errors').textContent = 'Erro ao alterar status: ' + (txt ||
+                res.status);
             return;
         }
         closeXModal('modal-modalidade-toggle');
         window.location.reload();
     }
+
     function openModalidadeDeleteModal(configId, nome) {
         document.getElementById('modalidade-delete-config-id').value = configId;
         document.getElementById('modalidade-delete-nome').textContent = nome || '';
@@ -1663,7 +1926,8 @@
         });
         if (!res.ok) {
             const txt = await res.text();
-            document.getElementById('modalidade-delete-errors').textContent = 'Erro ao excluir: ' + (txt || res.status);
+            document.getElementById('modalidade-delete-errors').textContent = 'Erro ao excluir: ' + (txt || res
+                .status);
             return;
         }
         closeXModal('modal-modalidade-delete');
@@ -1705,7 +1969,10 @@
             hora_inicio: document.getElementById('turno-create-inicio').value,
             hora_fim: document.getElementById('turno-create-fim').value,
             descricao: document.getElementById('turno-create-descricao').value || null,
-            ordem: (function(){ const v = document.getElementById('turno-create-ordem').value; return v === '' ? null : parseInt(v, 10); })(),
+            ordem: (function() {
+                const v = document.getElementById('turno-create-ordem').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             ativo: document.getElementById('turno-create-ativo').checked ? 1 : 0,
         };
         const url = TURNOS_BASE_URL;
@@ -1758,7 +2025,10 @@
             hora_inicio: document.getElementById('turno-edit-inicio').value,
             hora_fim: document.getElementById('turno-edit-fim').value,
             descricao: document.getElementById('turno-edit-descricao').value || null,
-            ordem: (function(){ const v = document.getElementById('turno-edit-ordem').value; return v === '' ? null : parseInt(v, 10); })(),
+            ordem: (function() {
+                const v = document.getElementById('turno-edit-ordem').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             ativo: document.getElementById('turno-edit-ativo').checked ? 1 : 0,
         };
         const url = `${TURNOS_BASE_URL}/${id}`;
@@ -1771,9 +2041,12 @@
             },
             body: JSON.stringify(payload)
         });
-        const data = await res.json().catch(() => ({ success: false }));
+        const data = await res.json().catch(() => ({
+            success: false
+        }));
         if (!res.ok || !data.success) {
-            document.getElementById('turno-edit-errors').textContent = (data && data.message) ? data.message : 'Erro ao atualizar turno';
+            document.getElementById('turno-edit-errors').textContent = (data && data.message) ? data.message :
+                'Erro ao atualizar turno';
             return;
         }
         closeXModal('modal-turno-edit');
@@ -1786,7 +2059,11 @@
         openXModal('modal-turno-tempo');
         try {
             const url = _tempoSlotsUrl(TEMPOSLOTS_INDEX_URL_TMPL, turnoId);
-            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const res = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             const data = await res.json();
             if (!data.success) throw new Error('Falha ao carregar slots');
             renderTempoResumo(container, data);
@@ -1804,7 +2081,11 @@
         openXModal('modal-turno-slots');
         try {
             const url = _tempoSlotsUrl(TEMPOSLOTS_INDEX_URL_TMPL, turnoId);
-            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const res = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             const data = await res.json();
             if (!data.success) throw new Error('Falha ao carregar slots');
             tituloTurnoEl.textContent = `Turno: ${data.turno?.nome || ''}`;
@@ -1861,7 +2142,8 @@
         container.appendChild(table);
         const tbody = table.querySelector('#tempo-slots-tbody');
         if (!slots.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-3 text-sm text-gray-500">Nenhum slot configurado.</td></tr>';
+            tbody.innerHTML =
+                '<tr><td colspan="6" class="px-4 py-3 text-sm text-gray-500">Nenhum slot configurado.</td></tr>';
             return;
         }
         slots.forEach(s => {
@@ -1905,8 +2187,13 @@
         const cancelBtn = document.getElementById('btn-cancel-create-slot');
         const submitBtn = document.getElementById('btn-submit-create-slot');
         const form = document.getElementById('turno-slot-create-form');
-        openBtn.onclick = () => { form.classList.remove('hidden'); };
-        cancelBtn.onclick = () => { form.classList.add('hidden'); resetCreateSlotForm(); };
+        openBtn.onclick = () => {
+            form.classList.remove('hidden');
+        };
+        cancelBtn.onclick = () => {
+            form.classList.add('hidden');
+            resetCreateSlotForm();
+        };
         submitBtn.onclick = async () => {
             await submitCreateTempoSlot(turnoId);
             form.classList.add('hidden');
@@ -1933,8 +2220,14 @@
             tipo: document.getElementById('slot-create-tipo').value,
             hora_inicio: document.getElementById('slot-create-inicio').value,
             hora_fim: document.getElementById('slot-create-fim').value,
-            ordem: (function(){ const v = document.getElementById('slot-create-ordem').value; return v === '' ? null : parseInt(v, 10); })(),
-            duracao_minutos: (function(){ const v = document.getElementById('slot-create-duracao').value; return v === '' ? null : parseInt(v, 10); })(),
+            ordem: (function() {
+                const v = document.getElementById('slot-create-ordem').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
+            duracao_minutos: (function() {
+                const v = document.getElementById('slot-create-duracao').value;
+                return v === '' ? null : parseInt(v, 10);
+            })(),
             descricao: document.getElementById('slot-create-descricao').value || null,
             ativo: document.getElementById('slot-create-ativo').checked ? 1 : 0,
         };
@@ -1953,7 +2246,9 @@
             document.getElementById('slot-create-errors').textContent = 'Erro ao salvar: ' + (txt || res.status);
             return;
         }
-        const data = await res.json().catch(() => ({ success: false }));
+        const data = await res.json().catch(() => ({
+            success: false
+        }));
         if (!data.success) {
             document.getElementById('slot-create-errors').textContent = data.message || 'Falha ao criar slot';
             return;
@@ -2065,7 +2360,10 @@
                 hora_inicio: editTr.querySelector('#slot-edit-inicio').value,
                 hora_fim: editTr.querySelector('#slot-edit-fim').value,
                 ordem: parseInt(editTr.querySelector('#slot-edit-ordem').value, 10),
-                duracao_minutos: (function(){ const v = editTr.querySelector('#slot-edit-duracao').value; return v === '' ? null : parseInt(v, 10); })(),
+                duracao_minutos: (function() {
+                    const v = editTr.querySelector('#slot-edit-duracao').value;
+                    return v === '' ? null : parseInt(v, 10);
+                })(),
                 descricao: editTr.querySelector('#slot-edit-descricao').value || null,
                 ativo: editTr.querySelector('#slot-edit-ativo').checked ? 1 : 0,
             };
@@ -2078,9 +2376,12 @@
                 },
                 body: JSON.stringify(payload)
             });
-            const data = await res.json().catch(() => ({ success: false }));
+            const data = await res.json().catch(() => ({
+                success: false
+            }));
             if (!res.ok || !data.success) {
-                editTr.querySelector('#slot-edit-errors').textContent = (data && data.message) ? data.message : 'Erro ao atualizar slot';
+                editTr.querySelector('#slot-edit-errors').textContent = (data && data.message) ? data.message :
+                    'Erro ao atualizar slot';
                 return;
             }
             await openTurnoSlotsModal(CURRENT_TURNO_ID);
@@ -2106,9 +2407,12 @@
                 'X-CSRF-TOKEN': csrfToken(),
             }
         });
-        const data = await res.json().catch(() => ({ success: false }));
+        const data = await res.json().catch(() => ({
+            success: false
+        }));
         if (!res.ok || !data.success) {
-            document.getElementById('turno-toggle-errors').textContent = (data && data.message) ? data.message : 'Erro ao alterar status';
+            document.getElementById('turno-toggle-errors').textContent = (data && data.message) ? data.message :
+                'Erro ao alterar status';
             return;
         }
         closeXModal('modal-turno-toggle');
@@ -2117,7 +2421,11 @@
 
     async function refreshTurnos() {
         try {
-            const res = await fetch(`${TURNOS_LIST_URL}?all=1`, { headers: { 'Accept': 'application/json' } });
+            const res = await fetch(`${TURNOS_LIST_URL}?all=1`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             const list = await res.json();
             const tbody = document.getElementById('turnos-tbody');
             const mobile = document.getElementById('turnos-mobile-list');
@@ -2132,7 +2440,8 @@
                 tr.setAttribute('data-fim', t.hora_fim || '');
                 tr.setAttribute('data-ativo', t.ativo ? '1' : '0');
                 tr.setAttribute('data-descricao', t.descricao || '');
-                tr.setAttribute('data-ordem', (typeof t.ordem !== 'undefined' && t.ordem !== null) ? t.ordem : '');
+                tr.setAttribute('data-ordem', (typeof t.ordem !== 'undefined' && t.ordem !== null) ? t
+                    .ordem : '');
                 tr.innerHTML = `
                     <td class="px-4 py-2">${t.nome || ''}</td>
                     <td class="px-4 py-2">${t.codigo || ''}</td>
@@ -2158,7 +2467,8 @@
                     card.setAttribute('data-fim', t.hora_fim || '');
                     card.setAttribute('data-ativo', t.ativo ? '1' : '0');
                     card.setAttribute('data-descricao', t.descricao || '');
-                    card.setAttribute('data-ordem', (typeof t.ordem !== 'undefined' && t.ordem !== null) ? t.ordem : '');
+                    card.setAttribute('data-ordem', (typeof t.ordem !== 'undefined' && t.ordem !== null) ? t
+                        .ordem : '');
                     const nomeEsc = (t.nome || '').replace(/'/g, "&#39;");
                     card.innerHTML = `
                         <div class="flex items-start justify-between">

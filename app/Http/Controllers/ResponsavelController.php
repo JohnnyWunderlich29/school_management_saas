@@ -15,7 +15,7 @@ class ResponsavelController extends Controller
     public function index(Request $request)
     {
         $query = Responsavel::query();
-        
+
         // Para super admins e suporte, filtrar pela escola da sessão se definida
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
@@ -27,17 +27,17 @@ class ResponsavelController extends Controller
                 $query->where('escola_id', auth()->user()->escola_id);
             }
         }
-        
+
         // Por padrão, mostrar apenas responsáveis ativos
         if (!$request->has('mostrar_inativos')) {
             $query->ativos();
         }
-        
+
         // Filtros usando scopes
         if ($request->filled('nome')) {
             $query->buscarPorNome($request->nome);
         }
-        
+
         if ($request->filled('ativo')) {
             if ($request->ativo == 'true') {
                 $query->ativos();
@@ -45,18 +45,18 @@ class ResponsavelController extends Controller
                 $query->where('ativo', false);
             }
         }
-        
+
         if ($request->has('cpf')) {
             $query->where('cpf', 'like', '%' . $request->cpf . '%');
         }
-        
+
         // Ordenação dinâmica via query string
         $allowedSorts = ['id', 'nome', 'parentesco', 'ativo'];
         $sort = in_array($request->get('sort'), $allowedSorts) ? $request->get('sort') : 'nome';
         $direction = in_array($request->get('direction'), ['asc', 'desc']) ? $request->get('direction') : 'asc';
 
         $responsaveis = $query->orderBy($sort, $direction)->paginate(15)->withQueryString();
-        
+
         return view('responsaveis.index', compact('responsaveis'));
     }
 
@@ -77,18 +77,19 @@ class ResponsavelController extends Controller
      */
     private function convertDateFormat($date)
     {
-        if (!$date) return null;
-        
+        if (!$date)
+            return null;
+
         // Se já está no formato Y-m-d, retorna como está
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return $date;
         }
-        
+
         // Se está no formato dd/mm/yyyy, converte
         if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
             return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
         }
-        
+
         return null;
     }
 
@@ -110,13 +111,14 @@ class ResponsavelController extends Controller
             'autorizado_buscar' => 'boolean',
             'contato_emergencia' => 'boolean',
             'observacoes' => 'nullable|string',
+            'consolidate_billing' => 'nullable|boolean',
             'alunos' => 'nullable|array',
             'alunos.*' => 'exists:alunos,id',
             'alunos_principal' => 'nullable|array',
             'alunos_principal.*' => 'boolean',
         ]);
 
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -144,6 +146,7 @@ class ResponsavelController extends Controller
                 'autorizado_buscar' => $request->autorizado_buscar ?? false,
                 'contato_emergencia' => $request->contato_emergencia ?? false,
                 'observacoes' => $request->observacoes,
+                'consolidate_billing' => $request->has('consolidate_billing') || $request->input('consolidate_billing') === true,
             ]);
 
             // Associar alunos se houver
@@ -207,10 +210,10 @@ class ResponsavelController extends Controller
             ->wherePivot('responsavel_principal', true)
             ->pluck('alunos.id')
             ->toArray();
-            
+
         return view('responsaveis.edit', compact(
-            'responsavel', 
-            'alunos', 
+            'responsavel',
+            'alunos',
             'alunosResponsavel',
             'alunosPrincipais'
         ));
@@ -237,6 +240,7 @@ class ResponsavelController extends Controller
             'autorizado_buscar' => 'boolean',
             'contato_emergencia' => 'boolean',
             'observacoes' => 'nullable|string',
+            'consolidate_billing' => 'nullable|boolean',
             'alunos' => 'nullable|array',
             'alunos.*' => 'exists:alunos,id',
             'alunos_principal' => 'nullable|array',
@@ -251,7 +255,7 @@ class ResponsavelController extends Controller
 
         try {
             $responsavel = Responsavel::findOrFail($id);
-            
+
             $responsavel->update([
                 'nome' => $request->nome,
                 'sobrenome' => $request->sobrenome,
@@ -270,11 +274,12 @@ class ResponsavelController extends Controller
                 'autorizado_buscar' => $request->autorizado_buscar ?? false,
                 'contato_emergencia' => $request->contato_emergencia ?? false,
                 'observacoes' => $request->observacoes,
+                'consolidate_billing' => $request->has('consolidate_billing') || $request->input('consolidate_billing') === true,
             ]);
 
             // Atualizar alunos
             $responsavel->alunos()->detach();
-            
+
             if ($request->has('alunos') && is_array($request->alunos)) {
                 foreach ($request->alunos as $index => $alunoId) {
                     $principal = isset($request->alunos_principal[$index]) && $request->alunos_principal[$index];
@@ -306,12 +311,12 @@ class ResponsavelController extends Controller
                 abort(404);
             }
         }
-        
+
         $statusAnterior = $responsavel->ativo;
         $responsavel->update(['ativo' => !$responsavel->ativo]);
-        
+
         $status = $responsavel->ativo ? 'ativado' : 'inativado';
-        
+
         // Registrar no histórico
         \App\Models\Historico::registrar(
             $responsavel->ativo ? 'ativado' : 'inativado',
@@ -321,8 +326,47 @@ class ResponsavelController extends Controller
             ['ativo' => $responsavel->ativo],
             "Responsável {$status} com sucesso"
         );
-        
+
         \App\Services\AlertService::success("Responsável {$status} com sucesso!");
         return redirect()->route('responsaveis.index');
+    }
+
+    public function toggleConsolidation(Responsavel $responsavel)
+    {
+        // Verificar permissões
+        if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
+            if (session('escola_atual') && $responsavel->escola_id !== session('escola_atual')) {
+                abort(404);
+            }
+        } else {
+            if (auth()->user()->escola_id && $responsavel->escola_id !== auth()->user()->escola_id) {
+                abort(404);
+            }
+        }
+
+        $responsavel->update(['consolidate_billing' => !$responsavel->consolidate_billing]);
+
+        $status = $responsavel->consolidate_billing ? 'Habilitada' : 'Desabilitada';
+
+        // Registrar no histórico
+        \App\Models\Historico::registrar(
+            'configuracao_alterada',
+            'Responsavel',
+            $responsavel->id,
+            null,
+            ['consolidate_billing' => $responsavel->consolidate_billing],
+            "Consolidação de faturas {$status} com sucesso"
+        );
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Consolidação de faturas {$status} com sucesso",
+                'consolidate_billing' => $responsavel->consolidate_billing
+            ]);
+        }
+
+        \App\Services\AlertService::success("Consolidação de faturas {$status} com sucesso!");
+        return redirect()->back();
     }
 }
