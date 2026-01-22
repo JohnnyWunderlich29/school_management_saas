@@ -15,7 +15,8 @@ class DatabaseSeeder extends Seeder
     {
         // Executar seeders na ordem correta
         $this->call([
-            // Seeders básicos
+                // Seeders básicos
+            SuperAdminSeeder::class,
             EscolaSeeder::class,
             UserSeeder::class,
             PermissaoSeeder::class,
@@ -27,8 +28,8 @@ class DatabaseSeeder extends Seeder
             NiveisEnsinoSeeder::class,
             CargosAdministrativosSeeder::class,
             TipoProfessorSeeder::class,
-            
-            // Seeders BNCC
+
+                // Seeders BNCC
             CamposExperienciaSeeder::class,
             SaberesConhecimentosEOSeeder::class,
             SaberesConhecimentosCGSeeder::class,
@@ -38,24 +39,24 @@ class DatabaseSeeder extends Seeder
             ObjetivosAprendizagemSeeder::class,
             ObjetivosAprendizagemEI02Seeder::class,
             TemplatesBnccSeeder::class,
-            // BNCC EF — Língua Portuguesa
+                // BNCC EF — Língua Portuguesa
             BnccPortuguesEfSeeder::class,
-            // BNCC EF — Matemática
+                // BNCC EF — Matemática
             BnccMatematicaEfSeeder::class,
-            // BNCC EF — Ciências
+                // BNCC EF — Ciências
             BnccCienciasEfSeeder::class,
-            // BNCC EF — História
+                // BNCC EF — História
             BnccHistoriaEfSeeder::class,
-            // BNCC EF — Geografia
+                // BNCC EF — Geografia
             BnccGeografiaEfSeeder::class,
-            // BNCC EF — Arte
+                // BNCC EF — Arte
             BnccArteEfSeeder::class,
-            // BNCC EF — Educação Física
+                // BNCC EF — Educação Física
             BnccEducacaoFisicaEfSeeder::class,
-            // BNCC EF — Ensino Religioso
+                // BNCC EF — Ensino Religioso
             BnccEnsinoReligiosoEfSeeder::class,
-            
-            // Seeders de dados
+
+                // Seeders de dados
             FuncionarioSeeder::class,
             TurmasSeeder::class,
             SalaSeeder::class,
@@ -64,20 +65,20 @@ class DatabaseSeeder extends Seeder
             ResponsavelSeeder::class,
             UserSalaSeeder::class,
 
-            // Seeders específicos por escola
+                // Seeders específicos por escola
             SalasEscola5Seeder::class,
             TurmasEscola5Seeder::class,
-            
-            // Seeders de relacionamentos
+
+                // Seeders de relacionamentos
             EscalaSeeder::class,
             PresencaSeeder::class,
-            
-            // Seeders de módulos específicos
+
+                // Seeders de módulos específicos
             BibliotecaPermissoesSeeder::class,
             BibliotecaPoliticasSeeder::class,
             BibliotecaCargosSeeder::class,
 
-            // Seeders de módulos (catálogo e ativações)
+                // Seeders de módulos (catálogo e ativações)
             ModulesSeeder::class,
             RelatoriosModuleSeeder::class,
             FinanceiroModuleActivationSeeder::class,
