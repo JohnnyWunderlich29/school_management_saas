@@ -10,13 +10,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     && docker-php-ext-install pdo pdo_pgsql zip
 
+# Instalar Node.js (necessário para compilar assets do Vite)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 COPY . .
 
-# CRIAR PASTAS E DAR PERMISSÕES (Isso resolve o erro do cache path)
+# CRIAR PASTAS E DAR PERMISSÕES
 RUN mkdir -p storage/framework/cache/data \
     && mkdir -p storage/framework/sessions \
     && mkdir -p storage/framework/views \
@@ -24,8 +28,11 @@ RUN mkdir -p storage/framework/cache/data \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Instalar dependências sem rodar scripts automáticos que travam o build
+# Instalar dependências PHP
 RUN composer install --no-dev --no-scripts --optimize-autoloader
+
+# Instalar dependências Node e compilar assets
+RUN npm install && npm run build
 
 # Comando para iniciar o servidor (Railway injeta a variável PORT automaticamente)
 CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
