@@ -133,7 +133,8 @@ class DashboardController extends Controller
         // Últimos 5 alunos cadastrados usando scope
         $ultimosAlunos = Aluno::ativos()
             ->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
-            ->select('id', 'nome', 'sobrenome', 'email', 'created_at')
+            ->with('turma')
+            ->select('id', 'nome', 'sobrenome', 'email', 'turma_id', 'created_at')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -682,6 +683,7 @@ class DashboardController extends Controller
         $fimQuinze = $fim;
         $alertasBaixaFrequencia = Aluno::ativos()
             ->when($escolaId, fn($q) => $q->where('escola_id', $escolaId))
+            ->with('turma')
             ->withCount([
                 'presencas as total_registros' => function ($query) use ($ultimosQuinze, $fimQuinze) {
                     $query->whereBetween('data', [$ultimosQuinze->toDateString(), $fimQuinze->toDateString()]);

@@ -19,10 +19,10 @@ class AlunoController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {        
-        $query = Aluno::with(['sala:id,codigo,nome', 'responsaveis:id,nome,sobrenome,telefone_principal'])
-            ->select('id', 'nome', 'sobrenome', 'data_nascimento', 'email', 'telefone', 'ativo', 'sala_id', 'created_at');
-        
+    {
+        $query = Aluno::with(['sala:id,codigo,nome', 'turma:id,codigo,nome', 'responsaveis:id,nome,sobrenome,telefone_principal'])
+            ->select('id', 'nome', 'sobrenome', 'data_nascimento', 'email', 'telefone', 'ativo', 'sala_id', 'turma_id', 'created_at');
+
         // Para super admins e suporte, filtrar pela escola da sessão se definida
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
@@ -34,17 +34,17 @@ class AlunoController extends Controller
                 $query->where('escola_id', auth()->user()->escola_id);
             }
         }
-        
+
         // Por padrão, mostrar apenas alunos ativos
         if (!$request->has('mostrar_inativos')) {
             $query->ativos();
         }
-        
+
         // Filtros usando scopes
         if ($request->filled('nome')) {
             $query->buscarPorNome($request->nome);
         }
-        
+
         if ($request->filled('ativo')) {
             if ($request->ativo == 'true') {
                 $query->ativos();
@@ -52,11 +52,11 @@ class AlunoController extends Controller
                 $query->where('ativo', false);
             }
         }
-        
+
         if ($request->has('sala_id') && !empty($request->sala_id)) {
             $query->where('sala_id', $request->sala_id);
         }
-        
+
         // Ordenação dinâmica a partir dos parâmetros sort/direction
         $sort = $request->get('sort');
         $direction = strtolower($request->get('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
@@ -76,16 +76,16 @@ class AlunoController extends Controller
         $alunos = $query->paginate(15);
         // Preservar parâmetros de busca/ordenação na paginação
         $alunos->appends($request->query());
-        
+
         // Carregar salas para o filtro (filtradas por escola)
         $salas = \App\Models\Sala::select('id', 'codigo', 'nome')
             ->where('ativo', true)
-            ->when(auth()->user()->escola_id, function($q) {
+            ->when(auth()->user()->escola_id, function ($q) {
                 $q->where('escola_id', auth()->user()->escola_id);
             })
             ->orderBy('codigo')
             ->get();
-        
+
         return view('alunos.index', compact('alunos', 'salas'));
     }
 
@@ -115,22 +115,22 @@ class AlunoController extends Controller
     public function searchResponsaveis(Request $request)
     {
         $query = $request->get('q', '');
-        
-        $responsaveis = Responsavel::where(function($q) use ($query) {
+
+        $responsaveis = Responsavel::where(function ($q) use ($query) {
             $q->where('nome', 'like', '%' . $query . '%')
-              ->orWhere('sobrenome', 'like', '%' . $query . '%')
-              ->orWhere('cpf', 'like', '%' . $query . '%');
+                ->orWhere('sobrenome', 'like', '%' . $query . '%')
+                ->orWhere('cpf', 'like', '%' . $query . '%');
         })
-        ->orderBy('nome')
-        ->limit(20)
-        ->get()
-        ->map(function($responsavel) {
-            return [
-                'id' => $responsavel->id,
-                'text' => $responsavel->nome_completo . ' - ' . ($responsavel->cpf ?? 'Sem CPF'),
-                'nome_completo' => $responsavel->nome_completo
-            ];
-        });
+            ->orderBy('nome')
+            ->limit(20)
+            ->get()
+            ->map(function ($responsavel) {
+                return [
+                    'id' => $responsavel->id,
+                    'text' => $responsavel->nome_completo . ' - ' . ($responsavel->cpf ?? 'Sem CPF'),
+                    'nome_completo' => $responsavel->nome_completo
+                ];
+            });
 
         return response()->json($responsaveis);
     }
@@ -143,19 +143,20 @@ class AlunoController extends Controller
         /**
          * Converte data do formato brasileiro (dd/mm/yyyy) para formato do banco (Y-m-d)
          */
-        $convertDateFormat = function($date) {
-            if (!$date) return null;
-            
+        $convertDateFormat = function ($date) {
+            if (!$date)
+                return null;
+
             // Se já está no formato Y-m-d, retorna como está
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                 return $date;
             }
-            
+
             // Se está no formato dd/mm/yyyy, converte
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
                 return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
             }
-            
+
             return null;
         };
 
@@ -209,19 +210,20 @@ class AlunoController extends Controller
         /**
          * Converte data do formato brasileiro (dd/mm/yyyy) para formato do banco (Y-m-d)
          */
-        $convertDateFormat = function($date) {
-            if (!$date) return null;
-            
+        $convertDateFormat = function ($date) {
+            if (!$date)
+                return null;
+
             // Se já está no formato Y-m-d, retorna como está
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                 return $date;
             }
-            
+
             // Se está no formato dd/mm/yyyy, converte
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
                 return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
             }
-            
+
             return null;
         };
 
@@ -245,7 +247,7 @@ class AlunoController extends Controller
                     ]);
                 }
             }
-            
+
             // Substituir o array de documentos pelos válidos
             if (empty($documentosValidos)) {
                 $request->request->remove('documentos');
@@ -286,7 +288,7 @@ class AlunoController extends Controller
                 // Converter para string para comparação correta
                 $responsavelPrincipal = (string) $request->responsavel_principal;
                 $responsaveis = array_map('strval', $request->responsaveis);
-                
+
                 if (!in_array($responsavelPrincipal, $responsaveis)) {
                     $validator->errors()->add('responsavel_principal', 'O responsável principal deve estar entre os responsáveis selecionados.');
                 }
@@ -303,7 +305,7 @@ class AlunoController extends Controller
                 ->withErrors($validator)
                 ->withInput();
         }
-        
+
         \Log::info('DEBUG STORE - Validação passou, iniciando transação');
 
         // Debug: Log da escola atual antes de criar aluno
@@ -349,7 +351,7 @@ class AlunoController extends Controller
                 'file_documentos_exists' => $request->file('documentos') !== null,
                 'file_documentos_count' => $request->file('documentos') ? count($request->file('documentos')) : 0
             ]);
-            
+
             if ($request->hasFile('documentos')) {
                 \Log::info('DEBUG STORE - Iniciando processamento de documentos');
                 foreach ($request->file('documentos') as $index => $arquivo) {
@@ -360,11 +362,11 @@ class AlunoController extends Controller
                         'mime_type' => $arquivo->getMimeType(),
                         'is_valid' => $arquivo->isValid()
                     ]);
-                    
+
                     $nomeOriginal = $arquivo->getClientOriginalName();
                     $nomeArquivo = time() . '_' . uniqid() . '.' . $arquivo->getClientOriginalExtension();
                     $caminho = $arquivo->storeAs('documentos/alunos/' . $aluno->id, $nomeArquivo, 'public');
-                    
+
                     $documento = AlunoDocumento::create([
                         'aluno_id' => $aluno->id,
                         'nome_original' => $nomeOriginal,
@@ -373,7 +375,7 @@ class AlunoController extends Controller
                         'tamanho' => $arquivo->getSize(),
                         'caminho' => $caminho
                     ]);
-                    
+
                     \Log::info('DEBUG STORE - Documento salvo no banco', [
                         'documento_id' => $documento->id,
                         'aluno_id' => $documento->aluno_id,
@@ -383,7 +385,7 @@ class AlunoController extends Controller
             } else {
                 \Log::info('DEBUG STORE - Nenhum arquivo de documento detectado para upload');
             }
-            
+
             // Debug: Log após criar aluno
             \Log::info('DEBUG ALUNO - Aluno criado com sucesso', [
                 'aluno_id' => $aluno->id,
@@ -426,7 +428,7 @@ class AlunoController extends Controller
     public function show(string $id)
     {
         $query = Aluno::with(['responsaveis', 'documentos', 'sala']);
-        
+
         // Aplicar filtro de escola
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
@@ -437,10 +439,10 @@ class AlunoController extends Controller
                 $query->where('escola_id', auth()->user()->escola_id);
             }
         }
-        
+
         $aluno = $query->findOrFail($id);
         $responsavelPrincipal = $aluno->responsavelPrincipal();
-        
+
         return view('alunos.show', compact('aluno', 'responsavelPrincipal'));
     }
 
@@ -450,7 +452,7 @@ class AlunoController extends Controller
     public function edit(string $id)
     {
         $query = Aluno::with('responsaveis');
-        
+
         // Aplicar filtro de escola
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
@@ -461,13 +463,13 @@ class AlunoController extends Controller
                 $query->where('escola_id', auth()->user()->escola_id);
             }
         }
-        
+
         $aluno = $query->findOrFail($id);
-        
+
         // Filtrar responsáveis e salas pela escola
         $responsaveisQuery = Responsavel::orderBy('nome');
         $salasQuery = Sala::where('ativo', true)->orderBy('codigo');
-        
+
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
                 $responsaveisQuery->where('escola_id', session('escola_atual'));
@@ -479,14 +481,14 @@ class AlunoController extends Controller
                 $salasQuery->where('escola_id', auth()->user()->escola_id);
             }
         }
-        
+
         $responsaveis = $responsaveisQuery->get();
         $salas = $salasQuery->get();
-        
+
         $responsavelPrincipalId = $aluno->responsaveis()
             ->wherePivot('responsavel_principal', true)
             ->first()?->id;
-            
+
         return view('alunos.edit', compact('aluno', 'responsaveis', 'salas', 'responsavelPrincipalId'));
     }
 
@@ -505,7 +507,7 @@ class AlunoController extends Controller
             'method' => $request->method(),
             'raw_files' => $request->file('documentos')
         ]);
-        
+
         // Filtrar arquivos vazios antes da validação
         $documentos = $request->file('documentos');
         if ($documentos) {
@@ -526,7 +528,7 @@ class AlunoController extends Controller
                     ]);
                 }
             }
-            
+
             // Substituir o array de documentos pelos válidos
             if (empty($documentosValidos)) {
                 $request->request->remove('documentos');
@@ -537,7 +539,7 @@ class AlunoController extends Controller
                 \Log::debug('DEBUG UPDATE - Mantendo apenas arquivos válidos', ['count' => count($documentosValidos)]);
             }
         }
-        
+
         $validator = Validator::make($request->all(), [
             'nome' => 'required|string|max:100',
             'sobrenome' => 'required|string|max:100',
@@ -568,7 +570,7 @@ class AlunoController extends Controller
                 // Converter para string para comparação correta
                 $responsavelPrincipal = (string) $request->responsavel_principal;
                 $responsaveis = array_map('strval', $request->responsaveis);
-                
+
                 if (!in_array($responsavelPrincipal, $responsaveis)) {
                     $validator->errors()->add('responsavel_principal', 'O responsável principal deve estar entre os responsáveis selecionados.');
                 }
@@ -584,19 +586,20 @@ class AlunoController extends Controller
         /**
          * Converte data do formato brasileiro (dd/mm/yyyy) para formato do banco (Y-m-d)
          */
-        $convertDateFormat = function($date) {
-            if (!$date) return null;
-            
+        $convertDateFormat = function ($date) {
+            if (!$date)
+                return null;
+
             // Se já está no formato Y-m-d, retorna como está
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
                 return $date;
             }
-            
+
             // Se está no formato dd/mm/yyyy, converte
             if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $date, $matches)) {
                 return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
             }
-            
+
             return null;
         };
 
@@ -604,7 +607,7 @@ class AlunoController extends Controller
         try {
             $aluno = Aluno::findOrFail($id);
             $dadosAntigos = $aluno->toArray();
-            
+
             $aluno->update([
                 'nome' => $request->nome,
                 'matricula' => $request->matricula,
@@ -646,7 +649,7 @@ class AlunoController extends Controller
                 'files_array' => $request->file('documentos'),
                 'is_array' => is_array($request->file('documentos'))
             ]);
-            
+
             if ($request->hasFile('documentos')) {
                 foreach ($request->file('documentos') as $arquivo) {
                     \Log::info('DEBUG UPLOAD - Processando arquivo', [
@@ -654,16 +657,16 @@ class AlunoController extends Controller
                         'tamanho' => $arquivo->getSize(),
                         'tipo_mime' => $arquivo->getMimeType()
                     ]);
-                    
+
                     $nomeOriginal = $arquivo->getClientOriginalName();
                     $nomeArquivo = time() . '_' . uniqid() . '.' . $arquivo->getClientOriginalExtension();
                     $caminho = $arquivo->storeAs('documentos/alunos/' . $aluno->id, $nomeArquivo, 'public');
-                    
+
                     \Log::info('DEBUG UPLOAD - Arquivo salvo', [
                         'caminho' => $caminho,
                         'nome_arquivo' => $nomeArquivo
                     ]);
-                    
+
                     $documento = AlunoDocumento::create([
                         'aluno_id' => $aluno->id,
                         'nome_original' => $nomeOriginal,
@@ -672,7 +675,7 @@ class AlunoController extends Controller
                         'tamanho' => $arquivo->getSize(),
                         'caminho' => $caminho
                     ]);
-                    
+
                     \Log::info('DEBUG UPLOAD - Documento criado no banco', [
                         'documento_id' => $documento->id
                     ]);
@@ -724,12 +727,12 @@ class AlunoController extends Controller
                 abort(404);
             }
         }
-        
+
         $statusAnterior = $aluno->ativo;
         $aluno->update(['ativo' => !$aluno->ativo]);
-        
+
         $status = $aluno->ativo ? 'ativado' : 'inativado';
-        
+
         // Registrar no histórico
         Historico::registrar(
             $aluno->ativo ? 'ativado' : 'inativado',
@@ -739,7 +742,7 @@ class AlunoController extends Controller
             ['ativo' => $aluno->ativo],
             "Aluno {$status} com sucesso"
         );
-        
+
         AlertService::success("Aluno {$status} com sucesso!");
         return redirect()->route('alunos.index');
     }
@@ -767,11 +770,11 @@ class AlunoController extends Controller
         ]);
 
         $turmaDestino = \App\Models\Turma::findOrFail($request->turma_id);
-        
+
         // Verificar se a turma pertence à mesma escola
         if ($turmaDestino->escola_id !== $aluno->escola_id) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Não é possível transferir para turma de outra escola.'
             ], 400);
         }
@@ -781,7 +784,7 @@ class AlunoController extends Controller
         $ocupacaoAtual = $turmaDestino->alunos()->count();
         if (!$solicitarTransferenciaSala && $ocupacaoAtual >= $turmaDestino->capacidade) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => "Turma lotada. Capacidade: {$turmaDestino->capacidade}, Ocupação: {$ocupacaoAtual}"
             ], 400);
         }
@@ -789,7 +792,7 @@ class AlunoController extends Controller
         // Verificar se não é a mesma turma
         if ($aluno->turma_id == $turmaDestino->id) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'O aluno já está nesta turma.'
             ], 400);
         }
@@ -800,7 +803,7 @@ class AlunoController extends Controller
             $transferenciaCriada = false;
             $transferenciaId = null;
 
-        if ($solicitarTransferenciaSala) {
+            if ($solicitarTransferenciaSala) {
                 // Solicitação: não alterar a turma agora, apenas criar transferência por turma para aprovação
                 $turmaAnterior = $aluno->turma;
                 $turmaAnteriorNome = $turmaAnterior ? $turmaAnterior->nome : 'Sem turma';
@@ -863,9 +866,9 @@ class AlunoController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Erro interno do servidor. Tente novamente.'
             ], 500);
         }
