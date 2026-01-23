@@ -24,12 +24,12 @@
                     <!-- Mobile Tab Selector -->
                     <div class="sm:hidden mb-4">
                         <label for="settings-tabs-mobile" class="sr-only">Selecionar Aba</label>
-                        <select id="settings-tabs-mobile"
+                        <x-select id="settings-tabs-mobile"
                             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="educacional" {{ $tab === 'educacional' ? 'selected' : '' }}>Educacional</option>
                             <option value="financeiro" {{ $tab === 'financeiro' ? 'selected' : '' }}>Financeiro</option>
                             <option value="importacao" {{ $tab === 'importacao' ? 'selected' : '' }}>Importação</option>
-                        </select>
+                        </x-select>
                     </div>
 
                     <!-- Desktop Tabs -->

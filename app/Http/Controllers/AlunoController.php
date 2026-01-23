@@ -95,7 +95,7 @@ class AlunoController extends Controller
     public function create()
     {
         // Aplicar filtro de escola nas salas
-        $salasQuery = Sala::where('ativo', true);
+        $salasQuery = Sala::withCount('alunos')->where('ativo', true);
         if (auth()->user()->isSuperAdmin() || auth()->user()->temCargo('Suporte')) {
             if (session('escola_atual')) {
                 $salasQuery->where('escola_id', session('escola_atual'));
