@@ -13,7 +13,20 @@
             </div>
         </div>
         <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-4 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
+            <!-- Mobile Sub-Tab Selector -->
+            <div class="sm:hidden px-4 py-3">
+                <label for="fin-tabs-mobile" class="sr-only">Selecionar Sub-aba</label>
+                <select id="fin-tabs-mobile" onchange="showFinanceTab(this.value)"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    <option value="tab-fin-settings">Formas de Cobrança</option>
+                    <option value="tab-fin-gateways">Gateways</option>
+                    <option value="tab-fin-dunning">Envio de Cobranças</option>
+                    <option value="tab-fin-automation">Automação</option>
+                </select>
+            </div>
+
+            <!-- Desktop Sub-Tabs -->
+            <nav class="hidden sm:flex -mb-px space-x-4 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
                 <button onclick="showFinanceTab('tab-fin-settings')" id="fin-settings-tab"
                     class="fintab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">Formas de
                     Cobrança</button>
@@ -118,8 +131,10 @@
 
             <!-- Modal de Edição da Forma -->
             <!-- Modal de Edição da Forma -->
-            <div x-show="isEditOpen" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div x-show="isEditOpen"
+                class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div
+                    class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
                     <template x-if="editing">
                         <div class="mt-3">
                             <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
@@ -956,6 +971,12 @@
 
 <!-- Finance agendamento de cobranças -->
 <div id="tab-fin-dunning" class="fintab-content hidden px-6 py-4">
+    @php
+        $pre = data_get($settings->dunning_schedule, 'pre_due_offsets', []);
+        $pre = is_string($pre) ? explode(',', $pre) : $pre;
+        $post = data_get($settings->dunning_schedule, 'overdue_offsets', []);
+        $post = is_string($post) ? explode(',', $post) : $post;
+    @endphp
     <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-gray-900">Agendamento de Cobranças</h3>
         <x-button color="secondary" type="button" onclick="openModal('mail-settings-modal')">
@@ -1555,6 +1576,10 @@
     window.showFinanceTab = function(tabId) {
         const next = document.getElementById(tabId);
         if (!next) return;
+
+        // Sincronizar seletor mobile
+        const mobileSelect = document.getElementById('fin-tabs-mobile');
+        if (mobileSelect) mobileSelect.value = tabId;
 
         // Encontrar aba atualmente visível
         const current = document.querySelector('.fintab-content:not(.hidden)');

@@ -83,21 +83,20 @@ class SchoolRegisterController extends Controller
             $escola->plano = $plan->slug; // manter compatibilidade com lógica existente
             $escola->ativo = true;
             $escola->em_dia = true;
-            $escola->valor_mensalidade = 0;
-            $escola->save();
 
             // Ajustar limites conforme plano
             $escola->max_usuarios = $plan->max_users;
             $escola->max_alunos = $plan->max_students;
 
-            // Definir mensalidade pelo plano
-            $escola->valor_mensalidade = (float) $plan->price;
-            
-            // Se plano for trial, definir data de vencimento em 7 dias (ou trial_days)
+            // Definir valor mensal inicial (será recalculado após módulos se não for trial)
+            $escola->valor_mensalidade = $plan->is_trial ? 0.0 : (float) $plan->price;
+
+            // Se plano for trial, definir data de vencimento
             if ($plan->is_trial) {
                 $trialDays = $plan->trial_days ?? 7;
                 $escola->data_vencimento = now()->addDays($trialDays);
             }
+
             $escola->save();
 
             $user = new User();
@@ -158,9 +157,12 @@ class SchoolRegisterController extends Controller
             if ($plan->is_trial) {
                 $escola->valor_mensalidade = 0.0;
             } else {
-                $escola->valor_mensalidade = $escola->getTotalMonthlyValue();
+                $escola->valor_mensalidade = (string) $escola->getTotalMonthlyValue();
             }
             $escola->save();
+
+            // Limpar cache de módulos para garantir que apareçam no primeiro acesso
+            cache()->forget("school_modules_{$escola->id}");
 
             return redirect()->route('dashboard')->with('status', 'Escola registrada com sucesso! Bem-vindo.');
         });

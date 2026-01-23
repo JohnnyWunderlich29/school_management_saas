@@ -120,8 +120,8 @@ class Escola extends Model
     public function modules()
     {
         return $this->belongsToMany(Module::class, 'escola_modules')
-                    ->withPivot('is_active', 'monthly_price', 'contracted_at', 'expires_at', 'notes', 'settings')
-                    ->withTimestamps();
+            ->withPivot('is_active', 'monthly_price', 'contracted_at', 'expires_at', 'notes', 'settings')
+            ->withTimestamps();
     }
 
     public function modalidadeConfigs(): HasMany
@@ -142,13 +142,13 @@ class Escola extends Model
     public function activeModules()
     {
         return $this->belongsToMany(Module::class, 'escola_modules')
-                    ->wherePivot('is_active', true)
-                    ->wherePivot(function($query) {
-                        $query->whereNull('expires_at')
-                              ->orWhere('expires_at', '>', now());
-                    })
-                    ->withPivot('is_active', 'monthly_price', 'contracted_at', 'expires_at', 'notes', 'settings')
-                    ->withTimestamps();
+            ->wherePivot('is_active', true)
+            ->wherePivot(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->withPivot('is_active', 'monthly_price', 'contracted_at', 'expires_at', 'notes', 'settings')
+            ->withTimestamps();
     }
 
     public function licenses(): HasMany
@@ -224,11 +224,11 @@ class Escola extends Model
         if (!$this->em_dia) {
             return 'inadimplente';
         }
-        
+
         if ($this->data_vencimento && $this->data_vencimento->isPast()) {
             return 'vencido';
         }
-        
+
         return 'em_dia';
     }
 
@@ -238,35 +238,37 @@ class Escola extends Model
     public function hasActiveModule(string $moduleName): bool
     {
         return $this->escolaModules()
-                    ->whereHas('module', function($query) use ($moduleName) {
-                        $query->where('name', $moduleName);
-                    })
-                    ->where('is_active', true)
-                    ->where(function($query) {
-                        $query->whereNull('expires_at')
-                              ->orWhere('expires_at', '>', now());
-                    })
-                    ->exists();
+            ->whereHas('module', function ($query) use ($moduleName) {
+                $query->where('name', $moduleName);
+            })
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->exists();
     }
 
     // Eventos do modelo
     protected static function booted()
     {
-        static::created(function (Escola $escola) {
-            // Se não foi informado código, gerar automaticamente ao final da inclusão
+        static::creating(function (Escola $escola) {
+            // Se não foi informado código, gerar automaticamente de forma aleatória e única
             if (empty($escola->codigo)) {
-                $codigo = self::gerarCodigoApartirDoId($escola->id);
-                // Evitar problemas com mass assignment e eventos
-                $escola->forceFill(['codigo' => $codigo])->saveQuietly();
+                $escola->codigo = self::gerarCodigoUnico();
             }
         });
     }
 
-    // Geração de código única e legível baseada no ID
-    private static function gerarCodigoApartirDoId(int $id): string
+    // Geração de código aleatório único
+    private static function gerarCodigoUnico(): string
     {
-        // Formato: ESC-000001, garantindo unicidade por ID
-        return 'ESC-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        do {
+            // Gera um código de 8 caracteres alfanuméricos em maiúsculas
+            $codigo = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        } while (self::where('codigo', $codigo)->exists());
+
+        return $codigo;
     }
 
     /**
@@ -275,12 +277,12 @@ class Escola extends Model
     public function getTotalModulesPrice(): float
     {
         return $this->escolaModules()
-                    ->where('is_active', true)
-                    ->where(function($query) {
-                        $query->whereNull('expires_at')
-                              ->orWhere('expires_at', '>', now());
-                    })
-                    ->sum('monthly_price');
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->sum('monthly_price');
     }
 
     /**
@@ -297,7 +299,7 @@ class Escola extends Model
     public function contractModule(Module $module, float $monthlyPrice = null, int $contractedBy = null): EscolaModule
     {
         $monthlyPrice = $monthlyPrice ?? $module->price;
-        
+
         return $this->escolaModules()->create([
             'module_id' => $module->id,
             'is_active' => true,
@@ -313,9 +315,9 @@ class Escola extends Model
     public function cancelModule(Module $module): bool
     {
         return $this->escolaModules()
-                    ->where('module_id', $module->id)
-                    ->where('is_active', true)
-                    ->update(['is_active' => false]);
+            ->where('module_id', $module->id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
     }
 
     /**
@@ -326,7 +328,7 @@ class Escola extends Model
         if ($this->plan) {
             return (float) $this->plan->price;
         }
-        return match($this->plano) {
+        return match ($this->plano) {
             'basico' => 99.90,
             'premium' => 199.90,
             'enterprise' => 399.90,
@@ -351,7 +353,7 @@ class Escola extends Model
                 'trial_days' => $this->plan->trial_days,
             ];
         }
-        return match($this->plano) {
+        return match ($this->plano) {
             'trial' => [
                 'nome' => 'Trial',
                 'preco' => 0.00,

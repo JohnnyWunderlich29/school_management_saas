@@ -20,27 +20,41 @@
                 </div>
 
                 <!-- Navegação de Abas -->
-                <div class="border-b border-gray-200 mb-6">
-                    <nav id="settings-tabs-nav" class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
-                        <a href="{{ route('settings.index', ['tab' => 'educacional'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
-                            data-tab="educacional"
-                            class="settings-tab-link {{ $tab === 'educacional' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
-                            <i class="fas fa-graduation-cap mr-2"></i>
-                            Educacional
-                        </a>
-                        <a href="{{ route('settings.index', ['tab' => 'financeiro'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
-                            data-tab="financeiro"
-                            class="settings-tab-link {{ $tab === 'financeiro' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
-                            <i class="fas fa-coins mr-2"></i>
-                            Financeiro
-                        </a>
-                        <a href="{{ route('settings.index', ['tab' => 'importacao'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
-                            data-tab="importacao"
-                            class="settings-tab-link {{ $tab === 'importacao' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
-                            <i class="fas fa-file-import mr-2"></i>
-                            Importação
-                        </a>
-                    </nav>
+                <div class="mb-6">
+                    <!-- Mobile Tab Selector -->
+                    <div class="sm:hidden mb-4">
+                        <label for="settings-tabs-mobile" class="sr-only">Selecionar Aba</label>
+                        <select id="settings-tabs-mobile"
+                            class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="educacional" {{ $tab === 'educacional' ? 'selected' : '' }}>Educacional</option>
+                            <option value="financeiro" {{ $tab === 'financeiro' ? 'selected' : '' }}>Financeiro</option>
+                            <option value="importacao" {{ $tab === 'importacao' ? 'selected' : '' }}>Importação</option>
+                        </select>
+                    </div>
+
+                    <!-- Desktop Tabs -->
+                    <div class="hidden sm:block border-b border-gray-200">
+                        <nav id="settings-tabs-nav" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <a href="{{ route('settings.index', ['tab' => 'educacional'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
+                                data-tab="educacional"
+                                class="settings-tab-link {{ $tab === 'educacional' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
+                                <i class="fas fa-graduation-cap mr-2"></i>
+                                Educacional
+                            </a>
+                            <a href="{{ route('settings.index', ['tab' => 'financeiro'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
+                                data-tab="financeiro"
+                                class="settings-tab-link {{ $tab === 'financeiro' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
+                                <i class="fas fa-coins mr-2"></i>
+                                Financeiro
+                            </a>
+                            <a href="{{ route('settings.index', ['tab' => 'importacao'] + ($currentSchoolId ? ['school_id' => $currentSchoolId] : [])) }}"
+                                data-tab="importacao"
+                                class="settings-tab-link {{ $tab === 'importacao' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center">
+                                <i class="fas fa-file-import mr-2"></i>
+                                Importação
+                            </a>
+                        </nav>
+                    </div>
                 </div>
 
 
@@ -186,6 +200,25 @@
                 }
             }
 
+            links.forEach(a => {
+                a.addEventListener('click', function(evt) {
+                    evt.preventDefault();
+                    const tab = a.dataset.tab || 'educacional';
+                    setActive(tab, a.href);
+                });
+            });
+
+            const mobileSelect = document.getElementById('settings-tabs-mobile');
+            if (mobileSelect) {
+                mobileSelect.addEventListener('change', function() {
+                    const tab = this.value;
+                    const link = Array.from(links).find(l => (l.dataset.tab || '') === tab);
+                    if (link) {
+                        setActive(tab, link.href);
+                    }
+                });
+            }
+
             async function setActive(tab, href) {
                 const next = document.getElementById(`settings-${tab}`);
                 if (!next) return;
@@ -207,6 +240,11 @@
                     a.classList.toggle('border-transparent', !isActive);
                     a.classList.toggle('text-gray-500', !isActive);
                 });
+
+                if (mobileSelect) {
+                    mobileSelect.value = tab;
+                }
+
                 try {
                     const url = new URL(window.location.href);
                     url.searchParams.set('tab', tab);
@@ -215,14 +253,6 @@
                     }, '', url.toString());
                 } catch (e) {}
             }
-
-            links.forEach(a => {
-                a.addEventListener('click', function(evt) {
-                    evt.preventDefault();
-                    const tab = a.dataset.tab || 'educacional';
-                    setActive(tab, a.href);
-                });
-            });
 
             window.addEventListener('popstate', function(event) {
                 const tab = (event.state && event.state.tab) || new URL(window.location.href).searchParams

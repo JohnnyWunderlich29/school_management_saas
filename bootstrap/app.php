@@ -9,19 +9,21 @@ return Application::configure(basePath: dirname(__DIR__))
         App\Providers\AuthServiceProvider::class,
     ])
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
         apiPrefix: 'api',
-        commands: __DIR__.'/../routes/console.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         // Middleware globais para web
         $middleware->web(append: [
             \App\Http\Middleware\CheckSessionExpiry::class,
             \App\Http\Middleware\AlertMiddleware::class,
         ]);
-        
+
         // Aliases de middleware
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,

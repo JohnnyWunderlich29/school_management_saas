@@ -36,23 +36,23 @@ class EscolaContext
                 return $next($request);
             }
 
-            // Administradores de escola têm acesso a funcionalidades licenciadas
-            if ($this->isSchoolAdmin($user)) {
+            $isSchoolAdmin = $this->isSchoolAdmin($user);
+            if ($isSchoolAdmin) {
                 $this->handleSchoolAdminAccess($user);
                 return $next($request);
             }
-            
+
             // Para usuários normais, aplicar filtros por escola
             if ($user->escola_id) {
                 // Definir o contexto da escola na sessão
                 session(['escola_atual' => $user->escola_id]);
 
-                
+
                 // Aplicar filtro global para todas as consultas
                 $this->applyGlobalScope($user->escola_id);
             }
         }
-        
+
         return $next($request);
     }
 
@@ -79,11 +79,26 @@ class EscolaContext
         ];
 
 
+        // Modelos que permitem registros globais (escola_id = null) além dos da própria escola
+        $hybridModels = [
+            \App\Models\Cargo::class,
+            \App\Models\ModalidadeEnsino::class,
+        ];
+
         foreach ($modelsWithEscola as $model) {
             if (class_exists($model)) {
-                $model::addGlobalScope('escola', function ($builder) use ($escolaId, $model) {
+                $isHybrid = in_array($model, $hybridModels);
+
+                $model::addGlobalScope('escola', function ($builder) use ($escolaId, $model, $isHybrid) {
                     $tableName = (new $model)->getTable();
-                    $builder->where($tableName . '.escola_id', $escolaId);
+                    if ($isHybrid) {
+                        $builder->where(function ($query) use ($tableName, $escolaId) {
+                            $query->where($tableName . '.escola_id', $escolaId)
+                                ->orWhereNull($tableName . '.escola_id');
+                        });
+                    } else {
+                        $builder->where($tableName . '.escola_id', $escolaId);
+                    }
                 });
             }
         }
@@ -119,12 +134,12 @@ class EscolaContext
     public static function podeAcessarEscola($escolaId)
     {
         $user = Auth::user();
-        
+
         // Super admins e suporte podem acessar qualquer escola
         if ($user && ($user->temCargo('Super Administrador') || $user->temCargo('Suporte'))) {
             return true;
         }
-        
+
         // Usuários normais só podem acessar sua própria escola
         return $user && $user->escola_id == $escolaId;
     }
@@ -134,9 +149,9 @@ class EscolaContext
      */
     private function isSchoolAdmin($user)
     {
-        return $user->temCargo('Administrador de Escola') || 
-               $user->temCargo('Administrador') || 
-               $user->temCargo('Diretor');
+        return $user->temCargo('Administrador de Escola') ||
+            $user->temCargo('Administrador') ||
+            $user->temCargo('Diretor');
     }
 
     /**
@@ -159,25 +174,25 @@ class EscolaContext
     }
 
     /**
-      * Verifica licenças de módulos para administradores de escola
-      */
-     private function checkModuleLicenses($user)
-     {
-         if (!$user->escola_id) {
-             return;
-         }
+     * Verifica licenças de módulos para administradores de escola
+     */
+    private function checkModuleLicenses($user)
+    {
+        if (!$user->escola_id) {
+            return;
+        }
 
-         $escola = \App\Models\Escola::find($user->escola_id);
-         if (!$escola) {
-             return;
-         }
+        $escola = \App\Models\Escola::find($user->escola_id);
+        if (!$escola) {
+            return;
+        }
 
-         $licenseService = app(\App\Services\LicenseService::class);
-         
+        $licenseService = app(\App\Services\LicenseService::class);
+
         // Definir módulos que requerem licença (inclui relatórios e financeiro)
         $licensedModules = [
             'comunicacao_module',
-            'alunos_module', 
+            'alunos_module',
             'funcionarios_module',
             'academico_module',
             'administracao_module',
@@ -185,19 +200,19 @@ class EscolaContext
             'financeiro_module',
         ];
 
-         $availableModules = [];
-         foreach ($licensedModules as $module) {
-             if ($licenseService->hasModuleLicense($module, $escola)) {
-                 $availableModules[] = $module;
-             }
-         }
+        $availableModules = [];
+        foreach ($licensedModules as $module) {
+            if ($licenseService->hasModuleLicense($module, $escola)) {
+                $availableModules[] = $module;
+            }
+        }
 
-         // Armazenar módulos disponíveis no contexto da aplicação
-         app()->instance('available_modules', $availableModules);
-         
-         // Definir no cache para uso em views e controllers
-         cache()->put("school_modules_{$user->escola_id}", $availableModules, now()->addHours(1));
-     }
+        // Armazenar módulos disponíveis no contexto da aplicação
+        app()->instance('available_modules', $availableModules);
+
+        // Definir no cache para uso em views e controllers
+        cache()->put("school_modules_{$user->escola_id}", $availableModules, now()->addHours(1));
+    }
 
     /**
      * Aplicar filtro de escola em uma query específica
@@ -205,11 +220,11 @@ class EscolaContext
     public static function aplicarFiltroEscola($query, $escolaId = null)
     {
         $escolaId = $escolaId ?: self::getEscolaAtual();
-        
+
         if ($escolaId) {
             return $query->where('escola_id', $escolaId);
         }
-        
+
         return $query;
     }
 
@@ -220,7 +235,7 @@ class EscolaContext
     {
         $escolaId = self::getEscolaAtual();
         $cacheKey = "escola_{$escolaId}_{$key}";
-        
+
         return cache()->remember($cacheKey, $ttl, $callback);
     }
 
@@ -230,10 +245,10 @@ class EscolaContext
     public static function clearEscolaCache($escolaId = null)
     {
         $escolaId = $escolaId ?: self::getEscolaAtual();
-        
+
         if ($escolaId) {
             $pattern = "escola_{$escolaId}_*";
-            
+
             // Limpar todas as chaves de cache que começam com o padrão
             $keys = cache()->getRedis()->keys($pattern);
             if (!empty($keys)) {

@@ -587,15 +587,28 @@
 
                 // Reset styling for all sidebar links
                 sidebarLinks.forEach(link => {
-                    link.classList.remove('bg-indigo-800', 'text-white');
-                    link.classList.add('text-indigo-100', 'hover:bg-indigo-600');
+                    const isMobile = !!link.closest('#mobileMenu');
+                    if (isMobile) {
+                        link.classList.remove('bg-indigo-600', 'text-white');
+                        link.classList.add('text-indigo-600', 'hover:bg-indigo-100');
+                    } else {
+                        link.classList.remove('bg-indigo-800', 'text-white');
+                        link.classList.add('text-indigo-100', 'hover:bg-indigo-600');
+                    }
                 });
 
                 // Reset styling for submenu toggle buttons
-                const submenuButtons = document.querySelectorAll('button[onclick*="toggleSubmenu"]');
+                const submenuButtons = document.querySelectorAll(
+                    'button[onclick*="toggleSubmenu"], button[onclick*="toggleMobileSubmenu"]');
                 submenuButtons.forEach(button => {
-                    button.classList.remove('bg-indigo-800', 'text-white');
-                    button.classList.add('text-indigo-100', 'hover:bg-indigo-600');
+                    const isMobile = !!button.closest('#mobileMenu');
+                    if (isMobile) {
+                        button.classList.remove('bg-indigo-600', 'text-white');
+                        button.classList.add('text-indigo-600', 'hover:bg-indigo-100');
+                    } else {
+                        button.classList.remove('bg-indigo-800', 'text-white');
+                        button.classList.add('text-indigo-100', 'hover:bg-indigo-600');
+                    }
                 });
 
                 // Collapse all submenus and reset arrows
@@ -623,63 +636,110 @@
                 const currentLink = candidates.length ? candidates[0].link : null;
 
                 if (currentLink) {
-                    currentLink.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
-                    currentLink.classList.add('bg-indigo-800', 'text-white');
+                    const isMobile = !!currentLink.closest('#mobileMenu');
+                    if (isMobile) {
+                        currentLink.classList.remove('text-indigo-600', 'hover:bg-indigo-100');
+                        currentLink.classList.add('bg-indigo-600', 'text-white');
+                    } else {
+                        currentLink.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
+                        currentLink.classList.add('bg-indigo-800', 'text-white');
+                    }
 
                     // Expand the submenu containing the active link, if any
                     const parentSubmenu = currentLink.closest('[id$="-submenu"]');
                     if (parentSubmenu) {
                         parentSubmenu.classList.remove('hidden');
-                        const submenuId = parentSubmenu.id.replace('-submenu', '');
-                        const arrow = document.getElementById(submenuId + '-arrow');
+                        const submenuId = parentSubmenu.id.replace('-submenu', '').replace('mobile-', '');
+                        const arrow = document.getElementById((isMobile ? 'mobile-' : '') + submenuId + '-arrow');
                         const button = document.querySelector(`button[onclick*="${submenuId}"]`);
 
                         if (arrow) arrow.classList.add('rotate-180');
                         if (button) {
-                            button.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
-                            button.classList.add('bg-indigo-800', 'text-white');
+                            if (isMobile) {
+                                button.classList.remove('text-indigo-600', 'hover:bg-indigo-100');
+                                button.classList.add('bg-indigo-600', 'text-white');
+                            } else {
+                                button.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
+                                button.classList.add('bg-indigo-800', 'text-white');
+                            }
                         }
                     }
                 }
 
                 // Ensure Biblioteca submenu stays expanded for all /biblioteca/* routes
                 if (currentPath.startsWith('/biblioteca')) {
-                    const bibliotecaSubmenu = document.getElementById('biblioteca-submenu');
-                    const bibliotecaArrow = document.getElementById('biblioteca-arrow');
-                    const bibliotecaButton = document.querySelector('button[onclick*="biblioteca"]');
-                    if (bibliotecaSubmenu) bibliotecaSubmenu.classList.remove('hidden');
-                    if (bibliotecaArrow) bibliotecaArrow.classList.add('rotate-180');
-                    if (bibliotecaButton) {
-                        bibliotecaButton.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
-                        bibliotecaButton.classList.add('bg-indigo-800', 'text-white');
-                    }
+                    ['', 'mobile-'].forEach(prefix => {
+                        const bibliotecaSubmenu = document.getElementById(prefix + 'biblioteca-submenu');
+                        const bibliotecaArrow = document.getElementById(prefix + 'biblioteca-arrow');
+                        const bibliotecaButton = document.querySelector(
+                            `button[onclick*="${prefix}biblioteca"], button[onclick*="toggleSubmenu('biblioteca')"]`
+                            );
+
+                        if (bibliotecaSubmenu) bibliotecaSubmenu.classList.remove('hidden');
+                        if (bibliotecaArrow) bibliotecaArrow.classList.add('rotate-180');
+                        if (bibliotecaButton) {
+                            const isMobile = prefix === 'mobile-';
+                            if (isMobile) {
+                                bibliotecaButton.classList.remove('text-indigo-600', 'hover:bg-indigo-100');
+                                bibliotecaButton.classList.add('bg-indigo-600', 'text-white');
+                            } else {
+                                bibliotecaButton.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
+                                bibliotecaButton.classList.add('bg-indigo-800', 'text-white');
+                            }
+                        }
+                    });
                 }
 
                 // Handle special cases for submenu parent routes
                 if (currentPath.includes('/funcionarios') || currentPath.includes('/escalas')) {
-                    const funcionariosSubmenu = document.getElementById('funcionarios-submenu');
-                    const funcionariosArrow = document.getElementById('funcionarios-arrow');
-                    const funcionariosButton = document.querySelector('button[onclick*="funcionarios"]');
+                    ['', 'mobile-'].forEach(prefix => {
+                        const funcionariosSubmenu = document.getElementById(prefix +
+                        'funcionarios-submenu');
+                        const funcionariosArrow = document.getElementById(prefix + 'funcionarios-arrow');
+                        const funcionariosButton = document.querySelector(
+                            `button[onclick*="${prefix}funcionarios"], button[onclick*="toggleSubmenu('funcionarios')"]`
+                            );
 
-                    if (funcionariosSubmenu) funcionariosSubmenu.classList.remove('hidden');
-                    if (funcionariosArrow) funcionariosArrow.classList.add('rotate-180');
-                    if (funcionariosButton) {
-                        funcionariosButton.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
-                        funcionariosButton.classList.add('bg-indigo-800', 'text-white');
-                    }
+                        if (funcionariosSubmenu) funcionariosSubmenu.classList.remove('hidden');
+                        if (funcionariosArrow) funcionariosArrow.classList.add('rotate-180');
+                        if (funcionariosButton) {
+                            const isMobile = prefix === 'mobile-';
+                            if (isMobile) {
+                                funcionariosButton.classList.remove('text-indigo-600',
+                                    'hover:bg-indigo-100');
+                                funcionariosButton.classList.add('bg-indigo-600', 'text-white');
+                            } else {
+                                funcionariosButton.classList.remove('text-indigo-100',
+                                    'hover:bg-indigo-600');
+                                funcionariosButton.classList.add('bg-indigo-800', 'text-white');
+                            }
+                        }
+                    });
                 }
 
                 if (currentPath.includes('/conversas') || currentPath.includes('/comunicados')) {
-                    const comunicacaoSubmenu = document.getElementById('comunicacao-submenu');
-                    const comunicacaoArrow = document.getElementById('comunicacao-arrow');
-                    const comunicacaoButton = document.querySelector('button[onclick*="comunicacao"]');
+                    ['', 'mobile-'].forEach(prefix => {
+                        const comunicacaoSubmenu = document.getElementById(prefix + 'comunicacao-submenu');
+                        const comunicacaoArrow = document.getElementById(prefix + 'comunicacao-arrow');
+                        const comunicacaoButton = document.querySelector(
+                            `button[onclick*="${prefix}comunicacao"], button[onclick*="toggleSubmenu('comunicacao')"]`
+                            );
 
-                    if (comunicacaoSubmenu) comunicacaoSubmenu.classList.remove('hidden');
-                    if (comunicacaoArrow) comunicacaoArrow.classList.add('rotate-180');
-                    if (comunicacaoButton) {
-                        comunicacaoButton.classList.remove('text-indigo-100', 'hover:bg-indigo-600');
-                        comunicacaoButton.classList.add('bg-indigo-800', 'text-white');
-                    }
+                        if (comunicacaoSubmenu) comunicacaoSubmenu.classList.remove('hidden');
+                        if (comunicacaoArrow) comunicacaoArrow.classList.add('rotate-180');
+                        if (comunicacaoButton) {
+                            const isMobile = prefix === 'mobile-';
+                            if (isMobile) {
+                                comunicacaoButton.classList.remove('text-indigo-600',
+                                'hover:bg-indigo-100');
+                                comunicacaoButton.classList.add('bg-indigo-600', 'text-white');
+                            } else {
+                                comunicacaoButton.classList.remove('text-indigo-100',
+                                'hover:bg-indigo-600');
+                                comunicacaoButton.classList.add('bg-indigo-800', 'text-white');
+                            }
+                        }
+                    });
                 }
             }
 

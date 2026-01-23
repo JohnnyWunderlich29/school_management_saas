@@ -29,7 +29,20 @@
 
         <!-- Tabs de navegação (modelo antigo) -->
         <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-4 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
+            <!-- Mobile Sub-Tab Selector -->
+            <div class="sm:hidden px-4 py-3">
+                <label for="edu-tabs-mobile" class="sr-only">Selecionar Sub-aba</label>
+                <select id="edu-tabs-mobile" onchange="showTab(this.value)"
+                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    <option value="tab-modalidades">Modalidades de Ensino</option>
+                    <option value="tab-niveis">Níveis de Ensino</option>
+                    <option value="tab-disciplinas">Disciplinas e Cargas Horárias</option>
+                    <option value="tab-turnos">Turnos</option>
+                </select>
+            </div>
+
+            <!-- Desktop Sub-Tabs -->
+            <nav class="hidden sm:flex -mb-px space-x-4 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
                 <button onclick="showTab('tab-modalidades')" id="modalidades-tab"
                     class="edutab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm">
                     Modalidades de Ensino
@@ -1170,6 +1183,10 @@
         const next = document.getElementById(tabId);
         if (!next) return;
 
+        // Sincronizar seletor mobile
+        const mobileSelect = document.getElementById('edu-tabs-mobile');
+        if (mobileSelect) mobileSelect.value = tabId;
+
         // Encontrar aba atualmente visível
         const current = document.querySelector('.edutab-content:not(.hidden)');
 
@@ -1867,7 +1884,7 @@
         if (!res.ok) {
             const txt = await res.text();
             document.getElementById('modalidade-edit-errors').textContent = 'Erro ao salvar: ' + (txt || res
-            .status);
+                .status);
             return;
         }
         closeXModal('modal-modalidade-edit');
