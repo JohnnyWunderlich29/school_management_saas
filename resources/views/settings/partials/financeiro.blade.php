@@ -16,13 +16,13 @@
             <!-- Mobile Sub-Tab Selector -->
             <div class="sm:hidden px-4 py-3">
                 <label for="fin-tabs-mobile" class="sr-only">Selecionar Sub-aba</label>
-                <select id="fin-tabs-mobile" onchange="showFinanceTab(this.value)"
+                <x-select name="fin-tabs-mobile" id="fin-tabs-mobile" onchange="showFinanceTab(this.value)"
                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                     <option value="tab-fin-settings">Formas de Cobrança</option>
                     <option value="tab-fin-gateways">Gateways</option>
                     <option value="tab-fin-dunning">Envio de Cobranças</option>
                     <option value="tab-fin-automation">Automação</option>
-                </select>
+                </x-select>
             </div>
 
             <!-- Desktop Sub-Tabs -->
@@ -1340,16 +1340,14 @@
                     <span class="ml-2 text-gray-700">Ativo</span>
                 </label>
             </div>
-            <div>
-                @php($tz = old('timezone', $settings->timezone ?? 'America/Sao_Paulo'))
-                <x-select name="timezone" label="Timezone">
-                    <option value="America/Sao_Paulo" @selected($tz === 'America/Sao_Paulo')>America/Sao_Paulo</option>
-                    <option value="America/Fortaleza" @selected($tz === 'America/Fortaleza')>America/Fortaleza</option>
-                    <option value="America/Manaus" @selected($tz === 'America/Manaus')>America/Manaus</option>
-                    <option value="America/Bahia" @selected($tz === 'America/Bahia')>America/Bahia</option>
-                    <option value="UTC" @selected($tz === 'UTC')>UTC</option>
-                </x-select>
-            </div>
+            @php($tz = old('timezone', $settings->timezone ?? 'America/Sao_Paulo'))
+            <x-select name="timezone" label="Timezone">
+                <option value="America/Sao_Paulo" @selected($tz === 'America/Sao_Paulo')>America/Sao_Paulo</option>
+                <option value="America/Fortaleza" @selected($tz === 'America/Fortaleza')>America/Fortaleza</option>
+                <option value="America/Manaus" @selected($tz === 'America/Manaus')>America/Manaus</option>
+                <option value="America/Bahia" @selected($tz === 'America/Bahia')>America/Bahia</option>
+                <option value="UTC" @selected($tz === 'UTC')>UTC</option>
+            </x-select>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Dias da semana</label>
                 @php($days = data_get($settings->dunning_schedule, 'days_of_week', []))

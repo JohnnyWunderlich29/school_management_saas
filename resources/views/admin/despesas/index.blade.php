@@ -4,12 +4,12 @@
     <x-breadcrumbs :items="[['title' => 'Administração', 'url' => '#'], ['title' => 'Despesas', 'url' => '#']]" />
 
     <x-card>
-        <div class="flex justify-between items-center mb-6">
-            <div>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="w-full">
                 <h1 class="text-2xl font-bold text-gray-900">Despesas</h1>
                 <p class="mt-1 text-sm text-gray-600">Listagem e gerenciamento de despesas</p>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex flex-col md:flex-row sm:items-center gap-2">
                 <x-button color="secondary" :href="route('admin.despesas.recorrencias')">
                     <i class="fas fa-redo mr-1"></i> Recorrências
                 </x-button>

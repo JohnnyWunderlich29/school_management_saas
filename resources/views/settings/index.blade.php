@@ -24,7 +24,7 @@
                     <!-- Mobile Tab Selector -->
                     <div class="sm:hidden mb-4">
                         <label for="settings-tabs-mobile" class="sr-only">Selecionar Aba</label>
-                        <x-select id="settings-tabs-mobile"
+                        <x-select name="settings-tabs-mobile" id="settings-tabs-mobile"
                             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="educacional" {{ $tab === 'educacional' ? 'selected' : '' }}>Educacional</option>
                             <option value="financeiro" {{ $tab === 'financeiro' ? 'selected' : '' }}>Financeiro</option>

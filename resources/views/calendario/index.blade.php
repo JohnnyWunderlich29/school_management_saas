@@ -9,12 +9,15 @@
     <style>
         /* FullCalendar v5/6: usar variáveis de botão para garantir consistência */
         .fc {
-            --fc-button-bg-color: #4f46e5; /* indigo-600 */
+            --fc-button-bg-color: #4f46e5;
+            /* indigo-600 */
             --fc-button-border-color: #4f46e5;
             --fc-button-text-color: #ffffff;
-            --fc-button-hover-bg-color: #4338ca; /* indigo-700 */
+            --fc-button-hover-bg-color: #4338ca;
+            /* indigo-700 */
             --fc-button-hover-border-color: #4338ca;
-            --fc-button-active-bg-color: #3730a3; /* indigo-800 */
+            --fc-button-active-bg-color: #3730a3;
+            /* indigo-800 */
             --fc-button-active-border-color: #3730a3;
         }
 
@@ -26,37 +29,44 @@
         /* Destaque visual para fins de semana (sábado e domingo) */
         .fc .fc-day-sat .fc-daygrid-day-frame,
         .fc .fc-day-sun .fc-daygrid-day-frame {
-            background-color: #f8fafc; /* slate-50 */
+            background-color: #f8fafc;
+            /* slate-50 */
         }
 
         .fc .fc-timegrid-col.fc-day-sat .fc-timegrid-col-frame,
         .fc .fc-timegrid-col.fc-day-sun .fc-timegrid-col-frame {
-            background-color: #f8fafc; /* slate-50 */
+            background-color: #f8fafc;
+            /* slate-50 */
         }
 
         .fc .fc-col-header-cell.fc-day-sat,
         .fc .fc-col-header-cell.fc-day-sun {
-            background-color: #f1f5f9; /* slate-100 */
+            background-color: #f1f5f9;
+            /* slate-100 */
         }
 
         /* Ajustes de responsividade do header do FullCalendar no mobile */
         @media (max-width: 640px) {
+
             /* Evitar que o header extrapole a largura e permitir quebra em duas linhas */
             .fc .fc-header-toolbar {
                 flex-wrap: wrap;
                 gap: 0.5rem;
             }
+
             .fc .fc-toolbar-chunk {
                 flex: 1 1 100%;
                 display: flex;
                 justify-content: space-between;
             }
+
             .fc .fc-toolbar-title {
                 font-size: 1.25rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
+
             /* Evitar scroll horizontal no container do calendário */
             #calendar {
                 overflow-x: hidden;
@@ -65,18 +75,24 @@
 
             /* Melhorias visuais na listWeek (mobile): reduzir negrito e ajustar layout */
             .fc .fc-list-day-cushion {
-                font-weight: 500; /* reduzir negrito do título do dia */
-                background-color: #f8fafc; /* slate-50 */
+                font-weight: 500;
+                /* reduzir negrito do título do dia */
+                background-color: #f8fafc;
+                /* slate-50 */
                 border-radius: 0.5rem;
                 padding: 0.5rem 0.75rem;
             }
+
             .fc .fc-list-day-side-text {
                 font-weight: 400;
-                color: #64748b; /* slate-500 */
+                color: #64748b;
+                /* slate-500 */
             }
+
             .fc .fc-list-event {
                 padding: 0.25rem 0.5rem;
             }
+
             .fc .fc-list-table td {
                 padding: 0.5rem 0.75rem;
             }
@@ -87,72 +103,74 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <x-breadcrumbs :items="[['title' => 'Calendário', 'url' => route('calendario.index')]]" />
 
-<x-card id="calendar-container">
-            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Calendário Escolar</h1>
-                    <p class="mt-1 text-sm text-gray-600">Visão mensal, semanal e agenda de eventos</p>
+            <x-card id="calendar-container">
+                <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div class="w-full">
+                        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Calendário Escolar</h1>
+                        <p class="mt-1 text-sm text-gray-600">Visão mensal, semanal e agenda de eventos</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row sm:items-center gap-2">
+                        <x-button class="w-full sm:w-auto" color="primary" @click="openCreate()">
+                            <i class="fas fa-plus mr-2"></i> Novo Evento
+                        </x-button>
+                        <x-button href="{{ route('calendario.pdf') }}?ano={{ request('ano', date('Y')) }}"
+                            x-bind:href="`{{ route('calendario.pdf') }}?ano=${filters.ano}`" color="secondary"
+                            class="w-full sm:w-auto inline-flex items-center gap-2" target="_blank">
+                            <i class="fas fa-file-pdf"></i> Exportar PDF Anual
+                        </x-button>
+                    </div>
                 </div>
-                <div class="flex sm:items-center gap-2">
-                    <x-button class="w-full sm:w-auto" color="primary" @click="openCreate()">
-                        <i class="fas fa-plus mr-2"></i> Novo Evento
-                    </x-button>
-                    <x-button href="{{ route('calendario.pdf') }}?ano={{ request('ano', date('Y')) }}" x-bind:href="`{{ route('calendario.pdf') }}?ano=${filters.ano}`" color="secondary" class="w-full sm:w-auto inline-flex items-center gap-2" target="_blank">
-                        <i class="fas fa-file-pdf"></i> Exportar PDF Anual
-                    </x-button>
+
+                <!-- Mobile: abas semanais para alternar rapidamente entre Agenda e Grade -->
+                <div class="sm:hidden mb-4">
+                    <div class="inline-flex rounded-lg overflow-hidden border border-gray-200">
+                        <button type="button" @click="setMobileWeekly('listWeek')"
+                            :class="mobileWeeklyMode === 'listWeek' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
+                            class="px-3 py-2 text-sm font-medium">
+                            Agenda semanal
+                        </button>
+                        <button type="button" @click="setMobileWeekly('timeGridWeek')"
+                            :class="mobileWeeklyMode === 'timeGridWeek' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
+                            class="px-3 py-2 text-sm font-medium border-l border-gray-200">
+                            Grade semanal
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Mobile: abas semanais para alternar rapidamente entre Agenda e Grade -->
-            <div class="sm:hidden mb-4">
-                <div class="inline-flex rounded-lg overflow-hidden border border-gray-200">
-                    <button type="button"
-                        @click="setMobileWeekly('listWeek')"
-                        :class="mobileWeeklyMode === 'listWeek' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
-                        class="px-3 py-2 text-sm font-medium">
-                        Agenda semanal
-                    </button>
-                    <button type="button"
-                        @click="setMobileWeekly('timeGridWeek')"
-                        :class="mobileWeeklyMode === 'timeGridWeek' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700'"
-                        class="px-3 py-2 text-sm font-medium border-l border-gray-200">
-                        Grade semanal
-                    </button>
-                </div>
-            </div>
+                @php
+                    $anoAtual = (int) date('Y');
+                    // Mostrar dois anos anteriores e um futuro
+                    $anos = [];
+                    for ($i = -2; $i <= 1; $i++) {
+                        $y = $anoAtual + $i;
+                        $anos[(string) $y] = (string) $y;
+                    }
+                @endphp
+                <x-collapsible-filter title="Filtros do Calendário" :action="route('calendario.index')" :clear-route="route('calendario.index')"
+                    target="calendar-container">
+                    <x-filter-field name="categoria" label="Categoria" type="select" :options="[
+                        'aula' => 'Aulas',
+                        'feriado' => 'Feriados',
+                        'recesso' => 'Recesso',
+                        'avaliacao' => 'Avaliações',
+                        'evento' => 'Eventos',
+                        'matricula' => 'Matrículas',
+                    ]"
+                        emptyOption="Todas" />
+                    <x-filter-field name="audiencia" label="Audiência" type="select" :options="[
+                        'gestores' => 'Gestores',
+                        'docentes' => 'Docentes',
+                        'responsaveis' => 'Responsáveis',
+                        'alunos' => 'Alunos',
+                    ]"
+                        emptyOption="Todos" />
+                    <x-filter-field name="ano" label="Ano Letivo" type="select" :options="$anos" :emptyOption="false" />
+                </x-collapsible-filter>
 
-            @php
-                $anoAtual = (int) date('Y');
-                // Mostrar dois anos anteriores e um futuro
-                $anos = [];
-                for ($i = -2; $i <= 1; $i++) {
-                    $y = $anoAtual + $i;
-                    $anos[(string) $y] = (string) $y;
-                }
-            @endphp
-            <x-collapsible-filter title="Filtros do Calendário" :action="route('calendario.index')" :clear-route="route('calendario.index')"
-                target="calendar-container">
-                <x-filter-field name="categoria" label="Categoria" type="select" :options="[
-                    'aula' => 'Aulas',
-                    'feriado' => 'Feriados',
-                    'recesso' => 'Recesso',
-                    'avaliacao' => 'Avaliações',
-                    'evento' => 'Eventos',
-                    'matricula' => 'Matrículas',
-                ]" emptyOption="Todas" />
-                <x-filter-field name="audiencia" label="Audiência" type="select" :options="[
-                    'gestores' => 'Gestores',
-                    'docentes' => 'Docentes',
-                    'responsaveis' => 'Responsáveis',
-                    'alunos' => 'Alunos',
-                ]" emptyOption="Todos" />
-                <x-filter-field name="ano" label="Ano Letivo" type="select" :options="$anos" :emptyOption="false" />
-            </x-collapsible-filter>
 
-            
 
-            
-            
+
+
                 <div class="p-4">
                     <div class="relative">
                         <div id="calendar"></div>
@@ -239,8 +257,7 @@
                         <!-- Data/Hora de fim -->
                         <div class="mb-4">
                             <label for="end" class="block text-sm font-medium text-gray-700">
-                                <span
-                                    x-text="form.allDay ? 'Data de fim' : 'Data e hora de fim'"></span>
+                                <span x-text="form.allDay ? 'Data de fim' : 'Data e hora de fim'"></span>
                             </label>
                             <x-input id="end" name="end" x-bind:type="form.allDay ? 'date' : 'datetime-local'"
                                 x-model="form.end" class="mt-1 w-full" />
@@ -262,7 +279,8 @@
                                     class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
                                     Cancelar
                                 </button>
-                                <button x-show="form.id" @click.prevent="confirmDelete" type="button" x-bind:disabled="deleting"
+                                <button x-show="form.id" @click.prevent="confirmDelete" type="button"
+                                    x-bind:disabled="deleting"
                                     class="inline-flex justify-center rounded-md border border-red-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm"
                                     :class="{ 'opacity-50 cursor-not-allowed': deleting }">
                                     <template x-if="deleting">
@@ -406,8 +424,13 @@
                             height: 'auto',
                             views: {
                                 listWeek: {
-                                    listDayFormat: { weekday: 'short', day: '2-digit' },
-                                    listDaySideFormat: { month: 'short' }
+                                    listDayFormat: {
+                                        weekday: 'short',
+                                        day: '2-digit'
+                                    },
+                                    listDaySideFormat: {
+                                        month: 'short'
+                                    }
                                 }
                             },
                             headerToolbar: isMobileInit ? {
@@ -724,7 +747,9 @@
                                 console.error(err);
                                 showToast('Erro ao salvar evento', 'error');
                             })
-                            .finally(() => { this.saving = false; });
+                            .finally(() => {
+                                this.saving = false;
+                            });
                     },
                     confirmDelete() {
                         if (!this.currentEventId) return;
@@ -766,7 +791,9 @@
                                 console.error(err);
                                 showToast('Erro ao excluir evento', 'error');
                             })
-                            .finally(() => { this.deleting = false; });
+                            .finally(() => {
+                                this.deleting = false;
+                            });
                     }
                 }
             }

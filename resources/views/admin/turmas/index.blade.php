@@ -96,13 +96,13 @@
 
     <x-card>
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 w-full">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Gerenciar Turmas</h1>
                 <p class="mt-1 text-sm text-gray-600">Gerencie as turmas da escola</p>
             </div>
             <button onclick="openCreateModal()"
-                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200">
+                class="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6">
                     </path>
@@ -1390,7 +1390,7 @@
                     const container = document.getElementById('alunos-disponiveis');
                     fetch(
                             `/admin/turmas/${turmaAtual}/alunos-disponiveis?mode=disponiveis&page_disponiveis=${encodeURIComponent(disponiveisPage)}&per_page=${encodeURIComponent(perPageAlunos)}&busca=${encodeURIComponent(buscaAlunosModal)}`
-                            )
+                        )
                         .then(response => response.json())
                         .then(data => {
                             const lista = data.disponiveis || [];
@@ -1433,7 +1433,7 @@
                     const container = document.getElementById('alunos-outras-turmas');
                     fetch(
                             `/admin/turmas/${turmaAtual}/alunos-disponiveis?mode=outras&page_outras=${encodeURIComponent(outrasPage)}&per_page=${encodeURIComponent(perPageAlunos)}&busca=${encodeURIComponent(buscaAlunosModal)}`
-                            )
+                        )
                         .then(response => response.json())
                         .then(data => {
                             const lista = data.outras_turmas || [];

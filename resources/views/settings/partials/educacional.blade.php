@@ -32,13 +32,13 @@
             <!-- Mobile Sub-Tab Selector -->
             <div class="sm:hidden px-4 py-3">
                 <label for="edu-tabs-mobile" class="sr-only">Selecionar Sub-aba</label>
-                <select id="edu-tabs-mobile" onchange="showTab(this.value)"
+                <x-select name="edu-tabs-mobile" id="edu-tabs-mobile" onchange="showTab(this.value)"
                     class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                     <option value="tab-modalidades">Modalidades de Ensino</option>
                     <option value="tab-niveis">Níveis de Ensino</option>
                     <option value="tab-disciplinas">Disciplinas e Cargas Horárias</option>
                     <option value="tab-turnos">Turnos</option>
-                </select>
+                </x-select>
             </div>
 
             <!-- Desktop Sub-Tabs -->
@@ -75,22 +75,18 @@
                         action="{{ route('admin.configuracao-educacional.store-modalidade', ['escola' => $escola->id]) }}"
                         class="space-y-4">
                         @csrf
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Modalidade</label>
-                            <select name="modalidade_ensino_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                <optgroup label="Padrão (BNCC)">
-                                    @foreach ($modalidadesPadrao as $m)
-                                        <option value="{{ $m->id }}">{{ $m->nome }}</option>
-                                    @endforeach
-                                </optgroup>
-                                <optgroup label="Personalizadas da Escola">
-                                    @foreach ($modalidadesPersonalizadas as $m)
-                                        <option value="{{ $m->id }}">{{ $m->nome }}</option>
-                                    @endforeach
-                                </optgroup>
-                            </select>
-                        </div>
+                        <x-select name="modalidade_ensino_id" label="Modalidade">
+                            <optgroup label="Padrão (BNCC)">
+                                @foreach ($modalidadesPadrao as $m)
+                                    <option value="{{ $m->id }}">{{ $m->nome }}</option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="Personalizadas da Escola">
+                                @foreach ($modalidadesPersonalizadas as $m)
+                                    <option value="{{ $m->id }}">{{ $m->nome }}</option>
+                                @endforeach
+                            </optgroup>
+                        </x-select>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" name="ativo" id="modalidade_ativo" checked>
                             <label for="modalidade_ativo" class="text-sm text-gray-700">Ativo</label>
@@ -266,15 +262,11 @@
                         action="{{ route('admin.configuracao-educacional.store-nivel', ['escola' => $escola->id]) }}"
                         class="space-y-4">
                         @csrf
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Nível de Ensino</label>
-                            <select name="nivel_ensino_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                @foreach ($niveisDisponiveis as $n)
-                                    <option value="{{ $n->id }}">{{ $n->nome }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-select name="nivel_ensino_id" label="Nível de Ensino">
+                            @foreach ($niveisDisponiveis as $n)
+                                <option value="{{ $n->id }}">{{ $n->nome }}</option>
+                            @endforeach
+                        </x-select>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" name="ativo" id="nivel_ativo" checked>
                             <label for="nivel_ativo" class="text-sm text-gray-700">Ativo</label>
@@ -509,26 +501,20 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Filtrar por nível</label>
-                    <select id="filtro-nivel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">Todos os níveis</option>
-                        @foreach ($escola->nivelConfigs as $cfg)
-                            <option value="{{ $cfg->nivelEnsino->id }}">{{ $cfg->nivelEnsino->nome }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Filtrar por área</label>
-                    <select id="filtro-area" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">Todas as áreas</option>
-                        <option value="linguagens">Linguagens</option>
-                        <option value="matematica">Matemática</option>
-                        <option value="ciencias">Ciências</option>
-                        <option value="humanas">Ciências Humanas</option>
-                        <option value="tecnologia">Tecnologia</option>
-                    </select>
-                </div>
+                <x-select name="filtro-nivel" id="filtro-nivel" label="Filtrar por nível">
+                    <option value="">Todos os níveis</option>
+                    @foreach ($escola->nivelConfigs as $cfg)
+                        <option value="{{ $cfg->nivelEnsino->id }}">{{ $cfg->nivelEnsino->nome }}</option>
+                    @endforeach
+                </x-select>
+                <x-select name="filtro-area" id="filtro-area" label="Filtrar por área">
+                    <option value="">Todas as áreas</option>
+                    <option value="linguagens">Linguagens</option>
+                    <option value="matematica">Matemática</option>
+                    <option value="ciencias">Ciências</option>
+                    <option value="humanas">Ciências Humanas</option>
+                    <option value="tecnologia">Tecnologia</option>
+                </x-select>
                 <div class="flex items-end">
                     <button type="button" onclick="loadDisciplinas()"
                         class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 w-full">Carregar</button>
@@ -2327,7 +2313,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Tipo</label>
-                        <select class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" id="slot-edit-tipo">
+                        <select class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" id="slot-edit-tipo">
                             <option value="aula" ${slot.tipo==='aula'?'selected':''}>Aula</option>
                             <option value="intervalo" ${slot.tipo==='intervalo'?'selected':''}>Intervalo</option>
                             <option value="almoco" ${slot.tipo==='almoco'?'selected':''}>Almoço</option>
